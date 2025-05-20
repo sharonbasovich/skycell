@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { LineChart as LucideLineChart } from 'lucide-react';
@@ -80,6 +81,7 @@ const Earth = () => {
   );
 };
 
+// Fixed TrajectoryPath component
 const TrajectoryPath = () => {
   // Create a curved path representing the balloon's trajectory
   const points = [];
@@ -93,17 +95,20 @@ const TrajectoryPath = () => {
     points.push(x, y, z);
   }
   
+  // Create a properly formatted array for the buffer attribute
+  const pointsArray = new Float32Array(points);
+  
   return (
     <line>
       <bufferGeometry>
         <bufferAttribute
           attach="attributes-position"
           count={curveSegments}
-          array={new Float32Array(points)}
+          array={pointsArray}
           itemSize={3}
         />
       </bufferGeometry>
-      <lineBasicMaterial color="#0EA5E9" opacity={0.7} transparent linewidth={1} />
+      <lineBasicMaterial color="#0EA5E9" opacity={0.7} transparent />
     </line>
   );
 };
@@ -359,7 +364,7 @@ const Dashboard = () => {
           
           {/* Sidebar column */}
           <div className="space-y-6">
-            {/* 3D position visualization */}
+            {/* 3D position visualization - Fixed component */}
             <Card className="bg-card/50 backdrop-blur-sm border-border/50">
               <CardHeader>
                 <CardTitle>3D Position</CardTitle>

@@ -1,7 +1,8 @@
 
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Stars } from '@react-three/drei';
-import { BufferGeometry, Float32BufferAttribute } from 'three';
+import * as THREE from 'three';
+import { useMemo } from 'react';
 
 // Component for the Earth
 const Earth = () => {
@@ -19,6 +20,14 @@ const Earth = () => {
 
 // Component for the balloon
 const BalloonPosition = () => {
+  // Create a simple line geometry for the connection
+  const linePoints = useMemo(() => {
+    return new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, -0.1, 0),
+      new THREE.Vector3(0, -0.6, 0)
+    ]);
+  }, []);
+
   return (
     <group>
       {/* Balloon */}
@@ -33,19 +42,11 @@ const BalloonPosition = () => {
         <meshStandardMaterial color="#8B5CF6" />
       </mesh>
       
-      {/* Connection line */}
-      <line>
-        <bufferGeometry>
-          {/* Use proper BufferGeometry attribute setup */}
-          <bufferAttribute 
-            attach="attributes-position" 
-            array={new Float32Array([0, -0.1, 0, 0, -0.6, 0])} 
-            count={2} 
-            itemSize={3} 
-          />
-        </bufferGeometry>
-        <lineBasicMaterial color="#FFFFFF" />
-      </line>
+      {/* Connection line - using primitive for direct three.js object access */}
+      <primitive object={new THREE.LineSegments(
+        linePoints,
+        new THREE.LineBasicMaterial({ color: "#FFFFFF" })
+      )} />
       
       {/* Position light */}
       <pointLight position={[0, 0, 0]} intensity={1} distance={5} color="#FFFFFF" />
@@ -53,33 +54,35 @@ const BalloonPosition = () => {
   );
 };
 
-// Fixed TrajectoryPath component
+// Corrected TrajectoryPath component
 const TrajectoryPath = () => {
-  // Create a curved path representing the balloon's trajectory
-  const curveSegments = 100;
-  const pointsArray = new Float32Array(curveSegments * 3);
-  
-  for (let i = 0; i < curveSegments; i++) {
-    const t = i / (curveSegments - 1);
-    const idx = i * 3;
-    pointsArray[idx] = Math.sin(t * Math.PI * 2) * 20;
-    pointsArray[idx + 1] = t * 15;
-    pointsArray[idx + 2] = Math.cos(t * Math.PI * 2) * 20;
-  }
-  
+  // Create a curved path using THREE.BufferGeometry
+  const trajectoryGeometry = useMemo(() => {
+    const curveSegments = 100;
+    const points = [];
+    
+    for (let i = 0; i < curveSegments; i++) {
+      const t = i / (curveSegments - 1);
+      const x = Math.sin(t * Math.PI * 2) * 20;
+      const y = t * 15;
+      const z = Math.cos(t * Math.PI * 2) * 20;
+      points.push(new THREE.Vector3(x, y, z));
+    }
+    
+    return new THREE.BufferGeometry().setFromPoints(points);
+  }, []);
+
   return (
-    <line>
-      <bufferGeometry>
-        {/* Use proper BufferGeometry attribute setup */}
-        <bufferAttribute
-          attach="attributes-position"
-          array={pointsArray}
-          count={curveSegments}
-          itemSize={3}
-        />
-      </bufferGeometry>
-      <lineBasicMaterial color="#0EA5E9" opacity={0.7} transparent />
-    </line>
+    <primitive 
+      object={new THREE.Line(
+        trajectoryGeometry,
+        new THREE.LineBasicMaterial({ 
+          color: "#0EA5E9", 
+          opacity: 0.7, 
+          transparent: true 
+        })
+      )}
+    />
   );
 };
 

@@ -1,7 +1,7 @@
 
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Stars } from '@react-three/drei';
-import { BufferGeometry } from 'three';
+import { BufferGeometry, Float32BufferAttribute } from 'three';
 
 // Component for the Earth
 const Earth = () => {
@@ -36,7 +36,8 @@ const BalloonPosition = () => {
       {/* Connection line */}
       <line>
         <bufferGeometry>
-          <float32BufferAttribute 
+          {/* Use proper BufferGeometry attribute setup */}
+          <bufferAttribute 
             attach="attributes-position" 
             array={new Float32Array([0, -0.1, 0, 0, -0.6, 0])} 
             count={2} 
@@ -69,7 +70,8 @@ const TrajectoryPath = () => {
   return (
     <line>
       <bufferGeometry>
-        <float32BufferAttribute
+        {/* Use proper BufferGeometry attribute setup */}
+        <bufferAttribute
           attach="attributes-position"
           array={pointsArray}
           count={curveSegments}

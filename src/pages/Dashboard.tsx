@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { LineChart } from 'lucide-react';
+import { LineChart as LucideLineChart } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  LineChart as RechartsLineChart, Line, BarChart, Bar, AreaChart, Area, 
+  LineChart, Line, BarChart, Bar, AreaChart, Area, 
   CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer 
 } from 'recharts';
 import { Canvas } from '@react-three/fiber';
@@ -214,39 +213,39 @@ const Dashboard = () => {
             title="Altitude" 
             value={lastReading.altitude.toLocaleString()} 
             unit="m"
-            icon={<LineChart />}
+            icon={<LucideLineChart />}
           />
           <DataCard 
             title="Temperature" 
             value={lastReading.temperature} 
             unit="°C"
-            icon={<LineChart />}
+            icon={<LucideLineChart />}
           />
           <DataCard 
             title="Pressure" 
             value={lastReading.pressure} 
             unit="kPa"
-            icon={<LineChart />}
+            icon={<LucideLineChart />}
           />
           <DataCard 
             title="Battery" 
             value={lastReading.batteryVoltage} 
             unit="V"
-            icon={<LineChart />}
+            icon={<LucideLineChart />}
             status={Number(lastReading.batteryVoltage) > 3.6 ? "online" : "warning"}
           />
           <DataCard 
             title="Signal" 
             value={lastReading.signalStrength} 
             unit="%"
-            icon={<LineChart />}
+            icon={<LucideLineChart />}
             status={lastReading.signalStrength > 60 ? "online" : "warning"}
           />
           <DataCard 
             title="Data Rate" 
             value={lastReading.dataRate} 
             unit="kb/s"
-            icon={<LineChart />}
+            icon={<LucideLineChart />}
           />
         </div>
         

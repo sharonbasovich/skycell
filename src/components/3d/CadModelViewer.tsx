@@ -1,0 +1,179 @@
+
+import { Suspense, useRef, useState } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, PerspectiveCamera, Grid, Environment, ContactShadows, Html } from '@react-three/drei';
+import * as THREE from 'three';
+
+// Placeholder for CAD Model
+const CadModel = () => {
+  const groupRef = useRef<THREE.Group>(null!);
+  const [hoveredPart, setHoveredPart] = useState<string | null>(null);
+  
+  return (
+    <group ref={groupRef}>
+      {/* Main Body */}
+      <mesh 
+        position={[0, 0, 0]} 
+        onPointerOver={() => setHoveredPart('main_body')}
+        onPointerOut={() => setHoveredPart(null)}
+      >
+        <boxGeometry args={[2, 0.5, 1]} />
+        <meshStandardMaterial 
+          color={hoveredPart === 'main_body' ? '#0EA5E9' : '#FFFFFF'} 
+          roughness={0.3}
+          metalness={0.7}
+        />
+        {hoveredPart === 'main_body' && (
+          <Html position={[0, 1, 0]}>
+            <div className="bg-background/80 backdrop-blur-sm p-2 rounded-md shadow-lg">
+              <p className="text-xs font-semibold">Main Body</p>
+              <p className="text-xs">Houses the main electronics</p>
+            </div>
+          </Html>
+        )}
+      </mesh>
+      
+      {/* Antenna */}
+      <mesh 
+        position={[0, 0.5, 0]} 
+        onPointerOver={() => setHoveredPart('antenna')}
+        onPointerOut={() => setHoveredPart(null)}
+      >
+        <cylinderGeometry args={[0.05, 0.05, 1]} />
+        <meshStandardMaterial 
+          color={hoveredPart === 'antenna' ? '#8B5CF6' : '#888888'} 
+          roughness={0.2}
+          metalness={0.8}
+        />
+        {hoveredPart === 'antenna' && (
+          <Html position={[0, 1, 0]}>
+            <div className="bg-background/80 backdrop-blur-sm p-2 rounded-md shadow-lg">
+              <p className="text-xs font-semibold">Mesh Network Antenna</p>
+              <p className="text-xs">915MHz communications</p>
+            </div>
+          </Html>
+        )}
+      </mesh>
+      
+      {/* Solar Panel */}
+      <mesh 
+        position={[1.2, 0, 0]} 
+        rotation={[0, 0, Math.PI / 2]}
+        onPointerOver={() => setHoveredPart('solar')}
+        onPointerOut={() => setHoveredPart(null)}
+      >
+        <boxGeometry args={[0.5, 0.8, 0.05]} />
+        <meshStandardMaterial 
+          color={hoveredPart === 'solar' ? '#0EA5E9' : '#2563EB'} 
+          roughness={0.1}
+          metalness={0.9}
+        />
+        {hoveredPart === 'solar' && (
+          <Html position={[0, 1, 0]}>
+            <div className="bg-background/80 backdrop-blur-sm p-2 rounded-md shadow-lg">
+              <p className="text-xs font-semibold">Solar Panel</p>
+              <p className="text-xs">5W power generation</p>
+            </div>
+          </Html>
+        )}
+      </mesh>
+      
+      {/* Camera Module */}
+      <mesh 
+        position={[0, 0, 0.6]} 
+        onPointerOver={() => setHoveredPart('camera')}
+        onPointerOut={() => setHoveredPart(null)}
+      >
+        <boxGeometry args={[0.4, 0.4, 0.2]} />
+        <meshStandardMaterial 
+          color={hoveredPart === 'camera' ? '#8B5CF6' : '#222222'} 
+          roughness={0.5}
+        />
+        {hoveredPart === 'camera' && (
+          <Html position={[0, 1, 0]}>
+            <div className="bg-background/80 backdrop-blur-sm p-2 rounded-md shadow-lg">
+              <p className="text-xs font-semibold">Camera Module</p>
+              <p className="text-xs">8MP image sensor</p>
+            </div>
+          </Html>
+        )}
+      </mesh>
+      
+      {/* GPS Module */}
+      <mesh 
+        position={[-0.8, 0.3, 0]} 
+        onPointerOver={() => setHoveredPart('gps')}
+        onPointerOut={() => setHoveredPart(null)}
+      >
+        <sphereGeometry args={[0.2, 16, 16]} />
+        <meshStandardMaterial 
+          color={hoveredPart === 'gps' ? '#0EA5E9' : '#DDDDDD'} 
+          roughness={0.3}
+        />
+        {hoveredPart === 'gps' && (
+          <Html position={[0, 1, 0]}>
+            <div className="bg-background/80 backdrop-blur-sm p-2 rounded-md shadow-lg">
+              <p className="text-xs font-semibold">GPS Module</p>
+              <p className="text-xs">High-precision positioning</p>
+            </div>
+          </Html>
+        )}
+      </mesh>
+    </group>
+  );
+};
+
+const CadModelViewer = () => {
+  const [viewMode, setViewMode] = useState('3d');
+  
+  return (
+    <div className="relative h-[80vh] w-full">
+      <div className="absolute top-4 right-4 z-10 flex gap-2">
+        <button 
+          className={`px-3 py-1 rounded-md text-sm ${viewMode === '3d' ? 'bg-primary text-white' : 'bg-background text-primary border border-primary'}`}
+          onClick={() => setViewMode('3d')}
+        >
+          3D View
+        </button>
+        <button 
+          className={`px-3 py-1 rounded-md text-sm ${viewMode === 'exploded' ? 'bg-primary text-white' : 'bg-background text-primary border border-primary'}`}
+          onClick={() => setViewMode('exploded')}
+        >
+          Exploded View
+        </button>
+      </div>
+      
+      <Canvas shadows>
+        <PerspectiveCamera makeDefault position={[4, 3, 4]} />
+        
+        <Suspense fallback={
+          <Html center>
+            <div className="flex flex-col items-center justify-center">
+              <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+              <p className="mt-4 text-sm text-primary">Loading Model...</p>
+            </div>
+          </Html>
+        }>
+          <CadModel />
+          <Grid 
+            position={[0, -0.5, 0]} 
+            args={[10, 10]} 
+            cellSize={0.5} 
+            cellThickness={0.5} 
+            cellColor="#6366F1" 
+            sectionSize={2}
+            sectionThickness={1}
+            sectionColor="#8B5CF6"
+            fadeDistance={30}
+          />
+          <Environment preset="studio" />
+          <ContactShadows position={[0, -0.5, 0]} opacity={0.4} scale={10} blur={1.5} far={4} />
+        </Suspense>
+        
+        <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />
+      </Canvas>
+    </div>
+  );
+};
+
+export default CadModelViewer;

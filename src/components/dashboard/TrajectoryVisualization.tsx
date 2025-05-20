@@ -1,6 +1,7 @@
 
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Stars } from '@react-three/drei';
+import { BufferGeometry } from 'three';
 
 // Component for the Earth
 const Earth = () => {

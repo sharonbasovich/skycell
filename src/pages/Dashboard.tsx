@@ -3,6 +3,9 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { LineChart as LucideLineChart } from 'lucide-react';
 
+// Import Card components that were missing
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
 // Import our new components
 import DataCard from '@/components/dashboard/DataCard';
 import TelemetryGraphs from '@/components/dashboard/TelemetryGraphs';

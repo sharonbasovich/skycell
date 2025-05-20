@@ -89,10 +89,12 @@ const TrajectoryPath = () => {
   
   for (let i = 0; i < curveSegments; i++) {
     const t = i / (curveSegments - 1);
-    const x = Math.sin(t * Math.PI * 2) * 20;
-    const y = t * 15;
-    const z = Math.cos(t * Math.PI * 2) * 20;
-    points.push(x, y, z);
+    // Simple spiral path calculation
+    points.push(
+      Math.sin(t * Math.PI * 2) * 20,
+      t * 15,
+      Math.cos(t * Math.PI * 2) * 20
+    );
   }
   
   // Create a properly formatted array for the buffer attribute
@@ -194,6 +196,7 @@ const Dashboard = () => {
       transition={{ duration: 0.4 }}
     >
       <div className="container mx-auto max-w-7xl px-4 py-6">
+        {/* Header section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold gradient-text">SkyCell Live Dashboard</h1>

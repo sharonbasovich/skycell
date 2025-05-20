@@ -33,17 +33,17 @@ const BalloonPosition = () => {
       </mesh>
       
       {/* Connection line */}
-      <lineSegments>
+      <line>
         <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            count={2}
-            array={new Float32Array([0, -0.1, 0, 0, -0.6, 0])}
-            itemSize={3}
+          <float32BufferAttribute 
+            attach="attributes-position" 
+            array={new Float32Array([0, -0.1, 0, 0, -0.6, 0])} 
+            count={2} 
+            itemSize={3} 
           />
         </bufferGeometry>
         <lineBasicMaterial color="#FFFFFF" />
-      </lineSegments>
+      </line>
       
       {/* Position light */}
       <pointLight position={[0, 0, 0]} intensity={1} distance={5} color="#FFFFFF" />
@@ -68,10 +68,10 @@ const TrajectoryPath = () => {
   return (
     <line>
       <bufferGeometry>
-        <bufferAttribute
+        <float32BufferAttribute
           attach="attributes-position"
-          count={curveSegments}
           array={pointsArray}
+          count={curveSegments}
           itemSize={3}
         />
       </bufferGeometry>

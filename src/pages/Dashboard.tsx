@@ -1,11 +1,11 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Chart } from 'lucide-react';
+import { LineChart } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  LineChart, Line, BarChart, Bar, AreaChart, Area, 
+  LineChart as RechartsLineChart, Line, BarChart, Bar, AreaChart, Area, 
   CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer 
 } from 'recharts';
 import { Canvas } from '@react-three/fiber';
@@ -214,39 +214,39 @@ const Dashboard = () => {
             title="Altitude" 
             value={lastReading.altitude.toLocaleString()} 
             unit="m"
-            icon={<Chart />}
+            icon={<LineChart />}
           />
           <DataCard 
             title="Temperature" 
             value={lastReading.temperature} 
             unit="°C"
-            icon={<Chart />}
+            icon={<LineChart />}
           />
           <DataCard 
             title="Pressure" 
             value={lastReading.pressure} 
             unit="kPa"
-            icon={<Chart />}
+            icon={<LineChart />}
           />
           <DataCard 
             title="Battery" 
             value={lastReading.batteryVoltage} 
             unit="V"
-            icon={<Chart />}
+            icon={<LineChart />}
             status={Number(lastReading.batteryVoltage) > 3.6 ? "online" : "warning"}
           />
           <DataCard 
             title="Signal" 
             value={lastReading.signalStrength} 
             unit="%"
-            icon={<Chart />}
+            icon={<LineChart />}
             status={lastReading.signalStrength > 60 ? "online" : "warning"}
           />
           <DataCard 
             title="Data Rate" 
             value={lastReading.dataRate} 
             unit="kb/s"
-            icon={<Chart />}
+            icon={<LineChart />}
           />
         </div>
         

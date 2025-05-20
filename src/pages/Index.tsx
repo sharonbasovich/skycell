@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
@@ -6,7 +5,7 @@ import { Link } from 'react-router-dom';
 import BackgroundScene from '../components/3d/BackgroundScene';
 import BalloonModel from '../components/3d/BalloonModel';
 import { Button } from '@/components/ui/button';
-import { ChartLine, Chart } from 'lucide-react';
+import { BarChart, LineChart } from 'lucide-react';
 
 const FeatureCard = ({ icon, title, description, delay = 0 }) => {
   const [ref, inView] = useInView({
@@ -81,12 +80,12 @@ const Index = () => {
           >
             <Link to="/dashboard">
               <Button size="lg" className="bg-primary hover:bg-primary/80 text-white">
-                View Live Dashboard <Chart className="ml-2 h-4 w-4" />
+                View Live Dashboard <BarChart className="ml-2 h-4 w-4" />
               </Button>
             </Link>
             <Link to="/cad">
               <Button variant="outline" size="lg" className="border-primary text-primary hover:bg-primary/10">
-                Explore CAD Model <ChartLine className="ml-2 h-4 w-4" />
+                Explore CAD Model <LineChart className="ml-2 h-4 w-4" />
               </Button>
             </Link>
           </motion.div>

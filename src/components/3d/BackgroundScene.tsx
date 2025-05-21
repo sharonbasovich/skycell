@@ -1,4 +1,3 @@
-
 import { useRef, useEffect, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Stars, useTexture, Environment } from '@react-three/drei';
@@ -14,9 +13,17 @@ const PhysicsSphere = ({ position, scale, color, speed = 1 }) => {
   ));
   const target = useRef(new THREE.Vector3(...position));
   
+  // Add time for smooth autonomous movement
+  const time = useRef(Math.random() * 100);
+  const noiseScale = useRef(0.5 + Math.random() * 1.0);
+  const noiseSpeed = useRef(0.2 + Math.random() * 0.5);
+  
   // Use cursor position
-  useFrame(({ mouse, viewport }) => {
+  useFrame(({ mouse, viewport, clock }) => {
     if (!meshRef.current) return;
+    
+    // Increment time for noise
+    time.current += clock.elapsedTime * 0.1;
 
     // Convert mouse coordinates to world space
     const x = (mouse.x * viewport.width) / 2;
@@ -29,15 +36,27 @@ const PhysicsSphere = ({ position, scale, color, speed = 1 }) => {
     const cursorPosition = new THREE.Vector3(x, y, 0);
     const distance = mesh.position.distanceTo(cursorPosition);
     
-    if (distance < 3) {
+    // Make cursor interaction stronger and more noticeable
+    if (distance < 5) {
       // Calculate direction from cursor to sphere
       const direction = new THREE.Vector3().subVectors(mesh.position, cursorPosition);
       direction.normalize();
       
       // Apply "hit" force - inversely proportional to distance
-      const force = 0.01 / Math.max(0.2, distance * 0.5);
+      const force = 0.03 / Math.max(0.2, distance * 0.5);
       velocity.current.add(direction.multiplyScalar(force));
     }
+
+    // Add smooth autonomous noise movement when not being interacted with
+    const noise = {
+      x: Math.sin(time.current * noiseSpeed.current) * noiseScale.current * 0.005,
+      y: Math.cos(time.current * noiseSpeed.current * 0.8) * noiseScale.current * 0.005,
+      z: Math.sin(time.current * noiseSpeed.current * 0.6) * noiseScale.current * 0.005
+    };
+    
+    velocity.current.x += noise.x;
+    velocity.current.y += noise.y;
+    velocity.current.z += noise.z;
 
     // Update position based on velocity
     mesh.position.add(velocity.current);
@@ -46,7 +65,7 @@ const PhysicsSphere = ({ position, scale, color, speed = 1 }) => {
     velocity.current.multiplyScalar(0.98);
     
     // Soft boundary forces to keep spheres in view
-    const boundaryForce = 0.001;
+    const boundaryForce = 0.002;
     const bounds = 10;
     
     if (Math.abs(mesh.position.x) > bounds) {
@@ -127,7 +146,15 @@ const BackgroundScene = () => {
     <div className="canvas-container">
       <Canvas 
         camera={{ position: [0, 0, 15], fov: 60 }}
-        style={{ cursor: 'none' }}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          zIndex: -1,
+          pointerEvents: 'auto'  // Make sure mouse events work
+        }}
       >
         <ambientLight intensity={0.3} />
         <pointLight position={[10, 10, 10]} intensity={1} />

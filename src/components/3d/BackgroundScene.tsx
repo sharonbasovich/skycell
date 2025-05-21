@@ -1,7 +1,46 @@
+
 import { useRef, useEffect, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Stars, useTexture, Environment } from '@react-three/drei';
 import * as THREE from 'three';
+
+// MouseCursor component to visualize the cursor in 3D space
+const MouseCursor = () => {
+  const { mouse, viewport } = useThree();
+  const cursorRef = useRef<THREE.Mesh>(null!);
+  
+  useFrame(() => {
+    if (!cursorRef.current) return;
+    
+    // Convert mouse coordinates to world space
+    const x = (mouse.x * viewport.width) / 2;
+    const y = (mouse.y * viewport.height) / 2;
+    
+    // Update cursor position
+    cursorRef.current.position.set(x, y, 0);
+  });
+  
+  return (
+    <group>
+      <mesh ref={cursorRef} position={[0, 0, 0]}>
+        <sphereGeometry args={[0.3, 16, 16]} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.6} />
+      </mesh>
+      <pointLight
+        position={[0, 0, 0]}
+        intensity={2}
+        distance={5}
+        decay={2}
+        color="#ffffff"
+        ref={(light) => {
+          if (light) {
+            light.position.copy(cursorRef.current?.position || new THREE.Vector3(0, 0, 0));
+          }
+        }}
+      />
+    </group>
+  );
+};
 
 // PhysicsSphere component that reacts to cursor
 const PhysicsSphere = ({ position, scale, color, speed = 1 }) => {
@@ -12,15 +51,17 @@ const PhysicsSphere = ({ position, scale, color, speed = 1 }) => {
     Math.random() * 0.01 - 0.005
   ));
   const target = useRef(new THREE.Vector3(...position));
+  const lastHit = useRef(0);
   
   // Add time for smooth autonomous movement
   const time = useRef(Math.random() * 100);
   const noiseScale = useRef(0.5 + Math.random() * 1.0);
   const noiseSpeed = useRef(0.2 + Math.random() * 0.5);
+  const materialRef = useRef<THREE.MeshStandardMaterial>(null!);
   
   // Use cursor position
   useFrame(({ mouse, viewport, clock }) => {
-    if (!meshRef.current) return;
+    if (!meshRef.current || !materialRef.current) return;
     
     // Increment time for noise
     time.current += clock.elapsedTime * 0.1;
@@ -43,8 +84,18 @@ const PhysicsSphere = ({ position, scale, color, speed = 1 }) => {
       direction.normalize();
       
       // Apply "hit" force - inversely proportional to distance
-      const force = 0.03 / Math.max(0.2, distance * 0.5);
+      const force = 0.05 / Math.max(0.2, distance * 0.5);
       velocity.current.add(direction.multiplyScalar(force));
+      
+      // Visual feedback - change color temporarily when hit by cursor
+      materialRef.current.emissive = new THREE.Color(color).multiplyScalar(0.5);
+      materialRef.current.emissiveIntensity = 0.7;
+      lastHit.current = clock.elapsedTime;
+    } else {
+      // Fade back to normal after hit
+      if (clock.elapsedTime - lastHit.current > 0.3) {
+        materialRef.current.emissiveIntensity = Math.max(0, materialRef.current.emissiveIntensity - 0.05);
+      }
     }
 
     // Add smooth autonomous noise movement when not being interacted with
@@ -91,10 +142,13 @@ const PhysicsSphere = ({ position, scale, color, speed = 1 }) => {
     <mesh ref={meshRef} position={position} scale={scale}>
       <sphereGeometry args={[1, 32, 32]} />
       <meshStandardMaterial 
+        ref={materialRef}
         color={color} 
         roughness={0.2} 
         metalness={0.8} 
         envMapIntensity={1}
+        emissive={color}
+        emissiveIntensity={0}
       />
     </mesh>
   );
@@ -122,25 +176,6 @@ const Cloud = ({ count = 20, radius = 20 }) => {
   );
 };
 
-// MouseTracker to visualize cursor in 3D space
-const MouseTracker = () => {
-  const { mouse, viewport } = useThree();
-  // Fix: Ensure we have a proper Vector3 compatible position with exactly 3 elements
-  const x = (mouse.x * viewport.width) / 2;
-  const y = (mouse.y * viewport.height) / 2;
-  const z = 0;
-
-  return (
-    <pointLight 
-      position={[x, y, z]} 
-      intensity={2}
-      distance={3}
-      decay={2}
-      color="#ffffff"
-    />
-  );
-};
-
 const BackgroundScene = () => {
   return (
     <div className="canvas-container">
@@ -161,7 +196,7 @@ const BackgroundScene = () => {
         <Stars radius={100} depth={50} count={5000} factor={4} fade speed={1} />
         <Cloud count={25} />
         <Environment preset="sunset" />
-        <MouseTracker />
+        <MouseCursor />
       </Canvas>
     </div>
   );

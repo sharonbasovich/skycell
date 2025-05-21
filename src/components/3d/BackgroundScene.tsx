@@ -1,3 +1,4 @@
+
 import { useRef, useEffect, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Stars, useTexture, Environment } from '@react-three/drei';
@@ -105,15 +106,14 @@ const Cloud = ({ count = 20, radius = 20 }) => {
 // MouseTracker to visualize cursor in 3D space
 const MouseTracker = () => {
   const { mouse, viewport } = useThree();
-  const position = [
-    (mouse.x * viewport.width) / 2,
-    (mouse.y * viewport.height) / 2,
-    0
-  ];
+  // Fix: Ensure we have a proper Vector3 compatible position with exactly 3 elements
+  const x = (mouse.x * viewport.width) / 2;
+  const y = (mouse.y * viewport.height) / 2;
+  const z = 0;
 
   return (
     <pointLight 
-      position={position} 
+      position={[x, y, z]} 
       intensity={2}
       distance={3}
       decay={2}

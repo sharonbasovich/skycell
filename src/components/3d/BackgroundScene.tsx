@@ -52,6 +52,7 @@ const PhysicsSphere = ({ position, scale, color, speed = 1 }) => {
   ));
   const target = useRef(new THREE.Vector3(...position));
   const lastHit = useRef(0);
+  const hitStrength = useRef(0);
   
   // Add time for smooth autonomous movement
   const time = useRef(Math.random() * 100);
@@ -79,30 +80,42 @@ const PhysicsSphere = ({ position, scale, color, speed = 1 }) => {
     
     // Make cursor interaction stronger and more noticeable
     if (distance < 5) {
-      // Calculate direction from cursor to sphere
+      // Calculate direction from cursor to sphere (repulsion)
       const direction = new THREE.Vector3().subVectors(mesh.position, cursorPosition);
       direction.normalize();
       
       // Apply "hit" force - inversely proportional to distance
-      const force = 0.05 / Math.max(0.2, distance * 0.5);
+      // Use much stronger force for more obvious effect
+      const force = 0.15 / Math.max(0.2, distance * 0.4);
       velocity.current.add(direction.multiplyScalar(force));
       
+      // Record hit strength for visual feedback
+      hitStrength.current = Math.min(1, force * 2);
+      
       // Visual feedback - change color temporarily when hit by cursor
-      materialRef.current.emissive = new THREE.Color(color).multiplyScalar(0.5);
-      materialRef.current.emissiveIntensity = 0.7;
+      materialRef.current.emissive = new THREE.Color(color).multiplyScalar(0.8);
+      materialRef.current.emissiveIntensity = 1.0;
       lastHit.current = clock.elapsedTime;
+      
+      // Scale effect for visual feedback
+      const scaleEffect = 1 + hitStrength.current * 0.3;
+      mesh.scale.set(scaleEffect * scale[0], scaleEffect * scale[1], scaleEffect * scale[2]);
     } else {
       // Fade back to normal after hit
-      if (clock.elapsedTime - lastHit.current > 0.3) {
-        materialRef.current.emissiveIntensity = Math.max(0, materialRef.current.emissiveIntensity - 0.05);
+      if (clock.elapsedTime - lastHit.current > 0.1) {
+        materialRef.current.emissiveIntensity = Math.max(0, materialRef.current.emissiveIntensity - 0.03);
+        // Return to original scale
+        const scaleFactor = 1 + Math.max(0, hitStrength.current - (clock.elapsedTime - lastHit.current)) * 0.3;
+        mesh.scale.set(scaleFactor * scale[0], scaleFactor * scale[1], scaleFactor * scale[2]);
+        hitStrength.current = Math.max(0, hitStrength.current - 0.03);
       }
     }
 
     // Add smooth autonomous noise movement when not being interacted with
     const noise = {
-      x: Math.sin(time.current * noiseSpeed.current) * noiseScale.current * 0.005,
-      y: Math.cos(time.current * noiseSpeed.current * 0.8) * noiseScale.current * 0.005,
-      z: Math.sin(time.current * noiseSpeed.current * 0.6) * noiseScale.current * 0.005
+      x: Math.sin(time.current * noiseSpeed.current) * noiseScale.current * 0.008,
+      y: Math.cos(time.current * noiseSpeed.current * 0.8) * noiseScale.current * 0.008,
+      z: Math.sin(time.current * noiseSpeed.current * 0.6) * noiseScale.current * 0.008
     };
     
     velocity.current.x += noise.x;

@@ -1,167 +1,28 @@
 
-import { useRef, useEffect, useState } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useRef, useEffect } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { Stars, useTexture, Environment } from '@react-three/drei';
 import * as THREE from 'three';
 
-// MouseCursor component to visualize the cursor in 3D space
-const MouseCursor = () => {
-  const { mouse, viewport } = useThree();
-  const cursorRef = useRef<THREE.Mesh>(null!);
-  
-  useFrame(() => {
-    if (!cursorRef.current) return;
-    
-    // Convert mouse coordinates to world space
-    const x = (mouse.x * viewport.width) / 2;
-    const y = (mouse.y * viewport.height) / 2;
-    
-    // Update cursor position
-    cursorRef.current.position.set(x, y, 0);
-  });
-  
-  return (
-    <group>
-      <mesh ref={cursorRef} position={[0, 0, 0]}>
-        <sphereGeometry args={[0.3, 16, 16]} />
-        <meshBasicMaterial color="#ffffff" transparent opacity={0.6} />
-      </mesh>
-      <pointLight
-        position={[0, 0, 0]}
-        intensity={2}
-        distance={5}
-        decay={2}
-        color="#ffffff"
-        ref={(light) => {
-          if (light) {
-            light.position.copy(cursorRef.current?.position || new THREE.Vector3(0, 0, 0));
-          }
-        }}
-      />
-    </group>
-  );
-};
-
-// PhysicsSphere component that reacts to cursor
-const PhysicsSphere = ({ position, scale, color, speed = 1 }) => {
+const AnimatedSphere = ({ position, scale, color, speed = 1 }) => {
   const meshRef = useRef<THREE.Mesh>(null!);
-  const velocity = useRef(new THREE.Vector3(
-    Math.random() * 0.01 - 0.005,
-    Math.random() * 0.01 - 0.005,
-    Math.random() * 0.01 - 0.005
-  ));
-  const target = useRef(new THREE.Vector3(...position));
-  const lastHit = useRef(0);
-  const hitStrength = useRef(0);
   
-  // Add time for smooth autonomous movement
-  const time = useRef(Math.random() * 100);
-  const noiseScale = useRef(0.5 + Math.random() * 1.0);
-  const noiseSpeed = useRef(0.2 + Math.random() * 0.5);
-  const materialRef = useRef<THREE.MeshStandardMaterial>(null!);
-  
-  // Use cursor position
-  useFrame(({ mouse, viewport, clock }) => {
-    if (!meshRef.current || !materialRef.current) return;
-    
-    // Increment time for noise
-    time.current += clock.elapsedTime * 0.1;
-
-    // Convert mouse coordinates to world space
-    const x = (mouse.x * viewport.width) / 2;
-    const y = (mouse.y * viewport.height) / 2;
-
-    // Basic physics simulation
-    const mesh = meshRef.current;
-    
-    // Apply force if cursor is close (cursor attraction/repulsion)
-    const cursorPosition = new THREE.Vector3(x, y, 0);
-    const distance = mesh.position.distanceTo(cursorPosition);
-    
-    // Make cursor interaction stronger and more noticeable
-    if (distance < 5) {
-      // Calculate direction from cursor to sphere (repulsion)
-      const direction = new THREE.Vector3().subVectors(mesh.position, cursorPosition);
-      direction.normalize();
-      
-      // Apply "hit" force - inversely proportional to distance
-      // Use much stronger force for more obvious effect
-      const force = 0.15 / Math.max(0.2, distance * 0.4);
-      velocity.current.add(direction.multiplyScalar(force));
-      
-      // Record hit strength for visual feedback
-      hitStrength.current = Math.min(1, force * 2);
-      
-      // Visual feedback - change color temporarily when hit by cursor
-      materialRef.current.emissive = new THREE.Color(color).multiplyScalar(0.8);
-      materialRef.current.emissiveIntensity = 1.0;
-      lastHit.current = clock.elapsedTime;
-      
-      // Scale effect for visual feedback
-      const scaleEffect = 1 + hitStrength.current * 0.3;
-      mesh.scale.set(scaleEffect * scale[0], scaleEffect * scale[1], scaleEffect * scale[2]);
-    } else {
-      // Fade back to normal after hit
-      if (clock.elapsedTime - lastHit.current > 0.1) {
-        materialRef.current.emissiveIntensity = Math.max(0, materialRef.current.emissiveIntensity - 0.03);
-        // Return to original scale
-        const scaleFactor = 1 + Math.max(0, hitStrength.current - (clock.elapsedTime - lastHit.current)) * 0.3;
-        mesh.scale.set(scaleFactor * scale[0], scaleFactor * scale[1], scaleFactor * scale[2]);
-        hitStrength.current = Math.max(0, hitStrength.current - 0.03);
-      }
-    }
-
-    // Add smooth autonomous noise movement when not being interacted with
-    const noise = {
-      x: Math.sin(time.current * noiseSpeed.current) * noiseScale.current * 0.008,
-      y: Math.cos(time.current * noiseSpeed.current * 0.8) * noiseScale.current * 0.008,
-      z: Math.sin(time.current * noiseSpeed.current * 0.6) * noiseScale.current * 0.008
-    };
-    
-    velocity.current.x += noise.x;
-    velocity.current.y += noise.y;
-    velocity.current.z += noise.z;
-
-    // Update position based on velocity
-    mesh.position.add(velocity.current);
-    
-    // Apply damping (slow down over time)
-    velocity.current.multiplyScalar(0.98);
-    
-    // Soft boundary forces to keep spheres in view
-    const boundaryForce = 0.002;
-    const bounds = 10;
-    
-    if (Math.abs(mesh.position.x) > bounds) {
-      velocity.current.x -= Math.sign(mesh.position.x) * boundaryForce;
-    }
-    
-    if (Math.abs(mesh.position.y) > bounds) {
-      velocity.current.y -= Math.sign(mesh.position.y) * boundaryForce;
-    }
-    
-    if (Math.abs(mesh.position.z) > bounds) {
-      velocity.current.z -= Math.sign(mesh.position.z) * boundaryForce * 0.5;
-    }
-    
-    // Slow rotation based on velocity
-    const rotationSpeed = velocity.current.length() * 10;
-    mesh.rotation.x += rotationSpeed * 0.3;
-    mesh.rotation.y += rotationSpeed * 0.2;
-    mesh.rotation.z += rotationSpeed * 0.1;
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime() * speed;
+    meshRef.current.position.y = position[1] + Math.sin(t) * 0.5;
+    meshRef.current.rotation.x = t * 0.3;
+    meshRef.current.rotation.y = t * 0.2;
+    meshRef.current.rotation.z = t * 0.1;
   });
 
   return (
     <mesh ref={meshRef} position={position} scale={scale}>
       <sphereGeometry args={[1, 32, 32]} />
       <meshStandardMaterial 
-        ref={materialRef}
         color={color} 
         roughness={0.2} 
         metalness={0.8} 
         envMapIntensity={1}
-        emissive={color}
-        emissiveIntensity={0}
       />
     </mesh>
   );
@@ -177,7 +38,7 @@ const Cloud = ({ count = 20, radius = 20 }) => {
   return (
     <group>
       {points.map((position, i) => (
-        <PhysicsSphere 
+        <AnimatedSphere 
           key={i} 
           position={position} 
           scale={[0.2 + Math.random() * 0.3, 0.2 + Math.random() * 0.3, 0.2 + Math.random() * 0.3]} 
@@ -192,24 +53,12 @@ const Cloud = ({ count = 20, radius = 20 }) => {
 const BackgroundScene = () => {
   return (
     <div className="canvas-container">
-      <Canvas 
-        camera={{ position: [0, 0, 15], fov: 60 }}
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          zIndex: -1,
-          pointerEvents: 'auto'  // Make sure mouse events work
-        }}
-      >
+      <Canvas camera={{ position: [0, 0, 15], fov: 60 }}>
         <ambientLight intensity={0.3} />
         <pointLight position={[10, 10, 10]} intensity={1} />
         <Stars radius={100} depth={50} count={5000} factor={4} fade speed={1} />
-        <Cloud count={25} />
+        <Cloud />
         <Environment preset="sunset" />
-        <MouseCursor />
       </Canvas>
     </div>
   );

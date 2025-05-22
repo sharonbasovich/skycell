@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
@@ -203,18 +204,13 @@ const Index = () => {
             <FeatureCard
               icon={
                 <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 2v8"></path>
-                  <path d="m4.93 10.93 1.41 1.41"></path>
-                  <path d="M2 18h2"></path>
-                  <path d="M20 18h2"></path>
-                  <path d="m19.07 10.93-1.41 1.41"></path>
-                  <path d="M22 22H2"></path>
-                  <path d="M16 6 7 22"></path>
-                  <path d="m8 6 9 16"></path>
+                  <path d="m15 12-8.5 8.5c-.83.83-2.17.83-3 0 0 0 0 0 0 0a2.12 2.12 0 0 1 0-3L12 9"></path>
+                  <path d="M17.64 15 22 10.64"></path>
+                  <path d="m20.91 11.7-1.25-1.25c-.6-.6-.93-1.4-.93-2.25v-.86L16.01 4.6a5.56 5.56 0 0 0-3.94-1.64H9l.92.82A6.18 6.18 0 0 1 12 8.4v1.56l2 2h2.47l2.26 1.91"></path>
                 </svg>
               }
-              title="Solar Powered"
-              description="High-efficiency solar panels keep our system operational for extended missions without needing battery replacement."
+              title="DIY Friendly"
+              description="SkyCell can be built using readily available off-the-shelf components, making it accessible for enthusiasts, researchers, and educational institutions."
               delay={0.2}
             />
             <FeatureCard
@@ -226,7 +222,7 @@ const Index = () => {
                 </svg>
               }
               title="Live Telemetry"
-              description="Comprehensive sensor suite provides real-time data on position, altitude, temperature, pressure, and communications status."
+              description="Comprehensive sensor suite provides real-time data on position, altitude, temperature, pressure, and communications status, along with captured images from above."
               delay={0.3}
             />
           </div>
@@ -244,7 +240,7 @@ const Index = () => {
               transition={{ duration: 0.5, delay: 0.1 }}
               viewport={{ once: true }}
             >
-              <h3 className="text-4xl font-bold text-primary">30km+</h3>
+              <h3 className="text-4xl font-bold text-primary">TBD</h3>
               <p className="text-muted-foreground mt-2">Maximum Altitude</p>
             </motion.div>
             
@@ -255,7 +251,7 @@ const Index = () => {
               transition={{ duration: 0.5, delay: 0.2 }}
               viewport={{ once: true }}
             >
-              <h3 className="text-4xl font-bold text-primary">50km</h3>
+              <h3 className="text-4xl font-bold text-primary">TBD</h3>
               <p className="text-muted-foreground mt-2">Communication Range</p>
             </motion.div>
             
@@ -266,7 +262,7 @@ const Index = () => {
               transition={{ duration: 0.5, delay: 0.3 }}
               viewport={{ once: true }}
             >
-              <h3 className="text-4xl font-bold text-primary">10+</h3>
+              <h3 className="text-4xl font-bold text-primary">TBD</h3>
               <p className="text-muted-foreground mt-2">Sensors Onboard</p>
             </motion.div>
             
@@ -277,7 +273,7 @@ const Index = () => {
               transition={{ duration: 0.5, delay: 0.4 }}
               viewport={{ once: true }}
             >
-              <h3 className="text-4xl font-bold text-primary">8hr</h3>
+              <h3 className="text-4xl font-bold text-primary">TBD</h3>
               <p className="text-muted-foreground mt-2">Flight Duration</p>
             </motion.div>
           </div>

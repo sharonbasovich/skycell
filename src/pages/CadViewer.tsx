@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import CadModelViewer from '../components/3d/CadModelViewer';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Download, FileText, FileCode } from 'lucide-react';
+import { toast } from 'sonner';
 
 const CadViewer = () => {
   const [activeTab, setActiveTab] = useState('design');
@@ -51,6 +53,16 @@ const CadViewer = () => {
   ];
   
   const [selectedComponent, setSelectedComponent] = useState(componentData[0]);
+  
+  const handleDownload = (fileType: string) => {
+    // This would typically download actual files in a real app
+    toast.success(`${fileType} download started`);
+    
+    // For demo purposes only - simulates a download click but won't actually download anything
+    setTimeout(() => {
+      toast.success(`${fileType} downloaded successfully`);
+    }, 2000);
+  };
   
   return (
     <motion.div
@@ -118,6 +130,15 @@ const CadViewer = () => {
                         <p className="text-lg font-bold">TBD</p>
                       </div>
                     </div>
+                    <div className="mt-4 pt-3 border-t border-border">
+                      <Button 
+                        size="sm" 
+                        className="w-full"
+                        onClick={() => handleDownload('CAD Model')}
+                      >
+                        <Download size={16} className="mr-1" /> Download CAD Model
+                      </Button>
+                    </div>
                   </div>
                 </TabsContent>
                 <TabsContent value="components" className="mt-4">
@@ -139,6 +160,17 @@ const CadViewer = () => {
                       <h4 className="text-sm font-medium">{selectedComponent.name}</h4>
                       <p className="text-xs text-muted-foreground mt-1">{selectedComponent.description}</p>
                     </div>
+                    
+                    <div className="mt-4 pt-3 border-t border-border">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => handleDownload('Bill of Materials (BOM)')}
+                      >
+                        <FileCode size={16} className="mr-1" /> Download BOM
+                      </Button>
+                    </div>
                   </div>
                 </TabsContent>
                 <TabsContent value="specs" className="mt-4">
@@ -153,8 +185,13 @@ const CadViewer = () => {
                       ))}
                     </ul>
                     <div className="mt-4 pt-3 border-t border-border">
-                      <Button size="sm" variant="outline" className="w-full">
-                        Download Tech Specs
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => handleDownload('Datasheet')}
+                      >
+                        <FileText size={16} className="mr-1" /> Download Datasheet
                       </Button>
                     </div>
                   </div>

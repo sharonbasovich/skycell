@@ -5,15 +5,22 @@ import { OrbitControls, PerspectiveCamera, Grid, Environment, ContactShadows, Ht
 import * as THREE from 'three';
 
 // Placeholder for CAD Model
-const CadModel = () => {
+const CadModel = ({ isExploded }: { isExploded: boolean }) => {
   const groupRef = useRef<THREE.Group>(null!);
   const [hoveredPart, setHoveredPart] = useState<string | null>(null);
+  
+  // Determine position offsets for exploded view
+  const mainBodyPosition = [0, isExploded ? 0 : 0, 0];
+  const antennaPosition = [0, isExploded ? 1.2 : 0.5, 0];
+  const solarPosition = [isExploded ? 2 : 1.2, 0, 0];
+  const cameraPosition = [0, 0, isExploded ? 1.5 : 0.6];
+  const gpsPosition = [isExploded ? -1.8 : -0.8, isExploded ? 1 : 0.3, 0];
   
   return (
     <group ref={groupRef}>
       {/* Main Body */}
       <mesh 
-        position={[0, 0, 0]} 
+        position={mainBodyPosition} 
         onPointerOver={() => setHoveredPart('main_body')}
         onPointerOut={() => setHoveredPart(null)}
       >
@@ -35,7 +42,7 @@ const CadModel = () => {
       
       {/* Antenna */}
       <mesh 
-        position={[0, 0.5, 0]} 
+        position={antennaPosition} 
         onPointerOver={() => setHoveredPart('antenna')}
         onPointerOut={() => setHoveredPart(null)}
       >
@@ -57,7 +64,7 @@ const CadModel = () => {
       
       {/* Solar Panel */}
       <mesh 
-        position={[1.2, 0, 0]} 
+        position={solarPosition} 
         rotation={[0, 0, Math.PI / 2]}
         onPointerOver={() => setHoveredPart('solar')}
         onPointerOut={() => setHoveredPart(null)}
@@ -80,7 +87,7 @@ const CadModel = () => {
       
       {/* Camera Module */}
       <mesh 
-        position={[0, 0, 0.6]} 
+        position={cameraPosition} 
         onPointerOver={() => setHoveredPart('camera')}
         onPointerOut={() => setHoveredPart(null)}
       >
@@ -101,7 +108,7 @@ const CadModel = () => {
       
       {/* GPS Module */}
       <mesh 
-        position={[-0.8, 0.3, 0]} 
+        position={gpsPosition} 
         onPointerOver={() => setHoveredPart('gps')}
         onPointerOut={() => setHoveredPart(null)}
       >
@@ -154,7 +161,7 @@ const CadModelViewer = () => {
             </div>
           </Html>
         }>
-          <CadModel />
+          <CadModel isExploded={viewMode === 'exploded'} />
           <Grid 
             position={[0, -0.5, 0]} 
             args={[10, 10]} 

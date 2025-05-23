@@ -42,7 +42,7 @@ const Header = () => {
             <img 
               src="/lovable-uploads/b697c43f-db59-439a-b839-3d1c3534fcf2.png" 
               alt="SkyCell Logo" 
-              className="w-10 h-10 object-contain" 
+              className="w-12 h-12 object-contain" 
             />
             <span className="text-xl font-bold gradient-text">SkyCell</span>
           </Link>

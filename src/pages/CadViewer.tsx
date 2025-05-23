@@ -103,19 +103,19 @@ const CadViewer = () => {
                     <div className="grid grid-cols-2 gap-2 mt-4">
                       <div className="bg-accent p-3 rounded-md">
                         <p className="text-xs font-medium">Total Weight</p>
-                        <p className="text-lg font-bold">650g</p>
+                        <p className="text-lg font-bold">300g</p>
                       </div>
                       <div className="bg-accent p-3 rounded-md">
                         <p className="text-xs font-medium">Dimensions</p>
-                        <p className="text-lg font-bold">15x10x8cm</p>
+                        <p className="text-lg font-bold">18x18x18cm</p>
                       </div>
                       <div className="bg-accent p-3 rounded-md">
                         <p className="text-xs font-medium">Power Draw</p>
-                        <p className="text-lg font-bold">1.8W</p>
+                        <p className="text-lg font-bold">TBD</p>
                       </div>
                       <div className="bg-accent p-3 rounded-md">
                         <p className="text-xs font-medium">Battery Life</p>
-                        <p className="text-lg font-bold">12hrs</p>
+                        <p className="text-lg font-bold">TBD</p>
                       </div>
                     </div>
                   </div>
@@ -177,21 +177,21 @@ const CadViewer = () => {
           <div className="bg-card/50 backdrop-blur-sm p-6 rounded-xl border border-border/50">
             <h3 className="text-lg font-bold mb-3">Material Selection</h3>
             <p className="text-sm text-muted-foreground">
-              Constructed from lightweight aerospace-grade materials including carbon fiber, aluminum alloy, and specialized UV-resistant polymers.
+              TBD
             </p>
           </div>
           
           <div className="bg-card/50 backdrop-blur-sm p-6 rounded-xl border border-border/50">
             <h3 className="text-lg font-bold mb-3">Environmental Testing</h3>
             <p className="text-sm text-muted-foreground">
-              Rigorously tested in extreme temperature chambers (-60°C to +50°C) and low pressure environments simulating altitude.
+              TBD
             </p>
           </div>
           
           <div className="bg-card/50 backdrop-blur-sm p-6 rounded-xl border border-border/50">
             <h3 className="text-lg font-bold mb-3">Optimization Process</h3>
             <p className="text-sm text-muted-foreground">
-              Design iteratively optimized through computational fluid dynamics and real-world test flights to maximize stability.
+              TBD
             </p>
           </div>
         </motion.div>

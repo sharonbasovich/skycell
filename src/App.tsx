@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
 import Header from "./components/Header";
+import LoadingScreen from "./components/LoadingScreen";
 import Index from "./pages/Index";
 import CadViewer from "./pages/CadViewer";
 import Development from "./pages/Development";
@@ -20,6 +21,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <LoadingScreen />
       <BrowserRouter>
         <div className="min-h-screen relative overflow-x-hidden">
           <Header />

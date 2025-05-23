@@ -39,9 +39,11 @@ const Header = () => {
           whileTap={{ scale: 0.95 }}
         >
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-r from-skycell-blue to-skycell-purple rounded-full flex items-center justify-center animate-pulse-glow">
-              <span className="text-white font-bold text-xl">SC</span>
-            </div>
+            <img 
+              src="/lovable-uploads/b697c43f-db59-439a-b839-3d1c3534fcf2.png" 
+              alt="SkyCell Logo" 
+              className="w-10 h-10 object-contain" 
+            />
             <span className="text-xl font-bold gradient-text">SkyCell</span>
           </Link>
         </motion.div>

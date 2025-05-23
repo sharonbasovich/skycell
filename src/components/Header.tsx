@@ -40,9 +40,9 @@ const Header = () => {
         >
           <Link to="/" className="flex items-center gap-2">
             <img 
-              src="/lovable-uploads/b697c43f-db59-439a-b839-3d1c3534fcf2.png" 
+              src="/lovable-uploads/b89dce68-0265-49c8-ac6b-8f70061ff276.png" 
               alt="SkyCell Logo" 
-              className="w-12 h-12 object-contain" 
+              className="w-16 h-16 object-contain" 
             />
             <span className="text-xl font-bold gradient-text">SkyCell</span>
           </Link>

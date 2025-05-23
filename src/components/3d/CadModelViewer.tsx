@@ -10,11 +10,12 @@ const CadModel = ({ isExploded }: { isExploded: boolean }) => {
   const [hoveredPart, setHoveredPart] = useState<string | null>(null);
   
   // Determine position offsets for exploded view
-  const mainBodyPosition = [0, isExploded ? 0 : 0, 0];
-  const antennaPosition = [0, isExploded ? 1.2 : 0.5, 0];
-  const solarPosition = [isExploded ? 2 : 1.2, 0, 0];
-  const cameraPosition = [0, 0, isExploded ? 1.5 : 0.6];
-  const gpsPosition = [isExploded ? -1.8 : -0.8, isExploded ? 1 : 0.3, 0];
+  // Fix: Define positions as tuples with exactly 3 elements [x, y, z]
+  const mainBodyPosition: [number, number, number] = [0, isExploded ? 0 : 0, 0];
+  const antennaPosition: [number, number, number] = [0, isExploded ? 1.2 : 0.5, 0];
+  const solarPosition: [number, number, number] = [isExploded ? 2 : 1.2, 0, 0];
+  const cameraPosition: [number, number, number] = [0, 0, isExploded ? 1.5 : 0.6];
+  const gpsPosition: [number, number, number] = [isExploded ? -1.8 : -0.8, isExploded ? 1 : 0.3, 0];
   
   return (
     <group ref={groupRef}>

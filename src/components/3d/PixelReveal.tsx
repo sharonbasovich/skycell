@@ -24,7 +24,11 @@ const PixelReveal = ({ children, gridSize = 20, delay = 0, className = "" }: Pix
   const pixels = Array.from({ length: gridSize * gridSize }, (_, i) => {
     const row = Math.floor(i / gridSize);
     const col = i % gridSize;
-    const randomDelay = Math.random() * 0.8;
+    
+    // Calculate diagonal distance from top-left (0,0)
+    const diagonalDistance = row + col;
+    // Normalize to create a wave effect with small delays between each diagonal
+    const waveDelay = diagonalDistance * 0.03;
     
     return (
       <motion.div
@@ -40,7 +44,7 @@ const PixelReveal = ({ children, gridSize = 20, delay = 0, className = "" }: Pix
         animate={isRevealed ? { opacity: 0, scale: 0.8 } : { opacity: 1, scale: 1 }}
         transition={{
           duration: 0.3,
-          delay: randomDelay,
+          delay: waveDelay,
           ease: "easeOut"
         }}
       />

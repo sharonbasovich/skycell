@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
@@ -334,10 +333,14 @@ const Index = () => {
         <div className="container mx-auto max-w-6xl">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center gap-2 mb-4 md:mb-0">
-              <div className="w-8 h-8 bg-gradient-to-r from-skycell-blue to-skycell-purple rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-sm">SC</span>
-              </div>
-              <span className="text-lg font-bold gradient-text">SkyCell</span>
+              <Link to="/" className="flex items-center gap-2">
+                <img 
+                  src="/lovable-uploads/b89dce68-0265-49c8-ac6b-8f70061ff276.png" 
+                  alt="SkyCell Logo" 
+                  className="w-8 h-8 object-contain" 
+                />
+                <span className="text-lg font-bold gradient-text">SkyCell</span>
+              </Link>
             </div>
             
             <div className="flex gap-6">

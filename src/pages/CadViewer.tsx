@@ -1,7 +1,7 @@
-
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import CadModelViewer from '../components/3d/CadModelViewer';
+import PixelReveal from '../components/3d/PixelReveal';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Download, FileText, FileCode } from 'lucide-react';

@@ -119,7 +119,7 @@ const Index = () => {
       <motion.section className="relative py-20 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-            <div className="h-[400px]">
+            <div className="h-[400px] relative">
               <BalloonModel />
             </div>
             

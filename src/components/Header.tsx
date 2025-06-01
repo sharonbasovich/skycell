@@ -20,8 +20,8 @@ const Header = () => {
   }, []);
 
   useEffect(() => {
-    // Scroll to top immediately when route changes, before any rendering
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    // Scroll to top when route changes
+    window.scrollTo(0, 0);
   }, [location.pathname]);
 
   useEffect(() => {

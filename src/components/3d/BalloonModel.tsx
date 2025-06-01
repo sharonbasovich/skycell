@@ -76,7 +76,8 @@ const Balloon = ({ interactive = false }) => {
 const BalloonModel = ({ interactive = false }) => {
   const [ref, inView] = useInView({
     triggerOnce: true,
-    threshold: 0.3,
+    threshold: 0.8, // Increased threshold to wait until more of the element is visible
+    rootMargin: '-100px 0px', // Add negative margin to trigger later
   });
 
   return (
@@ -84,7 +85,7 @@ const BalloonModel = ({ interactive = false }) => {
       <PixelReveal 
         className="h-full w-full" 
         gridSize={20} 
-        delay={inView ? 300 : 0}
+        delay={inView ? 500 : 0} // Increased delay
       >
         <Canvas className={interactive ? "interactive" : ""}>
           <PerspectiveCamera makeDefault position={[0, 0, 8]} />

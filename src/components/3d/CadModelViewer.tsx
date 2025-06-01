@@ -1,11 +1,30 @@
+
 import { Suspense, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera, Grid, Environment, ContactShadows, Html } from '@react-three/drei';
+import { OrbitControls, PerspectiveCamera, Grid, Environment, ContactShadows, Html, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import PixelReveal from './PixelReveal';
 
-// Placeholder for CAD Model
-const CadModel = ({ isExploded }: { isExploded: boolean }) => {
+// GLB CAD Model Component
+const GLBCadModel = ({ modelPath, isExploded }: { modelPath?: string; isExploded: boolean }) => {
+  const groupRef = useRef<THREE.Group>(null!);
+  
+  // Load GLB model - replace with your model path
+  // const { scene } = useGLTF(modelPath || '');
+  
+  // If you have a GLB model, uncomment this and comment out the placeholder
+  // return (
+  //   <group ref={groupRef} scale={isExploded ? 1.2 : 1}>
+  //     <primitive object={scene.clone()} />
+  //   </group>
+  // );
+
+  // Placeholder CAD model (remove when using GLB)
+  return <PlaceholderCadModel isExploded={isExploded} />;
+};
+
+// Placeholder CAD Model (remove when using GLB)
+const PlaceholderCadModel = ({ isExploded }: { isExploded: boolean }) => {
   const groupRef = useRef<THREE.Group>(null!);
   const [hoveredPart, setHoveredPart] = useState<string | null>(null);
   
@@ -131,7 +150,7 @@ const CadModel = ({ isExploded }: { isExploded: boolean }) => {
   );
 };
 
-const CadModelViewer = () => {
+const CadModelViewer = ({ modelPath = "" }: { modelPath?: string }) => {
   const [viewMode, setViewMode] = useState('3d');
   
   return (
@@ -163,7 +182,7 @@ const CadModelViewer = () => {
               </div>
             </Html>
           }>
-            <CadModel isExploded={viewMode === 'exploded'} />
+            <GLBCadModel modelPath={modelPath} isExploded={viewMode === 'exploded'} />
             <Grid 
               position={[0, -0.5, 0]} 
               args={[10, 10]} 

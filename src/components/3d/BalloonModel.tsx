@@ -2,7 +2,9 @@
 import { useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF, Float, PerspectiveCamera, OrbitControls } from '@react-three/drei';
+import { useInView } from 'react-intersection-observer';
 import * as THREE from 'three';
+import PixelReveal from './PixelReveal';
 
 // Placeholder for balloon model
 const Balloon = ({ interactive = false }) => {
@@ -72,16 +74,29 @@ const Balloon = ({ interactive = false }) => {
 };
 
 const BalloonModel = ({ interactive = false }) => {
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.3,
+  });
+
   return (
-    <Canvas className={interactive ? "interactive" : ""}>
-      <PerspectiveCamera makeDefault position={[0, 0, 8]} />
-      <ambientLight intensity={0.5} />
-      <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={1} />
-      <Float speed={1} rotationIntensity={0} floatIntensity={1} enabled={!interactive}>
-        <Balloon interactive={interactive} />
-      </Float>
-      {interactive && <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />}
-    </Canvas>
+    <div ref={ref} className="h-full w-full">
+      <PixelReveal 
+        className="h-full w-full" 
+        gridSize={20} 
+        delay={inView ? 300 : 0}
+      >
+        <Canvas className={interactive ? "interactive" : ""}>
+          <PerspectiveCamera makeDefault position={[0, 0, 8]} />
+          <ambientLight intensity={0.5} />
+          <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={1} />
+          <Float speed={1} rotationIntensity={0} floatIntensity={1} enabled={!interactive}>
+            <Balloon interactive={interactive} />
+          </Float>
+          {interactive && <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />}
+        </Canvas>
+      </PixelReveal>
+    </div>
   );
 };
 

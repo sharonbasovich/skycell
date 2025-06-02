@@ -26,7 +26,8 @@ const CadViewer = () => {
         '512KB Flash Memory',
         '128KB RAM',
         'Multiple communication interfaces'
-      ]
+      ],
+      componentId: 'main_body'
     },
     { 
       id: 'radio-module', 
@@ -37,7 +38,8 @@ const CadViewer = () => {
         '20dBm TX Power',
         '-148dBm Sensitivity',
         'Configurable spreading factors'
-      ]
+      ],
+      componentId: 'antenna'
     },
     { 
       id: 'sensor-array', 
@@ -48,11 +50,13 @@ const CadViewer = () => {
         'UV Index Sensor',
         'Radiation Detector',
         'GPS Module'
-      ]
+      ],
+      componentId: 'gps'
     }
   ];
   
   const [selectedComponent, setSelectedComponent] = useState(componentData[0]);
+  const [selectedModelComponent, setSelectedModelComponent] = useState<string | null>(null);
   
   const handleDownload = (fileType: string) => {
     // This would typically download actual files in a real app
@@ -62,6 +66,21 @@ const CadViewer = () => {
     setTimeout(() => {
       toast.success(`${fileType} downloaded successfully`);
     }, 2000);
+  };
+  
+  const handleComponentSelect = (component) => {
+    setSelectedComponent(component);
+    setSelectedModelComponent(component.componentId);
+  };
+
+  const handleModelComponentSelect = (componentId: string | null) => {
+    setSelectedModelComponent(componentId);
+    if (componentId) {
+      const component = componentData.find(c => c.componentId === componentId);
+      if (component) {
+        setSelectedComponent(component);
+      }
+    }
   };
   
   return (
@@ -149,7 +168,7 @@ const CadViewer = () => {
                         <div 
                           key={component.id}
                           className={`p-3 rounded-md cursor-pointer transition-all ${selectedComponent.id === component.id ? 'bg-primary text-white' : 'bg-accent hover:bg-accent/70'}`}
-                          onClick={() => setSelectedComponent(component)}
+                          onClick={() => handleComponentSelect(component)}
                         >
                           <p className="font-medium">{component.name}</p>
                         </div>
@@ -201,7 +220,10 @@ const CadViewer = () => {
           </div>
           
           <div className="w-full md:w-2/3 mt-10 md:mt-0 bg-card/30 backdrop-blur-sm rounded-xl border border-border/50 overflow-hidden">
-            <CadModelViewer />
+            <CadModelViewer 
+              selectedComponent={selectedModelComponent}
+              onComponentSelect={handleModelComponentSelect}
+            />
           </div>
         </div>
         

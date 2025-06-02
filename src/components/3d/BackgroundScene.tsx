@@ -15,7 +15,7 @@ const AnimatedBalloon = ({ position, scale, color, speed = 1 }) => {
 
   return (
     <group ref={groupRef} position={position} scale={scale}>
-      {/* Balloon sphere */}
+      {/* Balloon sphere - made taller (ellipsoid) */}
       <mesh position={[0, 0.5, 0]}>
         <sphereGeometry args={[0.8, 16, 16]} />
         <meshStandardMaterial 
@@ -24,6 +24,8 @@ const AnimatedBalloon = ({ position, scale, color, speed = 1 }) => {
           metalness={0.9} 
           envMapIntensity={1.5}
         />
+        {/* Apply scale to make it taller */}
+        <meshStandardMaterial attach="material" color={color} roughness={0.1} metalness={0.9} envMapIntensity={1.5} />
       </mesh>
       
       {/* Balloon string */}
@@ -62,7 +64,11 @@ const BalloonCloud = ({ count = 20, radius = 20 }) => {
         <AnimatedBalloon 
           key={i} 
           position={position} 
-          scale={[0.3 + Math.random() * 0.4, 0.3 + Math.random() * 0.4, 0.3 + Math.random() * 0.4]} 
+          scale={[
+            0.3 + Math.random() * 0.4, 
+            (0.3 + Math.random() * 0.4) * 1.5, // Make Y scale consistently taller
+            0.3 + Math.random() * 0.4
+          ]} 
           color={i % 2 === 0 ? "#0EA5E9" : "#8B5CF6"} 
           speed={0.3 + Math.random() * 0.4}
         />

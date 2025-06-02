@@ -1,12 +1,55 @@
 
-import { Suspense, useRef, useState } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Suspense, useRef, useState, useEffect } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Grid, Environment, ContactShadows, Html, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import PixelReveal from './PixelReveal';
 
+// Camera Controller Component
+const CameraController = ({ targetComponent, onComplete }) => {
+  const { camera, controls } = useThree();
+  const targetRef = useRef<THREE.Vector3>(new THREE.Vector3());
+  const positionRef = useRef<THREE.Vector3>(new THREE.Vector3());
+  
+  useEffect(() => {
+    if (targetComponent && controls) {
+      // Define target positions and camera positions for each component
+      const componentTargets = {
+        main_body: { target: [0, 0, 0], position: [3, 1, 3] },
+        antenna: { target: [0, 0.6, 0], position: [2, 2, 2] },
+        solar: { target: [1.2, 0, 0], position: [4, 1, 1] },
+        camera: { target: [0, 0, 0.6], position: [1, 1, 3] },
+        gps: { target: [-0.8, 0.3, 0], position: [-2, 1, 2] }
+      };
+      
+      const config = componentTargets[targetComponent];
+      if (config) {
+        // Animate camera to new position
+        targetRef.current.set(...config.target);
+        positionRef.current.set(...config.position);
+        
+        // Smooth transition
+        controls.target.copy(targetRef.current);
+        camera.position.copy(positionRef.current);
+        controls.update();
+        
+        if (onComplete) {
+          setTimeout(onComplete, 500);
+        }
+      }
+    }
+  }, [targetComponent, camera, controls, onComplete]);
+  
+  return null;
+};
+
 // GLB CAD Model Component
-const GLBCadModel = ({ modelPath, isExploded }: { modelPath?: string; isExploded: boolean }) => {
+const GLBCadModel = ({ modelPath, isExploded, selectedComponent, onComponentSelect }: { 
+  modelPath?: string; 
+  isExploded: boolean;
+  selectedComponent: string | null;
+  onComponentSelect: (component: string | null) => void;
+}) => {
   const groupRef = useRef<THREE.Group>(null!);
   
   // Load GLB model - replace with your model path
@@ -20,16 +63,22 @@ const GLBCadModel = ({ modelPath, isExploded }: { modelPath?: string; isExploded
   // );
 
   // Placeholder CAD model (remove when using GLB)
-  return <PlaceholderCadModel isExploded={isExploded} />;
+  return <PlaceholderCadModel isExploded={isExploded} selectedComponent={selectedComponent} onComponentSelect={onComponentSelect} />;
 };
 
 // Placeholder CAD Model (remove when using GLB)
-const PlaceholderCadModel = ({ isExploded }: { isExploded: boolean }) => {
+const PlaceholderCadModel = ({ 
+  isExploded, 
+  selectedComponent, 
+  onComponentSelect 
+}: { 
+  isExploded: boolean;
+  selectedComponent: string | null;
+  onComponentSelect: (component: string | null) => void;
+}) => {
   const groupRef = useRef<THREE.Group>(null!);
-  const [hoveredPart, setHoveredPart] = useState<string | null>(null);
   
   // Determine position offsets for exploded view
-  // Fix: Define positions as tuples with exactly 3 elements [x, y, z]
   const mainBodyPosition: [number, number, number] = [0, isExploded ? 0 : 0, 0];
   const antennaPosition: [number, number, number] = [0, isExploded ? 1.2 : 0.5, 0];
   const solarPosition: [number, number, number] = [isExploded ? 2 : 1.2, 0, 0];
@@ -41,16 +90,17 @@ const PlaceholderCadModel = ({ isExploded }: { isExploded: boolean }) => {
       {/* Main Body */}
       <mesh 
         position={mainBodyPosition} 
-        onPointerOver={() => setHoveredPart('main_body')}
-        onPointerOut={() => setHoveredPart(null)}
+        onPointerOver={() => onComponentSelect('main_body')}
+        onPointerOut={() => onComponentSelect(null)}
+        onClick={() => onComponentSelect('main_body')}
       >
         <boxGeometry args={[2, 0.5, 1]} />
         <meshStandardMaterial 
-          color={hoveredPart === 'main_body' ? '#0EA5E9' : '#FFFFFF'} 
+          color={selectedComponent === 'main_body' ? '#0EA5E9' : '#FFFFFF'} 
           roughness={0.3}
           metalness={0.7}
         />
-        {hoveredPart === 'main_body' && (
+        {selectedComponent === 'main_body' && (
           <Html position={[0, 1, 0]}>
             <div className="bg-background/80 backdrop-blur-sm p-2 rounded-md shadow-lg">
               <p className="text-xs font-semibold">Main Body</p>
@@ -63,16 +113,17 @@ const PlaceholderCadModel = ({ isExploded }: { isExploded: boolean }) => {
       {/* Antenna */}
       <mesh 
         position={antennaPosition} 
-        onPointerOver={() => setHoveredPart('antenna')}
-        onPointerOut={() => setHoveredPart(null)}
+        onPointerOver={() => onComponentSelect('antenna')}
+        onPointerOut={() => onComponentSelect(null)}
+        onClick={() => onComponentSelect('antenna')}
       >
         <cylinderGeometry args={[0.05, 0.05, 1]} />
         <meshStandardMaterial 
-          color={hoveredPart === 'antenna' ? '#8B5CF6' : '#888888'} 
+          color={selectedComponent === 'antenna' ? '#8B5CF6' : '#888888'} 
           roughness={0.2}
           metalness={0.8}
         />
-        {hoveredPart === 'antenna' && (
+        {selectedComponent === 'antenna' && (
           <Html position={[0, 1, 0]}>
             <div className="bg-background/80 backdrop-blur-sm p-2 rounded-md shadow-lg">
               <p className="text-xs font-semibold">Mesh Network Antenna</p>
@@ -86,16 +137,17 @@ const PlaceholderCadModel = ({ isExploded }: { isExploded: boolean }) => {
       <mesh 
         position={solarPosition} 
         rotation={[0, 0, Math.PI / 2]}
-        onPointerOver={() => setHoveredPart('solar')}
-        onPointerOut={() => setHoveredPart(null)}
+        onPointerOver={() => onComponentSelect('solar')}
+        onPointerOut={() => onComponentSelect(null)}
+        onClick={() => onComponentSelect('solar')}
       >
         <boxGeometry args={[0.5, 0.8, 0.05]} />
         <meshStandardMaterial 
-          color={hoveredPart === 'solar' ? '#0EA5E9' : '#2563EB'} 
+          color={selectedComponent === 'solar' ? '#0EA5E9' : '#2563EB'} 
           roughness={0.1}
           metalness={0.9}
         />
-        {hoveredPart === 'solar' && (
+        {selectedComponent === 'solar' && (
           <Html position={[0, 1, 0]}>
             <div className="bg-background/80 backdrop-blur-sm p-2 rounded-md shadow-lg">
               <p className="text-xs font-semibold">Solar Panel</p>
@@ -108,15 +160,16 @@ const PlaceholderCadModel = ({ isExploded }: { isExploded: boolean }) => {
       {/* Camera Module */}
       <mesh 
         position={cameraPosition} 
-        onPointerOver={() => setHoveredPart('camera')}
-        onPointerOut={() => setHoveredPart(null)}
+        onPointerOver={() => onComponentSelect('camera')}
+        onPointerOut={() => onComponentSelect(null)}
+        onClick={() => onComponentSelect('camera')}
       >
         <boxGeometry args={[0.4, 0.4, 0.2]} />
         <meshStandardMaterial 
-          color={hoveredPart === 'camera' ? '#8B5CF6' : '#222222'} 
+          color={selectedComponent === 'camera' ? '#8B5CF6' : '#222222'} 
           roughness={0.5}
         />
-        {hoveredPart === 'camera' && (
+        {selectedComponent === 'camera' && (
           <Html position={[0, 1, 0]}>
             <div className="bg-background/80 backdrop-blur-sm p-2 rounded-md shadow-lg">
               <p className="text-xs font-semibold">Camera Module</p>
@@ -129,15 +182,16 @@ const PlaceholderCadModel = ({ isExploded }: { isExploded: boolean }) => {
       {/* GPS Module */}
       <mesh 
         position={gpsPosition} 
-        onPointerOver={() => setHoveredPart('gps')}
-        onPointerOut={() => setHoveredPart(null)}
+        onPointerOver={() => onComponentSelect('gps')}
+        onPointerOut={() => onComponentSelect(null)}
+        onClick={() => onComponentSelect('gps')}
       >
         <sphereGeometry args={[0.2, 16, 16]} />
         <meshStandardMaterial 
-          color={hoveredPart === 'gps' ? '#0EA5E9' : '#DDDDDD'} 
+          color={selectedComponent === 'gps' ? '#0EA5E9' : '#DDDDDD'} 
           roughness={0.3}
         />
-        {hoveredPart === 'gps' && (
+        {selectedComponent === 'gps' && (
           <Html position={[0, 1, 0]}>
             <div className="bg-background/80 backdrop-blur-sm p-2 rounded-md shadow-lg">
               <p className="text-xs font-semibold">GPS Module</p>
@@ -150,7 +204,11 @@ const PlaceholderCadModel = ({ isExploded }: { isExploded: boolean }) => {
   );
 };
 
-const CadModelViewer = ({ modelPath = "" }: { modelPath?: string }) => {
+const CadModelViewer = ({ modelPath = "", selectedComponent = null, onComponentSelect = () => {} }: { 
+  modelPath?: string;
+  selectedComponent?: string | null;
+  onComponentSelect?: (component: string | null) => void;
+}) => {
   const [viewMode, setViewMode] = useState('3d');
   
   return (
@@ -182,7 +240,12 @@ const CadModelViewer = ({ modelPath = "" }: { modelPath?: string }) => {
               </div>
             </Html>
           }>
-            <GLBCadModel modelPath={modelPath} isExploded={viewMode === 'exploded'} />
+            <GLBCadModel 
+              modelPath={modelPath} 
+              isExploded={viewMode === 'exploded'} 
+              selectedComponent={selectedComponent}
+              onComponentSelect={onComponentSelect}
+            />
             <Grid 
               position={[0, -0.5, 0]} 
               args={[10, 10]} 
@@ -196,6 +259,7 @@ const CadModelViewer = ({ modelPath = "" }: { modelPath?: string }) => {
             />
             <Environment preset="studio" />
             <ContactShadows position={[0, -0.5, 0]} opacity={0.4} scale={10} blur={1.5} far={4} />
+            <CameraController targetComponent={selectedComponent} onComplete={() => {}} />
           </Suspense>
           
           <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />

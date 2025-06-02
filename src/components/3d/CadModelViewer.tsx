@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import PixelReveal from './PixelReveal';
 
 // Camera Controller Component
-const CameraController = ({ targetComponent, onComplete }) => {
+const CameraController = ({ targetComponent, onComplete }: { targetComponent: string | null, onComplete: () => void }) => {
   const { camera, controls } = useThree();
   const targetRef = useRef<THREE.Vector3>(new THREE.Vector3());
   const positionRef = useRef<THREE.Vector3>(new THREE.Vector3());
@@ -14,7 +14,7 @@ const CameraController = ({ targetComponent, onComplete }) => {
   useEffect(() => {
     if (targetComponent && controls) {
       // Define target positions and camera positions for each component
-      const componentTargets = {
+      const componentTargets: Record<string, { target: [number, number, number], position: [number, number, number] }> = {
         main_body: { target: [0, 0, 0], position: [3, 1, 3] },
         antenna: { target: [0, 0.6, 0], position: [2, 2, 2] },
         solar: { target: [1.2, 0, 0], position: [4, 1, 1] },
@@ -25,13 +25,15 @@ const CameraController = ({ targetComponent, onComplete }) => {
       const config = componentTargets[targetComponent];
       if (config) {
         // Animate camera to new position
-        targetRef.current.set(...config.target);
-        positionRef.current.set(...config.position);
+        targetRef.current.set(config.target[0], config.target[1], config.target[2]);
+        positionRef.current.set(config.position[0], config.position[1], config.position[2]);
         
         // Smooth transition
-        controls.target.copy(targetRef.current);
-        camera.position.copy(positionRef.current);
-        controls.update();
+        if ('target' in controls && 'update' in controls) {
+          (controls as any).target.copy(targetRef.current);
+          camera.position.copy(positionRef.current);
+          (controls as any).update();
+        }
         
         if (onComplete) {
           setTimeout(onComplete, 500);

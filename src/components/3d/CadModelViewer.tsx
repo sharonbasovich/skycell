@@ -34,7 +34,9 @@ const CameraController = ({ targetComponent, onComplete }: { targetComponent: st
         
         // Store current position and target
         startPosition.current.copy(camera.position);
-        startTarget.current.copy((controls as any).target);
+        if (controls && 'target' in controls) {
+          startTarget.current.copy((controls as any).target);
+        }
         
         // Set end position and target
         endPosition.current.set(...config.position);
@@ -43,6 +45,11 @@ const CameraController = ({ targetComponent, onComplete }: { targetComponent: st
         // Start animation
         setIsAnimating(true);
         animationProgress.current = 0;
+        
+        // Disable controls during animation
+        if (controls && 'enabled' in controls) {
+          (controls as any).enabled = false;
+        }
       }
     }
   }, [targetComponent, camera, controls]);
@@ -50,13 +57,19 @@ const CameraController = ({ targetComponent, onComplete }: { targetComponent: st
   // Animation frame loop
   useFrame((state, delta) => {
     if (isAnimating && controls && 'target' in controls) {
-      animationProgress.current += delta * 2; // Animation speed
+      animationProgress.current += delta * 1.5; // Animation speed
       
       if (animationProgress.current >= 1) {
         // Animation complete
         animationProgress.current = 1;
         setIsAnimating(false);
         console.log('Camera animation completed');
+        
+        // Re-enable controls
+        if (controls && 'enabled' in controls) {
+          (controls as any).enabled = true;
+        }
+        
         if (onComplete) {
           onComplete();
         }
@@ -72,8 +85,10 @@ const CameraController = ({ targetComponent, onComplete }: { targetComponent: st
       const currentTarget = new THREE.Vector3().lerpVectors(startTarget.current, endTarget.current, easeProgress);
       (controls as any).target.copy(currentTarget);
       
-      // Update controls
-      (controls as any).update();
+      // Force update controls
+      if (controls && 'update' in controls) {
+        (controls as any).update();
+      }
     }
   });
   
@@ -260,8 +275,8 @@ const CadModelViewer = ({ modelPath = "", selectedComponent = null, onComponentS
     onComponentSelect(componentId);
     if (componentId) {
       setCameraTarget(componentId);
-      // Reset after a delay to allow for new animations
-      setTimeout(() => setCameraTarget(null), 100);
+      // Reset after animation starts
+      setTimeout(() => setCameraTarget(null), 200);
     }
   };
   
@@ -270,7 +285,7 @@ const CadModelViewer = ({ modelPath = "", selectedComponent = null, onComponentS
     if (selectedComponent) {
       console.log('External selectedComponent changed to:', selectedComponent);
       setCameraTarget(selectedComponent);
-      setTimeout(() => setCameraTarget(null), 100);
+      setTimeout(() => setCameraTarget(null), 200);
     }
   }, [selectedComponent]);
   

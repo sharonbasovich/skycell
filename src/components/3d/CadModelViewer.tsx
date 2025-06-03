@@ -8,11 +8,15 @@ import PixelReveal from './PixelReveal';
 // Camera Controller Component
 const CameraController = ({ targetComponent, onComplete }: { targetComponent: string | null, onComplete: () => void }) => {
   const { camera, controls } = useThree();
-  const targetRef = useRef<THREE.Vector3>(new THREE.Vector3());
-  const positionRef = useRef<THREE.Vector3>(new THREE.Vector3());
+  const [isAnimating, setIsAnimating] = useState(false);
+  const startPosition = useRef<THREE.Vector3>(new THREE.Vector3());
+  const startTarget = useRef<THREE.Vector3>(new THREE.Vector3());
+  const endPosition = useRef<THREE.Vector3>(new THREE.Vector3());
+  const endTarget = useRef<THREE.Vector3>(new THREE.Vector3());
+  const animationProgress = useRef(0);
   
   useEffect(() => {
-    if (targetComponent && controls) {
+    if (targetComponent && controls && 'target' in controls) {
       // Define target positions and camera positions for each component
       const componentTargets: Record<string, { target: [number, number, number], position: [number, number, number] }> = {
         main_body: { target: [0, 0, 0], position: [3, 1, 3] },
@@ -24,23 +28,49 @@ const CameraController = ({ targetComponent, onComplete }: { targetComponent: st
       
       const config = componentTargets[targetComponent];
       if (config) {
-        // Animate camera to new position
-        targetRef.current.set(config.target[0], config.target[1], config.target[2]);
-        positionRef.current.set(config.position[0], config.position[1], config.position[2]);
+        // Store current position and target
+        startPosition.current.copy(camera.position);
+        startTarget.current.copy((controls as any).target);
         
-        // Smooth transition
-        if ('target' in controls && 'update' in controls) {
-          (controls as any).target.copy(targetRef.current);
-          camera.position.copy(positionRef.current);
-          (controls as any).update();
-        }
+        // Set end position and target
+        endPosition.current.set(config.position[0], config.position[1], config.position[2]);
+        endTarget.current.set(config.target[0], config.target[1], config.target[2]);
         
-        if (onComplete) {
-          setTimeout(onComplete, 500);
-        }
+        // Start animation
+        setIsAnimating(true);
+        animationProgress.current = 0;
       }
     }
-  }, [targetComponent, camera, controls, onComplete]);
+  }, [targetComponent, camera, controls]);
+  
+  // Animation frame loop
+  useFrame((state, delta) => {
+    if (isAnimating && controls && 'target' in controls) {
+      animationProgress.current += delta * 2; // Animation speed
+      
+      if (animationProgress.current >= 1) {
+        // Animation complete
+        animationProgress.current = 1;
+        setIsAnimating(false);
+        if (onComplete) {
+          onComplete();
+        }
+      }
+      
+      // Smooth interpolation using easing
+      const easeProgress = 1 - Math.pow(1 - animationProgress.current, 3); // Ease out cubic
+      
+      // Interpolate camera position
+      camera.position.lerpVectors(startPosition.current, endPosition.current, easeProgress);
+      
+      // Interpolate controls target
+      const currentTarget = new THREE.Vector3().lerpVectors(startTarget.current, endTarget.current, easeProgress);
+      (controls as any).target.copy(currentTarget);
+      
+      // Update controls
+      (controls as any).update();
+    }
+  });
   
   return null;
 };
@@ -87,6 +117,10 @@ const PlaceholderCadModel = ({
   const cameraPosition: [number, number, number] = [0, 0, isExploded ? 1.5 : 0.6];
   const gpsPosition: [number, number, number] = [isExploded ? -1.8 : -0.8, isExploded ? 1 : 0.3, 0];
   
+  const handleComponentClick = (componentId: string) => {
+    onComponentSelect(componentId);
+  };
+  
   return (
     <group ref={groupRef}>
       {/* Main Body */}
@@ -94,7 +128,7 @@ const PlaceholderCadModel = ({
         position={mainBodyPosition} 
         onPointerOver={() => onComponentSelect('main_body')}
         onPointerOut={() => onComponentSelect(null)}
-        onClick={() => onComponentSelect('main_body')}
+        onClick={() => handleComponentClick('main_body')}
       >
         <boxGeometry args={[2, 0.5, 1]} />
         <meshStandardMaterial 
@@ -117,7 +151,7 @@ const PlaceholderCadModel = ({
         position={antennaPosition} 
         onPointerOver={() => onComponentSelect('antenna')}
         onPointerOut={() => onComponentSelect(null)}
-        onClick={() => onComponentSelect('antenna')}
+        onClick={() => handleComponentClick('antenna')}
       >
         <cylinderGeometry args={[0.05, 0.05, 1]} />
         <meshStandardMaterial 
@@ -141,7 +175,7 @@ const PlaceholderCadModel = ({
         rotation={[0, 0, Math.PI / 2]}
         onPointerOver={() => onComponentSelect('solar')}
         onPointerOut={() => onComponentSelect(null)}
-        onClick={() => onComponentSelect('solar')}
+        onClick={() => handleComponentClick('solar')}
       >
         <boxGeometry args={[0.5, 0.8, 0.05]} />
         <meshStandardMaterial 
@@ -164,7 +198,7 @@ const PlaceholderCadModel = ({
         position={cameraPosition} 
         onPointerOver={() => onComponentSelect('camera')}
         onPointerOut={() => onComponentSelect(null)}
-        onClick={() => onComponentSelect('camera')}
+        onClick={() => handleComponentClick('camera')}
       >
         <boxGeometry args={[0.4, 0.4, 0.2]} />
         <meshStandardMaterial 
@@ -186,7 +220,7 @@ const PlaceholderCadModel = ({
         position={gpsPosition} 
         onPointerOver={() => onComponentSelect('gps')}
         onPointerOut={() => onComponentSelect(null)}
-        onClick={() => onComponentSelect('gps')}
+        onClick={() => handleComponentClick('gps')}
       >
         <sphereGeometry args={[0.2, 16, 16]} />
         <meshStandardMaterial 

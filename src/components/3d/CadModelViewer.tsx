@@ -16,6 +16,8 @@ const CameraController = ({ targetComponent, onComplete }: { targetComponent: st
   const animationProgress = useRef(0);
   
   useEffect(() => {
+    console.log('CameraController received targetComponent:', targetComponent);
+    
     if (targetComponent && controls && 'target' in controls) {
       // Define target positions and camera positions for each component
       const componentTargets: Record<string, { target: [number, number, number], position: [number, number, number] }> = {
@@ -28,13 +30,15 @@ const CameraController = ({ targetComponent, onComplete }: { targetComponent: st
       
       const config = componentTargets[targetComponent];
       if (config) {
+        console.log('Starting camera animation to:', config);
+        
         // Store current position and target
         startPosition.current.copy(camera.position);
         startTarget.current.copy((controls as any).target);
         
         // Set end position and target
-        endPosition.current.set(config.position[0], config.position[1], config.position[2]);
-        endTarget.current.set(config.target[0], config.target[1], config.target[2]);
+        endPosition.current.set(...config.position);
+        endTarget.current.set(...config.target);
         
         // Start animation
         setIsAnimating(true);
@@ -52,6 +56,7 @@ const CameraController = ({ targetComponent, onComplete }: { targetComponent: st
         // Animation complete
         animationProgress.current = 1;
         setIsAnimating(false);
+        console.log('Camera animation completed');
         if (onComplete) {
           onComplete();
         }
@@ -118,6 +123,7 @@ const PlaceholderCadModel = ({
   const gpsPosition: [number, number, number] = [isExploded ? -1.8 : -0.8, isExploded ? 1 : 0.3, 0];
   
   const handleComponentClick = (componentId: string) => {
+    console.log('Component clicked:', componentId);
     onComponentSelect(componentId);
   };
   
@@ -246,6 +252,27 @@ const CadModelViewer = ({ modelPath = "", selectedComponent = null, onComponentS
   onComponentSelect?: (component: string | null) => void;
 }) => {
   const [viewMode, setViewMode] = useState('3d');
+  const [cameraTarget, setCameraTarget] = useState<string | null>(null);
+  
+  // Handle component selection and trigger camera animation
+  const handleComponentSelect = (componentId: string | null) => {
+    console.log('CadModelViewer handleComponentSelect called with:', componentId);
+    onComponentSelect(componentId);
+    if (componentId) {
+      setCameraTarget(componentId);
+      // Reset after a delay to allow for new animations
+      setTimeout(() => setCameraTarget(null), 100);
+    }
+  };
+  
+  // Also trigger camera animation when selectedComponent prop changes (from external selection)
+  useEffect(() => {
+    if (selectedComponent) {
+      console.log('External selectedComponent changed to:', selectedComponent);
+      setCameraTarget(selectedComponent);
+      setTimeout(() => setCameraTarget(null), 100);
+    }
+  }, [selectedComponent]);
   
   return (
     <div className="relative h-[80vh] w-full">
@@ -280,7 +307,7 @@ const CadModelViewer = ({ modelPath = "", selectedComponent = null, onComponentS
               modelPath={modelPath} 
               isExploded={viewMode === 'exploded'} 
               selectedComponent={selectedComponent}
-              onComponentSelect={onComponentSelect}
+              onComponentSelect={handleComponentSelect}
             />
             <Grid 
               position={[0, -0.5, 0]} 
@@ -295,7 +322,7 @@ const CadModelViewer = ({ modelPath = "", selectedComponent = null, onComponentS
             />
             <Environment preset="studio" />
             <ContactShadows position={[0, -0.5, 0]} opacity={0.4} scale={10} blur={1.5} far={4} />
-            <CameraController targetComponent={selectedComponent} onComplete={() => {}} />
+            <CameraController targetComponent={cameraTarget} onComplete={() => {}} />
           </Suspense>
           
           <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />

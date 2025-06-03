@@ -5,91 +5,89 @@ import { OrbitControls, PerspectiveCamera, Grid, Environment, ContactShadows, Ht
 import * as THREE from 'three';
 import PixelReveal from './PixelReveal';
 
-// Camera Controller Component
-const CameraController = ({ targetComponent, onComplete }: { targetComponent: string | null, onComplete: () => void }) => {
+// Camera Controller Component - Completely rewritten
+const CameraController = ({ targetComponent }: { targetComponent: string | null }) => {
   const { camera, controls } = useThree();
   const [isAnimating, setIsAnimating] = useState(false);
-  const startPosition = useRef<THREE.Vector3>(new THREE.Vector3());
-  const startTarget = useRef<THREE.Vector3>(new THREE.Vector3());
-  const endPosition = useRef<THREE.Vector3>(new THREE.Vector3());
-  const endTarget = useRef<THREE.Vector3>(new THREE.Vector3());
-  const animationProgress = useRef(0);
+  const animationRef = useRef({
+    startPosition: new THREE.Vector3(),
+    startTarget: new THREE.Vector3(),
+    endPosition: new THREE.Vector3(),
+    endTarget: new THREE.Vector3(),
+    progress: 0
+  });
   
   useEffect(() => {
-    console.log('CameraController received targetComponent:', targetComponent);
+    if (!targetComponent || !controls) return;
     
-    if (targetComponent && controls && 'target' in controls) {
-      // Define target positions and camera positions for each component
-      const componentTargets: Record<string, { target: [number, number, number], position: [number, number, number] }> = {
-        main_body: { target: [0, 0, 0], position: [3, 1, 3] },
-        antenna: { target: [0, 0.6, 0], position: [2, 2, 2] },
-        solar: { target: [1.2, 0, 0], position: [4, 1, 1] },
-        camera: { target: [0, 0, 0.6], position: [1, 1, 3] },
-        gps: { target: [-0.8, 0.3, 0], position: [-2, 1, 2] }
-      };
-      
-      const config = componentTargets[targetComponent];
-      if (config) {
-        console.log('Starting camera animation to:', config);
-        
-        // Store current position and target
-        startPosition.current.copy(camera.position);
-        if (controls && 'target' in controls) {
-          startTarget.current.copy((controls as any).target);
-        }
-        
-        // Set end position and target
-        endPosition.current.set(...config.position);
-        endTarget.current.set(...config.target);
-        
-        // Start animation
-        setIsAnimating(true);
-        animationProgress.current = 0;
-        
-        // Disable controls during animation
-        if (controls && 'enabled' in controls) {
-          (controls as any).enabled = false;
-        }
+    console.log('Starting camera animation for:', targetComponent);
+    
+    // Define component positions and targets
+    const positions: Record<string, { position: THREE.Vector3, target: THREE.Vector3 }> = {
+      main_body: { 
+        position: new THREE.Vector3(3, 1, 3), 
+        target: new THREE.Vector3(0, 0, 0) 
+      },
+      antenna: { 
+        position: new THREE.Vector3(2, 2, 2), 
+        target: new THREE.Vector3(0, 0.6, 0) 
+      },
+      solar: { 
+        position: new THREE.Vector3(4, 1, 1), 
+        target: new THREE.Vector3(1.2, 0, 0) 
+      },
+      camera: { 
+        position: new THREE.Vector3(1, 1, 3), 
+        target: new THREE.Vector3(0, 0, 0.6) 
+      },
+      gps: { 
+        position: new THREE.Vector3(-2, 1, 2), 
+        target: new THREE.Vector3(-0.8, 0.3, 0) 
       }
-    }
+    };
+    
+    const config = positions[targetComponent];
+    if (!config) return;
+    
+    // Store animation data
+    const anim = animationRef.current;
+    anim.startPosition.copy(camera.position);
+    anim.startTarget.copy((controls as any).target);
+    anim.endPosition.copy(config.position);
+    anim.endTarget.copy(config.target);
+    anim.progress = 0;
+    
+    // Disable controls and start animation
+    (controls as any).enabled = false;
+    setIsAnimating(true);
+    
+    console.log('Animation setup complete, moving from:', anim.startPosition, 'to:', anim.endPosition);
   }, [targetComponent, camera, controls]);
   
-  // Animation frame loop
   useFrame((state, delta) => {
-    if (isAnimating && controls && 'target' in controls) {
-      animationProgress.current += delta * 1.5; // Animation speed
-      
-      if (animationProgress.current >= 1) {
-        // Animation complete
-        animationProgress.current = 1;
-        setIsAnimating(false);
-        console.log('Camera animation completed');
-        
-        // Re-enable controls
-        if (controls && 'enabled' in controls) {
-          (controls as any).enabled = true;
-        }
-        
-        if (onComplete) {
-          onComplete();
-        }
-      }
-      
-      // Smooth interpolation using easing
-      const easeProgress = 1 - Math.pow(1 - animationProgress.current, 3); // Ease out cubic
-      
-      // Interpolate camera position
-      camera.position.lerpVectors(startPosition.current, endPosition.current, easeProgress);
-      
-      // Interpolate controls target
-      const currentTarget = new THREE.Vector3().lerpVectors(startTarget.current, endTarget.current, easeProgress);
-      (controls as any).target.copy(currentTarget);
-      
-      // Force update controls
-      if (controls && 'update' in controls) {
-        (controls as any).update();
-      }
+    if (!isAnimating || !controls) return;
+    
+    const anim = animationRef.current;
+    anim.progress += delta * 2; // Animation speed
+    
+    if (anim.progress >= 1) {
+      // Animation complete
+      anim.progress = 1;
+      setIsAnimating(false);
+      (controls as any).enabled = true;
+      console.log('Animation completed');
     }
+    
+    // Ease out cubic for smooth animation
+    const eased = 1 - Math.pow(1 - anim.progress, 3);
+    
+    // Update camera position
+    camera.position.lerpVectors(anim.startPosition, anim.endPosition, eased);
+    
+    // Update controls target
+    const newTarget = new THREE.Vector3().lerpVectors(anim.startTarget, anim.endTarget, eased);
+    (controls as any).target.copy(newTarget);
+    (controls as any).update();
   });
   
   return null;
@@ -267,25 +265,27 @@ const CadModelViewer = ({ modelPath = "", selectedComponent = null, onComponentS
   onComponentSelect?: (component: string | null) => void;
 }) => {
   const [viewMode, setViewMode] = useState('3d');
-  const [cameraTarget, setCameraTarget] = useState<string | null>(null);
+  const [animationTarget, setAnimationTarget] = useState<string | null>(null);
   
   // Handle component selection and trigger camera animation
   const handleComponentSelect = (componentId: string | null) => {
     console.log('CadModelViewer handleComponentSelect called with:', componentId);
     onComponentSelect(componentId);
+    
+    // Trigger camera animation for the clicked component
     if (componentId) {
-      setCameraTarget(componentId);
-      // Reset after animation starts
-      setTimeout(() => setCameraTarget(null), 200);
+      setAnimationTarget(componentId);
+      // Clear the target after a short delay to allow for re-triggering
+      setTimeout(() => setAnimationTarget(null), 100);
     }
   };
   
-  // Also trigger camera animation when selectedComponent prop changes (from external selection)
+  // Handle external component selection (from sidebar)
   useEffect(() => {
     if (selectedComponent) {
       console.log('External selectedComponent changed to:', selectedComponent);
-      setCameraTarget(selectedComponent);
-      setTimeout(() => setCameraTarget(null), 200);
+      setAnimationTarget(selectedComponent);
+      setTimeout(() => setAnimationTarget(null), 100);
     }
   }, [selectedComponent]);
   
@@ -337,7 +337,7 @@ const CadModelViewer = ({ modelPath = "", selectedComponent = null, onComponentS
             />
             <Environment preset="studio" />
             <ContactShadows position={[0, -0.5, 0]} opacity={0.4} scale={10} blur={1.5} far={4} />
-            <CameraController targetComponent={cameraTarget} onComplete={() => {}} />
+            <CameraController targetComponent={animationTarget} />
           </Suspense>
           
           <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />

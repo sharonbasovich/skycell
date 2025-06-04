@@ -19,26 +19,59 @@ const FeatureCard = ({ icon, title, description, delay = 0 }) => {
   return (
     <motion.div
       ref={ref}
-      className="bg-card/50 backdrop-blur-md rounded-xl p-6 shadow-lg border border-border/50"
+      className="relative bg-card/50 backdrop-blur-md rounded-xl p-6 shadow-lg border border-border/50 overflow-hidden group perspective-1000"
+      style={{
+        background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid transparent',
+        backgroundImage: `
+          linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%),
+          linear-gradient(45deg, #0EA5E9, #8B5CF6, #06D6A0, #FFD23F, #FF6B6B, #0EA5E9)
+        `,
+        backgroundOrigin: 'border-box',
+        backgroundClip: 'content-box, border-box',
+        backgroundSize: '100% 100%, 300% 300%',
+        animation: 'holographic-border 3s ease-in-out infinite'
+      }}
       initial={{ opacity: 0, y: 20, rotateX: -15 }}
       animate={inView ? { opacity: 1, y: 0, rotateX: 0 } : { opacity: 0, y: 20, rotateX: -15 }}
       transition={{ duration: 0.5, delay, type: "spring", stiffness: 100 }}
       whileHover={{ 
         scale: 1.05, 
         rotateY: 5, 
+        rotateX: 5,
         z: 20,
         transition: { duration: 0.3 }
       }}
     >
+      {/* Animated shine overlay */}
+      <div 
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+        style={{
+          background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%)',
+          transform: 'translateX(-100%)',
+          animation: 'shine-sweep 2s ease-in-out infinite'
+        }}
+      />
+      
+      {/* 3D highlight effect */}
+      <div 
+        className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        style={{
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%, rgba(255,255,255,0.1) 100%)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.1)'
+        }}
+      />
+
       <motion.div 
-        className="mb-4 text-primary"
+        className="relative z-10 mb-4 text-primary"
         whileHover={{ scale: 1.2, rotate: 5 }}
         transition={{ duration: 0.3 }}
       >
         {icon}
       </motion.div>
-      <h3 className="text-xl font-bold mb-2">{title}</h3>
-      <p className="text-muted-foreground">{description}</p>
+      <h3 className="relative z-10 text-xl font-bold mb-2">{title}</h3>
+      <p className="relative z-10 text-muted-foreground">{description}</p>
     </motion.div>
   );
 };
@@ -61,6 +94,25 @@ const Index = () => {
 
   return (
     <>
+      {/* Add custom CSS for animations */}
+      <style jsx>{`
+        @keyframes holographic-border {
+          0% { background-position: 0% 0%, 0% 0%; }
+          50% { background-position: 0% 0%, 100% 100%; }
+          100% { background-position: 0% 0%, 0% 0%; }
+        }
+        
+        @keyframes shine-sweep {
+          0% { transform: translateX(-100%) skewX(-25deg); }
+          50% { transform: translateX(100%) skewX(-25deg); }
+          100% { transform: translateX(100%) skewX(-25deg); }
+        }
+        
+        .perspective-1000 {
+          perspective: 1000px;
+        }
+      `}</style>
+
       <BackgroundScene />
       
       {/* Floating decorative elements */}

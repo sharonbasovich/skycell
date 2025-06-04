@@ -4,6 +4,9 @@ import { useInView } from 'react-intersection-observer';
 import { Link } from 'react-router-dom';
 import BackgroundScene from '../components/3d/BackgroundScene';
 import BalloonModel from '../components/3d/BalloonModel';
+import ImageGallery from '../components/ImageGallery';
+import InteractiveStats from '../components/InteractiveStats';
+import ProjectTimeline from '../components/ProjectTimeline';
 import { Button } from '@/components/ui/button';
 import { BarChart, LineChart } from 'lucide-react';
 
@@ -17,11 +20,23 @@ const FeatureCard = ({ icon, title, description, delay = 0 }) => {
     <motion.div
       ref={ref}
       className="bg-card/50 backdrop-blur-md rounded-xl p-6 shadow-lg border border-border/50"
-      initial={{ opacity: 0, y: 20 }}
-      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-      transition={{ duration: 0.5, delay }}
+      initial={{ opacity: 0, y: 20, rotateX: -15 }}
+      animate={inView ? { opacity: 1, y: 0, rotateX: 0 } : { opacity: 0, y: 20, rotateX: -15 }}
+      transition={{ duration: 0.5, delay, type: "spring", stiffness: 100 }}
+      whileHover={{ 
+        scale: 1.05, 
+        rotateY: 5, 
+        z: 20,
+        transition: { duration: 0.3 }
+      }}
     >
-      <div className="mb-4 text-primary">{icon}</div>
+      <motion.div 
+        className="mb-4 text-primary"
+        whileHover={{ scale: 1.2, rotate: 5 }}
+        transition={{ duration: 0.3 }}
+      >
+        {icon}
+      </motion.div>
       <h3 className="text-xl font-bold mb-2">{title}</h3>
       <p className="text-muted-foreground">{description}</p>
     </motion.div>
@@ -39,9 +54,34 @@ const Index = () => {
     threshold: 0.1,
   });
 
+  // Parallax effect for floating elements
+  const floatingY1 = useTransform(scrollYProgress, [0, 1], [0, -200]);
+  const floatingY2 = useTransform(scrollYProgress, [0, 1], [0, -100]);
+  const floatingY3 = useTransform(scrollYProgress, [0, 1], [0, -300]);
+
   return (
     <>
       <BackgroundScene />
+      
+      {/* Floating decorative elements */}
+      <motion.div 
+        className="fixed top-20 right-10 w-20 h-20 bg-primary/10 rounded-full blur-xl z-0"
+        style={{ y: floatingY1 }}
+        animate={{ scale: [1, 1.2, 1], rotate: [0, 180, 360] }}
+        transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+      />
+      <motion.div 
+        className="fixed top-40 left-10 w-16 h-16 bg-secondary/10 rounded-full blur-xl z-0"
+        style={{ y: floatingY2 }}
+        animate={{ scale: [1.2, 1, 1.2], rotate: [360, 180, 0] }}
+        transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+      />
+      <motion.div 
+        className="fixed bottom-40 right-20 w-12 h-12 bg-primary/5 rounded-full blur-xl z-0"
+        style={{ y: floatingY3 }}
+        animate={{ scale: [1, 1.5, 1], rotate: [0, -180, -360] }}
+        transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+      />
       
       {/* Hero section */}
       <motion.section 
@@ -115,13 +155,24 @@ const Index = () => {
         </motion.div>
       </motion.section>
       
-      {/* About section */}
-      <motion.section className="relative py-20 px-4">
+      {/* About section with enhanced animations */}
+      <motion.section 
+        className="relative py-20 px-4"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        transition={{ duration: 1 }}
+        viewport={{ once: true }}
+      >
         <div className="container mx-auto max-w-6xl">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-            <div className="h-[400px] relative">
+            <motion.div 
+              className="h-[400px] relative"
+              whileInView={{ rotateY: [0, 10, 0] }}
+              transition={{ duration: 2, ease: "easeInOut" }}
+              viewport={{ once: true }}
+            >
               <BalloonModel />
-            </div>
+            </motion.div>
             
             <motion.div
               initial={{ opacity: 0, x: 100 }}
@@ -167,7 +218,10 @@ const Index = () => {
         </div>
       </motion.section>
       
-      {/* Features section */}
+      {/* Image Gallery Section */}
+      <ImageGallery />
+      
+      {/* Features section with enhanced animations */}
       <section className="relative py-20 px-4 bg-accent/50">
         <div className="container mx-auto max-w-6xl">
           <motion.div
@@ -228,60 +282,33 @@ const Index = () => {
         </div>
       </section>
       
-      {/* Stats section */}
-      <section className="relative py-20 px-4">
-        <div className="container mx-auto max-w-6xl">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <motion.div
-              className="text-center"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              viewport={{ once: true }}
-            >
-              <h3 className="text-4xl font-bold text-primary">TBD</h3>
-              <p className="text-muted-foreground mt-2">Maximum Altitude</p>
-            </motion.div>
-            
-            <motion.div
-              className="text-center"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              viewport={{ once: true }}
-            >
-              <h3 className="text-4xl font-bold text-primary">TBD</h3>
-              <p className="text-muted-foreground mt-2">Communication Range</p>
-            </motion.div>
-            
-            <motion.div
-              className="text-center"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              viewport={{ once: true }}
-            >
-              <h3 className="text-4xl font-bold text-primary">TBD</h3>
-              <p className="text-muted-foreground mt-2">Sensors Onboard</p>
-            </motion.div>
-            
-            <motion.div
-              className="text-center"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-              viewport={{ once: true }}
-            >
-              <h3 className="text-4xl font-bold text-primary">TBD</h3>
-              <p className="text-muted-foreground mt-2">Flight Duration</p>
-            </motion.div>
-          </div>
-        </div>
-      </section>
+      {/* Interactive Stats section */}
+      <InteractiveStats />
       
-      {/* CTA section */}
-      <section className="relative py-20 px-4 bg-gradient-to-r from-skycell-blue/20 to-skycell-purple/20">
-        <div className="container mx-auto max-w-4xl text-center">
+      {/* Project Timeline */}
+      <ProjectTimeline />
+      
+      {/* Enhanced CTA section */}
+      <motion.section 
+        className="relative py-20 px-4 bg-gradient-to-r from-skycell-blue/20 to-skycell-purple/20 overflow-hidden"
+        whileInView={{ scale: [0.95, 1] }}
+        transition={{ duration: 0.8 }}
+        viewport={{ once: true }}
+      >
+        {/* Animated background particles */}
+        <motion.div
+          className="absolute inset-0"
+          animate={{
+            background: [
+              "radial-gradient(circle at 0% 0%, hsl(var(--primary)/.1) 0%, transparent 50%)",
+              "radial-gradient(circle at 100% 100%, hsl(var(--secondary)/.1) 0%, transparent 50%)",
+              "radial-gradient(circle at 0% 0%, hsl(var(--primary)/.1) 0%, transparent 50%)"
+            ]
+          }}
+          transition={{ duration: 8, repeat: Infinity }}
+        />
+
+        <div className="container mx-auto max-w-4xl text-center relative z-10">
           <motion.h2
             className="text-3xl font-bold mb-6 gradient-text"
             initial={{ opacity: 0, y: 20 }}
@@ -326,7 +353,7 @@ const Index = () => {
             </Link>
           </motion.div>
         </div>
-      </section>
+      </motion.section>
       
       {/* Footer */}
       <footer className="py-10 px-4 border-t border-border">

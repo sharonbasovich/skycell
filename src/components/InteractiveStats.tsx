@@ -1,9 +1,10 @@
 
 import { useState, useEffect } from 'react';
-import { motion, useInView } from 'react-intersection-observer';
+import { motion } from 'framer-motion';
+import { useInView } from 'react-intersection-observer';
 
 const InteractiveStats = () => {
-  const [ref, inView] = useInView({
+  const { ref, inView } = useInView({
     triggerOnce: true,
     threshold: 0.3,
   });
@@ -62,7 +63,7 @@ const InteractiveStats = () => {
   );
 };
 
-const StatCard = ({ stat, index, inView }) => {
+const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: boolean }) => {
   const [count, setCount] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 

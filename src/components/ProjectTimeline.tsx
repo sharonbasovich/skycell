@@ -1,6 +1,7 @@
 
 import { useRef } from 'react';
-import { motion, useScroll, useTransform, useInView } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import { useInView } from 'react-intersection-observer';
 
 const ProjectTimeline = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -9,7 +10,7 @@ const ProjectTimeline = () => {
     offset: ["start end", "end start"]
   });
 
-  const [ref, inView] = useInView({
+  const { ref, inView } = useInView({
     triggerOnce: true,
     threshold: 0.1,
   });
@@ -113,8 +114,8 @@ const ProjectTimeline = () => {
   );
 };
 
-const TimelineItem = ({ item, index, inView }) => {
-  const getStatusColor = (status) => {
+const TimelineItem = ({ item, index, inView }: { item: any, index: number, inView: boolean }) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return 'bg-green-500';
       case 'in-progress': return 'bg-blue-500';

@@ -1,6 +1,7 @@
 
 import { useState, useRef } from 'react';
-import { motion, useScroll, useTransform, useInView } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import { useInView } from 'react-intersection-observer';
 
 const ImageGallery = () => {
   const [selectedImage, setSelectedImage] = useState<number | null>(null);
@@ -10,7 +11,7 @@ const ImageGallery = () => {
     offset: ["start end", "end start"]
   });
 
-  const [ref, inView] = useInView({
+  const { ref, inView } = useInView({
     triggerOnce: true,
     threshold: 0.1,
   });

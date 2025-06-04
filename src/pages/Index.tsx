@@ -24,25 +24,24 @@ const FeatureCard = ({ icon, title, description, delay = 0 }) => {
       animate={inView ? { opacity: 1, y: 0, rotateX: 0 } : { opacity: 0, y: 50, rotateX: -15 }}
       transition={{ duration: 0.8, delay, type: "spring", stiffness: 100 }}
       whileHover={{ 
-        scale: 1.05,
-        rotateY: 10,
-        rotateX: 5,
-        z: 50,
-        transition: { duration: 0.4 }
+        scale: 1.02,
+        rotateY: 5,
+        z: 20,
+        transition: { duration: 0.3 }
       }}
       style={{ perspective: "1000px" }}
     >
       {/* 3D Card Container */}
-      <div className="relative bg-gradient-to-br from-card/90 via-card/70 to-card/90 backdrop-blur-xl rounded-2xl p-8 shadow-2xl border border-border/30 overflow-hidden transform-gpu transition-all duration-500 group-hover:shadow-[0_25px_50px_-12px_rgba(14,165,233,0.25)]">
+      <div className="relative bg-gradient-to-br from-card/90 via-card/80 to-card/90 backdrop-blur-xl rounded-2xl p-8 shadow-2xl border border-border/30 overflow-hidden transform-gpu transition-all duration-300 group-hover:shadow-[0_25px_50px_-12px_rgba(14,165,233,0.25)]">
         
         {/* Animated shine effect */}
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-30 transition-opacity duration-500">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
         </div>
         
         {/* Holographic border effect */}
-        <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-          <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary/20 via-secondary/20 to-primary/20 blur-sm animate-pulse" />
+        <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-50 transition-opacity duration-300">
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10 blur-sm" />
         </div>
         
         {/* Floating particles */}
@@ -56,8 +55,8 @@ const FeatureCard = ({ icon, title, description, delay = 0 }) => {
                 top: `${10 + i * 20}%`,
               }}
               animate={{
-                y: [0, -20, 0],
-                opacity: [0.2, 0.8, 0.2],
+                y: [0, -10, 0],
+                opacity: [0.2, 0.6, 0.2],
                 scale: [0.5, 1, 0.5],
               }}
               transition={{
@@ -75,32 +74,32 @@ const FeatureCard = ({ icon, title, description, delay = 0 }) => {
           <motion.div 
             className="mb-6 text-primary flex justify-center"
             whileHover={{ 
-              scale: 1.2, 
-              rotate: [0, 5, -5, 0],
-              filter: "drop-shadow(0 0 15px rgba(14, 165, 233, 0.5))"
+              scale: 1.1, 
+              rotate: [0, 2, -2, 0],
+              filter: "drop-shadow(0 0 10px rgba(14, 165, 233, 0.3))"
             }}
-            transition={{ duration: 0.6, type: "spring" }}
+            transition={{ duration: 0.4, type: "spring" }}
           >
             {icon}
           </motion.div>
           
           <motion.h3 
             className="text-xl font-bold mb-4 text-center bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text"
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.02 }}
           >
             {title}
           </motion.h3>
           
           <motion.p 
             className="text-muted-foreground text-center leading-relaxed"
-            whileHover={{ y: -2 }}
+            whileHover={{ y: -1 }}
           >
             {description}
           </motion.p>
         </div>
         
         {/* 3D depth effect */}
-        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-transparent via-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 transform group-hover:scale-105" />
+        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-transparent via-primary/3 to-secondary/3 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       </div>
     </motion.div>
   );
@@ -113,9 +112,9 @@ const StickyRevealSection = ({ children, className = "" }) => {
     offset: ["start end", "end start"]
   });
 
-  const y = useTransform(scrollYProgress, [0, 1], [100, -100]);
-  const opacity = useTransform(scrollYProgress, [0, 0.3, 0.7, 1], [0, 1, 1, 0]);
-  const scale = useTransform(scrollYProgress, [0, 0.3, 0.7, 1], [0.8, 1, 1, 0.8]);
+  const y = useTransform(scrollYProgress, [0, 1], [50, -50]);
+  const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0.3, 1, 1, 0.3]);
+  const scale = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0.95, 1, 1, 0.95]);
 
   return (
     <motion.section
@@ -130,9 +129,9 @@ const StickyRevealSection = ({ children, className = "" }) => {
 
 const Index = () => {
   const { scrollYProgress } = useScroll();
-  const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
-  const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.9]);
-  const y = useTransform(scrollYProgress, [0, 0.2], [0, -50]);
+  const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0.7]);
+  const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.95]);
+  const y = useTransform(scrollYProgress, [0, 0.2], [0, -30]);
   
   const [heroRef, heroInView] = useInView({
     triggerOnce: true,
@@ -140,10 +139,10 @@ const Index = () => {
   });
 
   // Enhanced parallax effects
-  const floatingY1 = useTransform(scrollYProgress, [0, 1], [0, -400]);
-  const floatingY2 = useTransform(scrollYProgress, [0, 1], [0, -200]);
-  const floatingY3 = useTransform(scrollYProgress, [0, 1], [0, -600]);
-  const rotateX = useTransform(scrollYProgress, [0, 1], [0, 360]);
+  const floatingY1 = useTransform(scrollYProgress, [0, 1], [0, -200]);
+  const floatingY2 = useTransform(scrollYProgress, [0, 1], [0, -100]);
+  const floatingY3 = useTransform(scrollYProgress, [0, 1], [0, -300]);
+  const rotateX = useTransform(scrollYProgress, [0, 1], [0, 180]);
 
   return (
     <>
@@ -154,19 +153,19 @@ const Index = () => {
         className="fixed top-20 right-10 w-24 h-24 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-full blur-2xl z-0"
         style={{ y: floatingY1, rotateX }}
         animate={{ 
-          scale: [1, 1.3, 1], 
-          rotate: [0, 180, 360],
-          filter: ["blur(20px)", "blur(30px)", "blur(20px)"]
+          scale: [1, 1.2, 1], 
+          rotate: [0, 90, 180],
+          filter: ["blur(20px)", "blur(25px)", "blur(20px)"]
         }}
-        transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+        transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
       />
       <motion.div 
         className="fixed top-40 left-10 w-20 h-20 bg-gradient-to-r from-secondary/15 to-primary/15 rounded-full blur-2xl z-0"
         style={{ y: floatingY2 }}
         animate={{ 
-          scale: [1.2, 1, 1.2], 
-          rotate: [360, 180, 0],
-          x: [0, 20, 0]
+          scale: [1.1, 1, 1.1], 
+          rotate: [180, 90, 0],
+          x: [0, 15, 0]
         }}
         transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
       />
@@ -174,11 +173,11 @@ const Index = () => {
         className="fixed bottom-40 right-20 w-16 h-16 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-full blur-xl z-0"
         style={{ y: floatingY3 }}
         animate={{ 
-          scale: [1, 1.5, 1], 
-          rotate: [0, -180, -360],
-          opacity: [0.3, 0.7, 0.3]
+          scale: [1, 1.3, 1], 
+          rotate: [0, -90, -180],
+          opacity: [0.3, 0.6, 0.3]
         }}
-        transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+        transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
       />
       
       {/* Hero section with sticky reveal */}
@@ -388,7 +387,6 @@ const Index = () => {
       
       {/* Enhanced CTA section */}
       <StickyRevealSection className="py-20 px-4 bg-gradient-to-r from-skycell-blue/20 to-skycell-purple/20 overflow-hidden z-10">
-        {/* ... keep existing code (CTA section content) */}
         <motion.div
           className="absolute inset-0"
           animate={{

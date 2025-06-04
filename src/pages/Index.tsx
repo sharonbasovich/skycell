@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
@@ -26,12 +27,12 @@ const FeatureCard = ({ icon, title, description, delay = 0 }) => {
         border: '1px solid transparent',
         backgroundImage: `
           linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%),
-          linear-gradient(45deg, #0EA5E9, #8B5CF6, #06D6A0, #FFD23F, #FF6B6B, #0EA5E9)
+          linear-gradient(45deg, #0EA5E9, #8B5CF6, #1A1F2C, #0EA5E9, #8B5CF6)
         `,
         backgroundOrigin: 'border-box',
         backgroundClip: 'content-box, border-box',
-        backgroundSize: '100% 100%, 300% 300%',
-        animation: 'holographic-border 3s ease-in-out infinite'
+        backgroundSize: '100% 100%, 400% 400%',
+        animation: 'holographic-border 4s ease-in-out infinite'
       }}
       initial={{ opacity: 0, y: 20, rotateX: -15 }}
       animate={inView ? { opacity: 1, y: 0, rotateX: 0 } : { opacity: 0, y: 20, rotateX: -15 }}
@@ -48,7 +49,7 @@ const FeatureCard = ({ icon, title, description, delay = 0 }) => {
       <div 
         className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
         style={{
-          background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%)',
+          background: 'linear-gradient(45deg, transparent 30%, rgba(14, 165, 233, 0.2) 50%, transparent 70%)',
           transform: 'translateX(-100%)',
           animation: 'shine-sweep 2s ease-in-out infinite'
         }}
@@ -58,8 +59,8 @@ const FeatureCard = ({ icon, title, description, delay = 0 }) => {
       <div 
         className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         style={{
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%, rgba(255,255,255,0.1) 100%)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.1)'
+          background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, transparent 50%, rgba(139, 92, 246, 0.1) 100%)',
+          boxShadow: 'inset 0 1px 0 rgba(14, 165, 233, 0.2), inset 0 -1px 0 rgba(0,0,0,0.1)'
         }}
       />
 
@@ -95,23 +96,25 @@ const Index = () => {
   return (
     <>
       {/* Add custom CSS for animations */}
-      <style jsx>{`
-        @keyframes holographic-border {
-          0% { background-position: 0% 0%, 0% 0%; }
-          50% { background-position: 0% 0%, 100% 100%; }
-          100% { background-position: 0% 0%, 0% 0%; }
-        }
-        
-        @keyframes shine-sweep {
-          0% { transform: translateX(-100%) skewX(-25deg); }
-          50% { transform: translateX(100%) skewX(-25deg); }
-          100% { transform: translateX(100%) skewX(-25deg); }
-        }
-        
-        .perspective-1000 {
-          perspective: 1000px;
-        }
-      `}</style>
+      <style>
+        {`
+          @keyframes holographic-border {
+            0% { background-position: 0% 0%, 0% 0%; }
+            50% { background-position: 0% 0%, 100% 100%; }
+            100% { background-position: 0% 0%, 0% 0%; }
+          }
+          
+          @keyframes shine-sweep {
+            0% { transform: translateX(-100%) skewX(-25deg); }
+            50% { transform: translateX(100%) skewX(-25deg); }
+            100% { transform: translateX(100%) skewX(-25deg); }
+          }
+          
+          .perspective-1000 {
+            perspective: 1000px;
+          }
+        `}
+      </style>
 
       <BackgroundScene />
       

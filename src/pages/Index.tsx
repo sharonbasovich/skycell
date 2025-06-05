@@ -57,6 +57,24 @@ const FeatureCard = ({
       duration: 0.3
     }
   }}>
+      {/* Animated white border on hover */}
+      <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{
+        background: 'linear-gradient(90deg, white 50%, transparent 50%)',
+        backgroundSize: '20px 2px, 2px 20px, 20px 2px, 2px 20px',
+        backgroundPosition: '0 0, 100% 0, 100% 100%, 0 100%',
+        backgroundRepeat: 'repeat-x, repeat-y, repeat-x, repeat-y',
+        maskImage: `
+          linear-gradient(to right, white 2px, transparent 2px),
+          linear-gradient(to bottom, white 2px, transparent 2px),
+          linear-gradient(to left, white 2px, transparent 2px),
+          linear-gradient(to top, white 2px, transparent 2px)
+        `,
+        maskPosition: '0 0, calc(100% - 2px) 0, 100% calc(100% - 2px), 2px 100%',
+        maskSize: '100% 2px, 2px 100%, 100% 2px, 2px 100%',
+        maskRepeat: 'no-repeat',
+        animation: 'border-travel 2s linear infinite'
+      }} />
+
       {/* Animated shine overlay */}
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{
       background: 'linear-gradient(45deg, transparent 30%, rgba(2, 132, 199, 0.2) 50%, transparent 70%)',
@@ -75,7 +93,7 @@ const FeatureCard = ({
       rotate: 5
     }} transition={{
       duration: 0.3
-    }} className="relative z-10 mb-4 text-primary mx-[10px] my-[7px]">
+    }} className="relative z-10 mb-4 mx-[10px] my-[7px] text-white">
         {icon}
       </motion.div>
       <h3 className="relative z-10 text-xl font-bold mb-2 px-[16px]">{title}</h3>
@@ -112,6 +130,24 @@ const Index = () => {
             0% { transform: translateX(-100%) skewX(-25deg); }
             50% { transform: translateX(100%) skewX(-25deg); }
             100% { transform: translateX(100%) skewX(-25deg); }
+          }
+          
+          @keyframes border-travel {
+            0% {
+              background-position: 0 0, 100% 0, 100% 100%, 0 100%;
+            }
+            25% {
+              background-position: 100% 0, 100% 0, 100% 100%, 0 100%;
+            }
+            50% {
+              background-position: 100% 0, 100% 100%, 100% 100%, 0 100%;
+            }
+            75% {
+              background-position: 100% 0, 100% 100%, 0 100%, 0 100%;
+            }
+            100% {
+              background-position: 0 0, 100% 100%, 0 100%, 0 0;
+            }
           }
           
           .perspective-1000 {

@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
@@ -20,19 +19,20 @@ const FeatureCard = ({ icon, title, description, delay = 0 }) => {
   return (
     <motion.div
       ref={ref}
-      className="relative bg-card/50 backdrop-blur-md rounded-xl p-6 shadow-lg border border-border/50 overflow-hidden group perspective-1000"
+      className="relative bg-card/50 backdrop-blur-md rounded-xl p-6 shadow-lg border-2 overflow-hidden group perspective-1000"
       style={{
         background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
         backdropFilter: 'blur(10px)',
         border: '1px solid transparent',
         backgroundImage: `
           linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%),
-          linear-gradient(45deg, #0EA5E9, #8B5CF6, #1A1F2C, #0EA5E9, #8B5CF6)
+          linear-gradient(45deg, #0EA5E9, #8B5CF6, #0EA5E9, #8B5CF6)
         `,
         backgroundOrigin: 'border-box',
         backgroundClip: 'content-box, border-box',
         backgroundSize: '100% 100%, 400% 400%',
-        animation: 'holographic-border 4s ease-in-out infinite'
+        animation: 'holographic-border 4s ease-in-out infinite',
+        borderWidth: '1px'
       }}
       initial={{ opacity: 0, y: 20, rotateX: -15 }}
       animate={inView ? { opacity: 1, y: 0, rotateX: 0 } : { opacity: 0, y: 20, rotateX: -15 }}
@@ -57,7 +57,7 @@ const FeatureCard = ({ icon, title, description, delay = 0 }) => {
       
       {/* 3D highlight effect */}
       <div 
-        className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        className="absolute inset-1 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         style={{
           background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, transparent 50%, rgba(139, 92, 246, 0.1) 100%)',
           boxShadow: 'inset 0 1px 0 rgba(14, 165, 233, 0.2), inset 0 -1px 0 rgba(0,0,0,0.1)'

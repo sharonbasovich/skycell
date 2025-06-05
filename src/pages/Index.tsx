@@ -25,7 +25,7 @@ const FeatureCard = ({
     border: '1px solid transparent',
     backgroundImage: `
           linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%),
-          linear-gradient(45deg, #0EA5E9, #8B5CF6, #1A1F2C, #0EA5E9, #8B5CF6)
+          linear-gradient(45deg, #0284C7, #7C3AED, #0284C7, #7C3AED)
         `,
     backgroundOrigin: 'border-box',
     backgroundClip: 'content-box, border-box',
@@ -59,15 +59,15 @@ const FeatureCard = ({
   }}>
       {/* Animated shine overlay */}
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{
-      background: 'linear-gradient(45deg, transparent 30%, rgba(14, 165, 233, 0.2) 50%, transparent 70%)',
+      background: 'linear-gradient(45deg, transparent 30%, rgba(2, 132, 199, 0.2) 50%, transparent 70%)',
       transform: 'translateX(-100%)',
       animation: 'shine-sweep 2s ease-in-out infinite'
     }} />
       
       {/* 3D highlight effect */}
       <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{
-      background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, transparent 50%, rgba(139, 92, 246, 0.1) 100%)',
-      boxShadow: 'inset 0 1px 0 rgba(14, 165, 233, 0.2), inset 0 -1px 0 rgba(0,0,0,0.1)'
+      background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.1) 0%, transparent 50%, rgba(124, 58, 237, 0.1) 100%)',
+      boxShadow: 'inset 0 1px 0 rgba(2, 132, 199, 0.2), inset 0 -1px 0 rgba(0,0,0,0.1)'
     }} />
 
       <motion.div whileHover={{

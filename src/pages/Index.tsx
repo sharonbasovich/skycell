@@ -9,6 +9,7 @@ import InteractiveStats from '../components/InteractiveStats';
 import ProjectTimeline from '../components/ProjectTimeline';
 import { Button } from '@/components/ui/button';
 import { BarChart, LineChart } from 'lucide-react';
+
 const FeatureCard = ({
   icon,
   title,
@@ -19,6 +20,7 @@ const FeatureCard = ({
     triggerOnce: true,
     threshold: 0.1
   });
+
   return <motion.div ref={ref} className="relative bg-card/50 backdrop-blur-md rounded-xl p-6 shadow-lg border border-border/50 overflow-hidden group perspective-1000" style={{
     background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
     backdropFilter: 'blur(10px)',
@@ -58,22 +60,14 @@ const FeatureCard = ({
     }
   }}>
       {/* Animated white border on hover */}
-      <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{
-        background: 'linear-gradient(90deg, white 50%, transparent 50%)',
-        backgroundSize: '20px 2px, 2px 20px, 20px 2px, 2px 20px',
-        backgroundPosition: '0 0, 100% 0, 100% 100%, 0 100%',
-        backgroundRepeat: 'repeat-x, repeat-y, repeat-x, repeat-y',
-        maskImage: `
-          linear-gradient(to right, white 2px, transparent 2px),
-          linear-gradient(to bottom, white 2px, transparent 2px),
-          linear-gradient(to left, white 2px, transparent 2px),
-          linear-gradient(to top, white 2px, transparent 2px)
-        `,
-        maskPosition: '0 0, calc(100% - 2px) 0, 100% calc(100% - 2px), 2px 100%',
-        maskSize: '100% 2px, 2px 100%, 100% 2px, 2px 100%',
-        maskRepeat: 'no-repeat',
-        animation: 'border-travel 2s linear infinite'
-      }} />
+      <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="absolute inset-0 rounded-xl overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-white transform -translate-x-full group-hover:translate-x-full transition-transform duration-2000 ease-linear" style={{ animationDelay: '0s' }}></div>
+          <div className="absolute top-0 right-0 w-0.5 h-full bg-white transform -translate-y-full group-hover:translate-y-full transition-transform duration-2000 ease-linear" style={{ animationDelay: '0.5s' }}></div>
+          <div className="absolute bottom-0 right-0 w-full h-0.5 bg-white transform translate-x-full group-hover:-translate-x-full transition-transform duration-2000 ease-linear" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute bottom-0 left-0 w-0.5 h-full bg-white transform translate-y-full group-hover:-translate-y-full transition-transform duration-2000 ease-linear" style={{ animationDelay: '1.5s' }}></div>
+        </div>
+      </div>
 
       {/* Animated shine overlay */}
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{
@@ -100,6 +94,7 @@ const FeatureCard = ({
       <p className="relative z-10 text-muted-foreground my-[11px] px-[18px]">{description}</p>
     </motion.div>;
 };
+
 const Index = () => {
   const {
     scrollYProgress

@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
@@ -62,10 +63,10 @@ const FeatureCard = ({
       {/* Animated white border on hover */}
       <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300">
         <div className="absolute inset-0 rounded-xl overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-0.5 bg-white transform -translate-x-full group-hover:translate-x-full transition-transform duration-2000 ease-linear" style={{ animationDelay: '0s' }}></div>
-          <div className="absolute top-0 right-0 w-0.5 h-full bg-white transform -translate-y-full group-hover:translate-y-full transition-transform duration-2000 ease-linear" style={{ animationDelay: '0.5s' }}></div>
-          <div className="absolute bottom-0 right-0 w-full h-0.5 bg-white transform translate-x-full group-hover:-translate-x-full transition-transform duration-2000 ease-linear" style={{ animationDelay: '1s' }}></div>
-          <div className="absolute bottom-0 left-0 w-0.5 h-full bg-white transform translate-y-full group-hover:-translate-y-full transition-transform duration-2000 ease-linear" style={{ animationDelay: '1.5s' }}></div>
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-white transform -translate-x-full group-hover:translate-x-full transition-transform duration-[6000ms] ease-linear" style={{ animationDelay: '0s' }}></div>
+          <div className="absolute top-0 right-0 w-0.5 h-full bg-white transform -translate-y-full group-hover:translate-y-full transition-transform duration-[6000ms] ease-linear" style={{ animationDelay: '1.5s' }}></div>
+          <div className="absolute bottom-0 right-0 w-full h-0.5 bg-white transform translate-x-full group-hover:-translate-x-full transition-transform duration-[6000ms] ease-linear" style={{ animationDelay: '3s' }}></div>
+          <div className="absolute bottom-0 left-0 w-0.5 h-full bg-white transform translate-y-full group-hover:-translate-y-full transition-transform duration-[6000ms] ease-linear" style={{ animationDelay: '4.5s' }}></div>
         </div>
       </div>
 

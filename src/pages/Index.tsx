@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
@@ -61,13 +60,8 @@ const FeatureCard = ({
     }
   }}>
       {/* Animated white border on hover */}
-      <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        <div className="absolute inset-0 rounded-xl overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-0.5 bg-white transform -translate-x-full group-hover:translate-x-full transition-transform duration-[6000ms] ease-linear" style={{ animationDelay: '0s' }}></div>
-          <div className="absolute top-0 right-0 w-0.5 h-full bg-white transform -translate-y-full group-hover:translate-y-full transition-transform duration-[6000ms] ease-linear" style={{ animationDelay: '1.5s' }}></div>
-          <div className="absolute bottom-0 right-0 w-full h-0.5 bg-white transform translate-x-full group-hover:-translate-x-full transition-transform duration-[6000ms] ease-linear" style={{ animationDelay: '3s' }}></div>
-          <div className="absolute bottom-0 left-0 w-0.5 h-full bg-white transform translate-y-full group-hover:-translate-y-full transition-transform duration-[6000ms] ease-linear" style={{ animationDelay: '4.5s' }}></div>
-        </div>
+      <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+        <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:animate-border-travel"></div>
       </div>
 
       {/* Animated shine overlay */}
@@ -130,20 +124,25 @@ const Index = () => {
           
           @keyframes border-travel {
             0% {
-              background-position: 0 0, 100% 0, 100% 100%, 0 100%;
+              border-image: linear-gradient(0deg, white 0%, transparent 25%, transparent 75%, white 100%) 2;
             }
             25% {
-              background-position: 100% 0, 100% 0, 100% 100%, 0 100%;
+              border-image: linear-gradient(90deg, white 0%, transparent 25%, transparent 75%, white 100%) 2;
             }
             50% {
-              background-position: 100% 0, 100% 100%, 100% 100%, 0 100%;
+              border-image: linear-gradient(180deg, white 0%, transparent 25%, transparent 75%, white 100%) 2;
             }
             75% {
-              background-position: 100% 0, 100% 100%, 0 100%, 0 100%;
+              border-image: linear-gradient(270deg, white 0%, transparent 25%, transparent 75%, white 100%) 2;
             }
             100% {
-              background-position: 0 0, 100% 100%, 0 100%, 0 0;
+              border-image: linear-gradient(360deg, white 0%, transparent 25%, transparent 75%, white 100%) 2;
             }
+          }
+          
+          .animate-border-travel {
+            animation: border-travel 3s linear infinite;
+            border-image: linear-gradient(0deg, white 0%, transparent 25%, transparent 75%, white 100%) 2;
           }
           
           .perspective-1000 {

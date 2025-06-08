@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
@@ -59,16 +60,14 @@ const FeatureCard = ({
       duration: 0.3
     }
   }}>
-      {/* Animated white border on hover - New reliable implementation */}
-      <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 overflow-hidden">
-        {/* Top border */}
-        <div className="absolute top-0 left-0 w-full h-0.5 bg-white transform -translate-x-full group-hover:animate-border-top"></div>
-        {/* Right border */}
-        <div className="absolute top-0 right-0 w-0.5 h-full bg-white transform -translate-y-full group-hover:animate-border-right"></div>
-        {/* Bottom border */}
-        <div className="absolute bottom-0 right-0 w-full h-0.5 bg-white transform translate-x-full group-hover:animate-border-bottom"></div>
-        {/* Left border */}
-        <div className="absolute bottom-0 left-0 w-0.5 h-full bg-white transform translate-y-full group-hover:animate-border-left"></div>
+      {/* Animated white border on hover */}
+      <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="absolute inset-0 rounded-xl overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-white transform -translate-x-full group-hover:translate-x-full transition-transform duration-[6000ms] ease-linear" style={{ animationDelay: '0s' }}></div>
+          <div className="absolute top-0 right-0 w-0.5 h-full bg-white transform -translate-y-full group-hover:translate-y-full transition-transform duration-[6000ms] ease-linear" style={{ animationDelay: '1.5s' }}></div>
+          <div className="absolute bottom-0 right-0 w-full h-0.5 bg-white transform translate-x-full group-hover:-translate-x-full transition-transform duration-[6000ms] ease-linear" style={{ animationDelay: '3s' }}></div>
+          <div className="absolute bottom-0 left-0 w-0.5 h-full bg-white transform translate-y-full group-hover:-translate-y-full transition-transform duration-[6000ms] ease-linear" style={{ animationDelay: '4.5s' }}></div>
+        </div>
       </div>
 
       {/* Animated shine overlay */}
@@ -129,46 +128,22 @@ const Index = () => {
             100% { transform: translateX(100%) skewX(-25deg); }
           }
           
-          @keyframes border-top {
-            0% { transform: translateX(-100%); }
-            25% { transform: translateX(0%); }
-            100% { transform: translateX(0%); }
-          }
-          
-          @keyframes border-right {
-            0% { transform: translateY(-100%); }
-            25% { transform: translateY(-100%); }
-            50% { transform: translateY(0%); }
-            100% { transform: translateY(0%); }
-          }
-          
-          @keyframes border-bottom {
-            0% { transform: translateX(100%); }
-            50% { transform: translateX(100%); }
-            75% { transform: translateX(0%); }
-            100% { transform: translateX(0%); }
-          }
-          
-          @keyframes border-left {
-            0% { transform: translateY(100%); }
-            75% { transform: translateY(100%); }
-            100% { transform: translateY(0%); }
-          }
-          
-          .animate-border-top {
-            animation: border-top 4s ease-in-out infinite;
-          }
-          
-          .animate-border-right {
-            animation: border-right 4s ease-in-out infinite;
-          }
-          
-          .animate-border-bottom {
-            animation: border-bottom 4s ease-in-out infinite;
-          }
-          
-          .animate-border-left {
-            animation: border-left 4s ease-in-out infinite;
+          @keyframes border-travel {
+            0% {
+              background-position: 0 0, 100% 0, 100% 100%, 0 100%;
+            }
+            25% {
+              background-position: 100% 0, 100% 0, 100% 100%, 0 100%;
+            }
+            50% {
+              background-position: 100% 0, 100% 100%, 100% 100%, 0 100%;
+            }
+            75% {
+              background-position: 100% 0, 100% 100%, 0 100%, 0 100%;
+            }
+            100% {
+              background-position: 0 0, 100% 100%, 0 100%, 0 0;
+            }
           }
           
           .perspective-1000 {

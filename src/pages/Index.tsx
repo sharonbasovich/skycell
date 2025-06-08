@@ -59,9 +59,16 @@ const FeatureCard = ({
       duration: 0.3
     }
   }}>
-      {/* Animated white border on hover */}
-      <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-        <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:animate-border-travel"></div>
+      {/* Animated white border on hover - New reliable implementation */}
+      <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 overflow-hidden">
+        {/* Top border */}
+        <div className="absolute top-0 left-0 w-full h-0.5 bg-white transform -translate-x-full group-hover:animate-border-top"></div>
+        {/* Right border */}
+        <div className="absolute top-0 right-0 w-0.5 h-full bg-white transform -translate-y-full group-hover:animate-border-right"></div>
+        {/* Bottom border */}
+        <div className="absolute bottom-0 right-0 w-full h-0.5 bg-white transform translate-x-full group-hover:animate-border-bottom"></div>
+        {/* Left border */}
+        <div className="absolute bottom-0 left-0 w-0.5 h-full bg-white transform translate-y-full group-hover:animate-border-left"></div>
       </div>
 
       {/* Animated shine overlay */}
@@ -122,27 +129,46 @@ const Index = () => {
             100% { transform: translateX(100%) skewX(-25deg); }
           }
           
-          @keyframes border-travel {
-            0% {
-              border-image: linear-gradient(0deg, white 0%, transparent 25%, transparent 75%, white 100%) 2;
-            }
-            25% {
-              border-image: linear-gradient(90deg, white 0%, transparent 25%, transparent 75%, white 100%) 2;
-            }
-            50% {
-              border-image: linear-gradient(180deg, white 0%, transparent 25%, transparent 75%, white 100%) 2;
-            }
-            75% {
-              border-image: linear-gradient(270deg, white 0%, transparent 25%, transparent 75%, white 100%) 2;
-            }
-            100% {
-              border-image: linear-gradient(360deg, white 0%, transparent 25%, transparent 75%, white 100%) 2;
-            }
+          @keyframes border-top {
+            0% { transform: translateX(-100%); }
+            25% { transform: translateX(0%); }
+            100% { transform: translateX(0%); }
           }
           
-          .animate-border-travel {
-            animation: border-travel 3s linear infinite;
-            border-image: linear-gradient(0deg, white 0%, transparent 25%, transparent 75%, white 100%) 2;
+          @keyframes border-right {
+            0% { transform: translateY(-100%); }
+            25% { transform: translateY(-100%); }
+            50% { transform: translateY(0%); }
+            100% { transform: translateY(0%); }
+          }
+          
+          @keyframes border-bottom {
+            0% { transform: translateX(100%); }
+            50% { transform: translateX(100%); }
+            75% { transform: translateX(0%); }
+            100% { transform: translateX(0%); }
+          }
+          
+          @keyframes border-left {
+            0% { transform: translateY(100%); }
+            75% { transform: translateY(100%); }
+            100% { transform: translateY(0%); }
+          }
+          
+          .animate-border-top {
+            animation: border-top 4s ease-in-out infinite;
+          }
+          
+          .animate-border-right {
+            animation: border-right 4s ease-in-out infinite;
+          }
+          
+          .animate-border-bottom {
+            animation: border-bottom 4s ease-in-out infinite;
+          }
+          
+          .animate-border-left {
+            animation: border-left 4s ease-in-out infinite;
           }
           
           .perspective-1000 {

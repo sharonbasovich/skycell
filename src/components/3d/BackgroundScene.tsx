@@ -15,33 +15,36 @@ const AnimatedBalloon = ({ position, scale, color, speed = 1 }) => {
 
   return (
     <group ref={groupRef} position={position} scale={scale}>
-      {/* Main balloon envelope - teardrop shape */}
-      <mesh position={[0, 0.8, 0]}>
-        <sphereGeometry args={[1.2, 16, 16]} />
+      {/* Main balloon envelope - spherical top part */}
+      <mesh position={[0, 0.3, 0]}>
+        <sphereGeometry args={[1.2, 32, 32, 0, Math.PI * 2, 0, Math.PI * 0.7]} />
         <meshStandardMaterial 
           color={color} 
           roughness={0.1} 
           metalness={0.9} 
           envMapIntensity={1.5}
           transparent
-          opacity={0.8}
+          opacity={0.9}
+          side={THREE.DoubleSide}
         />
-        {/* Apply non-uniform scale to create teardrop shape */}
-        <mesh scale={[1, 1.6, 1]}>
-          <sphereGeometry args={[1, 16, 16]} />
-          <meshStandardMaterial 
-            color={color} 
-            roughness={0.1} 
-            metalness={0.9} 
-            envMapIntensity={1.5}
-            transparent
-            opacity={0.9}
-          />
-        </mesh>
+      </mesh>
+      
+      {/* Bottom teardrop section */}
+      <mesh position={[0, -0.4, 0]} scale={[1, 1.5, 1]}>
+        <sphereGeometry args={[0.8, 32, 32, 0, Math.PI * 2, Math.PI * 0.3, Math.PI * 0.7]} />
+        <meshStandardMaterial 
+          color={color} 
+          roughness={0.1} 
+          metalness={0.9} 
+          envMapIntensity={1.5}
+          transparent
+          opacity={0.9}
+          side={THREE.DoubleSide}
+        />
       </mesh>
       
       {/* Balloon neck/valve at bottom */}
-      <mesh position={[0, -0.1, 0]}>
+      <mesh position={[0, -1.1, 0]}>
         <cylinderGeometry args={[0.08, 0.12, 0.3]} />
         <meshStandardMaterial 
           color="#444444" 
@@ -51,7 +54,7 @@ const AnimatedBalloon = ({ position, scale, color, speed = 1 }) => {
       </mesh>
       
       {/* Main suspension lines */}
-      <mesh position={[0, -0.5, 0]}>
+      <mesh position={[0, -1.5, 0]}>
         <cylinderGeometry args={[0.008, 0.008, 0.8]} />
         <meshStandardMaterial 
           color="#888888" 
@@ -61,7 +64,7 @@ const AnimatedBalloon = ({ position, scale, color, speed = 1 }) => {
       </mesh>
       
       {/* Additional suspension lines for realism */}
-      <mesh position={[0.1, -0.5, 0.1]} rotation={[0, 0, 0.1]}>
+      <mesh position={[0.1, -1.5, 0.1]} rotation={[0, 0, 0.1]}>
         <cylinderGeometry args={[0.005, 0.005, 0.75]} />
         <meshStandardMaterial 
           color="#888888" 
@@ -69,7 +72,7 @@ const AnimatedBalloon = ({ position, scale, color, speed = 1 }) => {
           metalness={0.7}
         />
       </mesh>
-      <mesh position={[-0.1, -0.5, -0.1]} rotation={[0, 0, -0.1]}>
+      <mesh position={[-0.1, -1.5, -0.1]} rotation={[0, 0, -0.1]}>
         <cylinderGeometry args={[0.005, 0.005, 0.75]} />
         <meshStandardMaterial 
           color="#888888" 
@@ -79,8 +82,8 @@ const AnimatedBalloon = ({ position, scale, color, speed = 1 }) => {
       </mesh>
       
       {/* Enlarged payload box for better visibility */}
-      <mesh position={[0, -1.1, 0]}>
-        <boxGeometry args={[0.25, 0.2, 0.25]} />
+      <mesh position={[0, -2.1, 0]}>
+        <boxGeometry args={[0.3, 0.25, 0.3]} />
         <meshStandardMaterial 
           color="#654321" 
           roughness={0.5} 
@@ -89,16 +92,16 @@ const AnimatedBalloon = ({ position, scale, color, speed = 1 }) => {
       </mesh>
       
       {/* Solar panels on payload */}
-      <mesh position={[0.15, -1.05, 0]} rotation={[0, 0, Math.PI / 6]}>
-        <boxGeometry args={[0.12, 0.15, 0.01]} />
+      <mesh position={[0.18, -2.05, 0]} rotation={[0, 0, Math.PI / 6]}>
+        <boxGeometry args={[0.15, 0.18, 0.01]} />
         <meshStandardMaterial 
           color="#1a365d" 
           metalness={0.9} 
           roughness={0.1}
         />
       </mesh>
-      <mesh position={[-0.15, -1.05, 0]} rotation={[0, 0, -Math.PI / 6]}>
-        <boxGeometry args={[0.12, 0.15, 0.01]} />
+      <mesh position={[-0.18, -2.05, 0]} rotation={[0, 0, -Math.PI / 6]}>
+        <boxGeometry args={[0.15, 0.18, 0.01]} />
         <meshStandardMaterial 
           color="#1a365d" 
           metalness={0.9} 
@@ -107,14 +110,14 @@ const AnimatedBalloon = ({ position, scale, color, speed = 1 }) => {
       </mesh>
       
       {/* Communication antenna */}
-      <mesh position={[0, -0.9, 0.15]}>
+      <mesh position={[0, -1.9, 0.18]}>
         <cylinderGeometry args={[0.015, 0.015, 0.4]} />
         <meshStandardMaterial color="#888888" metalness={0.8} />
       </mesh>
       
       {/* Small parachute attachment point */}
-      <mesh position={[0, -1.25, 0]}>
-        <sphereGeometry args={[0.03, 8, 8]} />
+      <mesh position={[0, -2.35, 0]}>
+        <sphereGeometry args={[0.035, 8, 8]} />
         <meshStandardMaterial 
           color="#ff4444" 
           roughness={0.4} 

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -51,6 +50,24 @@ const Header = () => {
     }
   };
 
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleNavClick = (path: string, e: React.MouseEvent) => {
+    if (location.pathname === path) {
+      e.preventDefault();
+      scrollToTop();
+    }
+  };
+
+  const handleLogoClick = (e: React.MouseEvent) => {
+    if (location.pathname === '/') {
+      e.preventDefault();
+      scrollToTop();
+    }
+  };
+
   const navItems = [
     { name: 'Home', path: '/' },
     { name: 'CAD Viewer', path: '/cad' },
@@ -73,7 +90,7 @@ const Header = () => {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
-          <Link to="/" className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2" onClick={handleLogoClick}>
             <img 
               src="/lovable-uploads/b89dce68-0265-49c8-ac6b-8f70061ff276.png" 
               alt="SkyCell Logo" 
@@ -85,7 +102,7 @@ const Header = () => {
         
         <nav className="hidden md:flex gap-8">
           {navItems.map((item) => (
-            <Link key={item.path} to={item.path}>
+            <Link key={item.path} to={item.path} onClick={(e) => handleNavClick(item.path, e)}>
               <motion.div
                 className="relative"
                 whileHover={{ scale: 1.1 }}

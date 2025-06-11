@@ -1,8 +1,7 @@
-
 import { useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import BackgroundScene from '../components/3d/BackgroundScene';
 import BalloonModel from '../components/3d/BalloonModel';
 import ImageGallery from '../components/ImageGallery';
@@ -119,6 +118,27 @@ const Index = () => {
   const floatingY1 = useTransform(scrollYProgress, [0, 1], [0, -200]);
   const floatingY2 = useTransform(scrollYProgress, [0, 1], [0, -100]);
   const floatingY3 = useTransform(scrollYProgress, [0, 1], [0, -300]);
+
+  const location = useLocation();
+
+  const handleNavClick = (path: string, e: React.MouseEvent) => {
+    if (location.pathname === path) {
+      e.preventDefault();
+      scrollToTop();
+    }
+  };
+
+  const handleLogoClick = (e: React.MouseEvent) => {
+    if (location.pathname === '/') {
+      e.preventDefault();
+      scrollToTop();
+    }
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return <>
       {/* Add custom CSS for animations */}
       <style>
@@ -487,27 +507,27 @@ const Index = () => {
       </motion.section>
       
       {/* Footer */}
-      <footer className="py-10 px-4 border-t border-border">
-        <div className="container mx-auto max-w-6xl">
+      <footer className="relative py-10 px-4 border-t border-border z-20">
+        <div className="container mx-auto max-w-6xl relative z-30">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center gap-2 mb-4 md:mb-0">
-              <Link to="/" className="flex items-center gap-2">
+              <Link to="/" className="flex items-center gap-2" onClick={handleLogoClick}>
                 <img src="/lovable-uploads/b89dce68-0265-49c8-ac6b-8f70061ff276.png" alt="SkyCell Logo" className="w-8 h-8 object-contain" />
                 <span className="text-lg font-bold gradient-text">SkyCell</span>
               </Link>
             </div>
             
             <div className="flex gap-6">
-              <Link to="/" className="text-muted-foreground hover:text-primary transition-colors">
+              <Link to="/" className="text-muted-foreground hover:text-primary transition-colors" onClick={(e) => handleNavClick('/', e)}>
                 Home
               </Link>
-              <Link to="/cad" className="text-muted-foreground hover:text-primary transition-colors">
+              <Link to="/cad" className="text-muted-foreground hover:text-primary transition-colors" onClick={(e) => handleNavClick('/cad', e)}>
                 CAD Models
               </Link>
-              <Link to="/development" className="text-muted-foreground hover:text-primary transition-colors">
+              <Link to="/development" className="text-muted-foreground hover:text-primary transition-colors" onClick={(e) => handleNavClick('/development', e)}>
                 Development
               </Link>
-              <Link to="/dashboard" className="text-muted-foreground hover:text-primary transition-colors">
+              <Link to="/dashboard" className="text-muted-foreground hover:text-primary transition-colors" onClick={(e) => handleNavClick('/dashboard', e)}>
                 Dashboard
               </Link>
             </div>

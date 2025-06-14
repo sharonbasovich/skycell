@@ -63,7 +63,7 @@ const AnimatedBalloon = ({ position, scale, color, speed = 1 }) => {
         <meshStandardMaterial 
           color="#888888" 
           roughness={0.3} 
-          metalness={0.7"
+          metalness={0.7}
         />
       </mesh>
       
@@ -72,7 +72,7 @@ const AnimatedBalloon = ({ position, scale, color, speed = 1 }) => {
         <boxGeometry args={[0.3, 0.25, 0.3]} />
         <meshStandardMaterial 
           color="#654321" 
-          roughness={0.5" 
+          roughness={0.5} 
           metalness={0.3}
         />
       </mesh>

@@ -1,3 +1,4 @@
+
 import { useRef, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Stars, useTexture, Environment } from '@react-three/drei';
@@ -14,7 +15,7 @@ const AnimatedBalloon = ({ position, scale, color, speed = 1 }) => {
 
   return (
     <group ref={groupRef} position={position} scale={scale}>
-      {/* Main balloon envelope - simple ellipsoid shape */}
+      {/* Main balloon envelope - taller ellipsoid shape */}
       <mesh position={[0, 0, 0]}>
         <sphereGeometry args={[1.2, 32, 32]} />
         <meshStandardMaterial 
@@ -62,7 +63,7 @@ const AnimatedBalloon = ({ position, scale, color, speed = 1 }) => {
         <meshStandardMaterial 
           color="#888888" 
           roughness={0.3} 
-          metalness={0.7}
+          metalness={0.7"
         />
       </mesh>
       
@@ -71,7 +72,7 @@ const AnimatedBalloon = ({ position, scale, color, speed = 1 }) => {
         <boxGeometry args={[0.3, 0.25, 0.3]} />
         <meshStandardMaterial 
           color="#654321" 
-          roughness={0.5} 
+          roughness={0.5" 
           metalness={0.3}
         />
       </mesh>
@@ -113,10 +114,10 @@ const AnimatedBalloon = ({ position, scale, color, speed = 1 }) => {
   );
 };
 
-const BalloonCloud = ({ count = 20, radius = 20 }) => {
+const BalloonCloud = ({ count = 35, radius = 25 }) => {
   const points = Array.from({ length: count }, () => [
     (Math.random() - 0.5) * radius,
-    (Math.random() - 0.5) * radius * 0.5,
+    (Math.random() - 0.5) * radius * 0.6,
     (Math.random() - 0.5) * radius
   ]);
   
@@ -129,9 +130,9 @@ const BalloonCloud = ({ count = 20, radius = 20 }) => {
           key={i} 
           position={position} 
           scale={[
-            0.4 + Math.random() * 0.3, 
-            0.4 + Math.random() * 0.3, 
-            0.4 + Math.random() * 0.3
+            0.3 + Math.random() * 0.2, // Narrower width range
+            0.6 + Math.random() * 0.4, // Taller height range
+            0.3 + Math.random() * 0.2  // Narrower depth range
           ]} 
           color={colors[i % colors.length]} 
           speed={0.2 + Math.random() * 0.3}

@@ -152,7 +152,7 @@ const ProjectTimeline = () => {
 
           {/* Rocket at the end */}
           <motion.div
-            className="absolute left-4 bottom-0 transform -translate-x-1/2 translate-y-8"
+            className="absolute left-8 bottom-0 transform -translate-x-1/2 translate-y-8"
             initial={{ opacity: 0, y: 20, rotate: 0 }}
             animate={inView ? { 
               opacity: 1, 
@@ -178,7 +178,7 @@ const ProjectTimeline = () => {
               />
               {/* Rocket exhaust */}
               <motion.div
-                className="absolute -top-3 -left-3 w-4 h-8 bg-gradient-to-t from-orange-500 to-yellow-400 rounded-full blur-sm"
+                className="absolute -top-1 -left-1 w-4 h-8 bg-gradient-to-t from-orange-500 to-yellow-400 rounded-full blur-sm"
                 animate={{
                   scaleY: [0.8, 1.2, 0.8],
                   opacity: [0.7, 1, 0.7]

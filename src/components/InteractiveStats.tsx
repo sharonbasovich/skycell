@@ -110,7 +110,7 @@ const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: b
           stiffness: 100
         }
       } : { opacity: 0, y: 50, rotateX: -15 }}
-      className="text-center group cursor-pointer animate-pulse-glow"
+      className="text-center group cursor-pointer"
       style={{ perspective: "1000px" }}
       onMouseEnter={() => setIsFlipped(true)}
       onMouseLeave={() => setIsFlipped(false)}
@@ -119,49 +119,42 @@ const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: b
         className="relative w-full h-48 transition-transform duration-700 preserve-3d"
         style={{
           transformStyle: "preserve-3d",
-          transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
-          transformOrigin: "center center"
+          transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)"
         }}
       >
         {/* Front Face - SkyCell Logo */}
         <div
-          className="absolute inset-0 bg-gradient-to-br from-card/90 to-card/70 backdrop-blur-md rounded-xl p-6 shadow-lg border border-border/50 backface-hidden flex flex-col justify-center items-center relative overflow-hidden"
+          className="absolute inset-0 bg-card/70 backdrop-blur-md rounded-xl p-6 shadow-lg border border-border/50 backface-hidden flex flex-col justify-center items-center"
           style={{
             backfaceVisibility: "hidden",
-            transform: "rotateY(0deg)",
-            backgroundImage: `
-              radial-gradient(circle at 20% 20%, rgba(14, 165, 233, 0.1) 0%, transparent 50%),
-              radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
-              linear-gradient(45deg, transparent 49%, rgba(255, 255, 255, 0.1) 50%, transparent 51%)
-            `,
-            backgroundSize: '60px 60px, 60px 60px, 12px 12px'
+            transform: "rotateY(0deg)"
           }}
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent rounded-xl"></div>
           <img 
             src="/lovable-uploads/b89dce68-0265-49c8-ac6b-8f70061ff276.png" 
             alt="SkyCell Logo"
-            className="w-20 h-20 object-contain opacity-90 relative z-10"
+            className="w-16 h-16 object-contain mb-4 opacity-80"
           />
+          
+          <h3 className="text-lg font-bold gradient-text">
+            SkyCell
+          </h3>
+          
+          <p className="text-sm text-muted-foreground mt-2">
+            Hover to reveal
+          </p>
         </div>
 
         {/* Back Face - Achievement Info */}
         <div
-          className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20 backdrop-blur-md rounded-xl p-6 shadow-lg border border-primary/30 backface-hidden flex flex-col justify-center items-center relative overflow-hidden"
+          className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20 backdrop-blur-md rounded-xl p-6 shadow-lg border border-primary/30 backface-hidden flex flex-col justify-center items-center"
           style={{
             backfaceVisibility: "hidden",
-            transform: "rotateY(180deg)",
-            backgroundImage: `
-              radial-gradient(circle at 20% 20%, rgba(14, 165, 233, 0.15) 0%, transparent 50%),
-              radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
-              linear-gradient(45deg, transparent 49%, rgba(255, 255, 255, 0.1) 50%, transparent 51%)
-            `,
-            backgroundSize: '50px 50px, 50px 50px, 10px 10px'
+            transform: "rotateY(180deg)"
           }}
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-transparent via-primary/10 to-transparent rounded-xl"></div>
           <motion.div
-            className={`text-3xl mb-3 ${stat.color} relative z-10`}
+            className={`text-3xl mb-3 ${stat.color}`}
             animate={isFlipped ? { 
               scale: 1.1,
               rotate: 360
@@ -174,19 +167,19 @@ const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: b
             {stat.icon}
           </motion.div>
           
-          <h3 className="text-2xl md:text-3xl font-bold text-primary mb-2 relative z-10">
+          <h3 className="text-2xl md:text-3xl font-bold text-primary mb-2">
             {count.toLocaleString()}{stat.suffix}
           </h3>
           
-          <h4 className="text-sm font-bold text-primary mb-2 text-center relative z-10">
+          <h4 className="text-sm font-bold text-primary mb-2 text-center">
             {stat.label}
           </h4>
           
-          <p className="text-xs text-muted-foreground text-center leading-relaxed relative z-10">
+          <p className="text-xs text-muted-foreground text-center leading-relaxed">
             {stat.description}
           </p>
           
-          <div className="mt-3 w-full h-1 bg-gradient-to-r from-primary to-secondary rounded-full opacity-60 relative z-10"></div>
+          <div className="mt-3 w-full h-1 bg-gradient-to-r from-primary to-secondary rounded-full opacity-60"></div>
         </div>
       </div>
     </motion.div>

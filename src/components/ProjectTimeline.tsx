@@ -1,5 +1,3 @@
-
-
 import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
@@ -102,7 +100,7 @@ const ProjectTimeline = () => {
 
           {/* Rocket at bottom of timeline */}
           <motion.div
-            className="absolute left-6 bottom-0 w-8 h-8 flex items-center justify-center transform translate-y-4"
+            className="absolute left-4 bottom-0 w-8 h-8 flex items-center justify-center transform translate-y-4"
             initial={{ opacity: 0, y: -20 }}
             animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: -20 }}
             transition={{ duration: 0.8, delay: 2.5 }}
@@ -227,4 +225,3 @@ const TimelineItem = ({ item, index, inView }: { item: any, index: number, inVie
 };
 
 export default ProjectTimeline;
-

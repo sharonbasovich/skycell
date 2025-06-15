@@ -15,28 +15,32 @@ const InteractiveStats = () => {
       suffix: 'm', 
       label: 'Maximum Altitude',
       icon: '↗️',
-      color: 'text-blue-500'
+      color: 'text-blue-500',
+      description: 'Reached new heights in stratospheric communication testing'
     },
     { 
       value: 50, 
       suffix: 'km', 
       label: 'Communication Range',
       icon: '📡',
-      color: 'text-green-500'
+      color: 'text-green-500',
+      description: 'Established reliable mesh network connections across vast distances'
     },
     { 
       value: 12, 
       suffix: '', 
       label: 'Sensors Onboard',
       icon: '🔬',
-      color: 'text-purple-500'
+      color: 'text-purple-500',
+      description: 'Advanced sensor array for comprehensive atmospheric monitoring'
     },
     { 
       value: 6, 
       suffix: 'h', 
       label: 'Flight Duration',
       icon: '⏱️',
-      color: 'text-orange-500'
+      color: 'text-orange-500',
+      description: 'Continuous operation time during extended test flights'
     },
   ];
 
@@ -65,7 +69,7 @@ const InteractiveStats = () => {
 
 const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: boolean }) => {
   const [count, setCount] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
+  const [isFlipped, setIsFlipped] = useState(false);
 
   useEffect(() => {
     if (!inView) return;
@@ -106,73 +110,72 @@ const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: b
           stiffness: 100
         }
       } : { opacity: 0, y: 50, rotateX: -15 }}
-      whileHover={{ 
-        scale: 1.05,
-        rotateY: 5,
-        z: 20,
-        transition: { duration: 0.3 }
-      }}
-      onHoverStart={() => setIsHovered(true)}
-      onHoverEnd={() => setIsHovered(false)}
       className="text-center group cursor-pointer"
+      style={{ perspective: "1000px" }}
+      onMouseEnter={() => setIsFlipped(true)}
+      onMouseLeave={() => setIsFlipped(false)}
     >
-      <motion.div
-        className="bg-card/70 backdrop-blur-md rounded-xl p-6 shadow-lg border border-border/50 relative overflow-hidden"
-        animate={isHovered ? { 
-          background: "rgba(var(--card), 0.9)",
-          borderColor: "hsl(var(--primary))"
-        } : {}}
+      <div
+        className="relative w-full h-48 transition-transform duration-700 preserve-3d"
+        style={{
+          transformStyle: "preserve-3d",
+          transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)"
+        }}
       >
-        {/* Animated background gradient */}
-        <motion.div
-          className="absolute inset-0 opacity-0 group-hover:opacity-20"
-          animate={isHovered ? { 
-            background: "linear-gradient(45deg, hsl(var(--primary)), hsl(var(--secondary)))",
-            opacity: 0.1
-          } : { opacity: 0 }}
-          transition={{ duration: 0.3 }}
-        />
-        
-        <motion.div
-          className={`text-4xl mb-2 ${stat.color}`}
-          animate={isHovered ? { 
-            scale: 1.2,
-            rotate: 360
-          } : { 
-            scale: 1,
-            rotate: 0
+        {/* Front Face */}
+        <div
+          className="absolute inset-0 bg-card/70 backdrop-blur-md rounded-xl p-6 shadow-lg border border-border/50 backface-hidden"
+          style={{
+            backfaceVisibility: "hidden",
+            transform: "rotateY(0deg)"
           }}
-          transition={{ duration: 0.5, type: "spring" }}
         >
-          {stat.icon}
-        </motion.div>
-        
-        <motion.h3 
-          className="text-3xl md:text-4xl font-bold text-primary mb-2"
-          animate={isHovered ? { scale: 1.1 } : { scale: 1 }}
+          <motion.div
+            className={`text-4xl mb-2 ${stat.color}`}
+            animate={isFlipped ? { 
+              scale: 1.2,
+              rotate: 360
+            } : { 
+              scale: 1,
+              rotate: 0
+            }}
+            transition={{ duration: 0.5, type: "spring" }}
+          >
+            {stat.icon}
+          </motion.div>
+          
+          <h3 className="text-3xl md:text-4xl font-bold text-primary mb-2">
+            {count.toLocaleString()}{stat.suffix}
+          </h3>
+          
+          <p className="text-muted-foreground">
+            {stat.label}
+          </p>
+        </div>
+
+        {/* Back Face */}
+        <div
+          className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20 backdrop-blur-md rounded-xl p-6 shadow-lg border border-primary/30 backface-hidden flex flex-col justify-center items-center"
+          style={{
+            backfaceVisibility: "hidden",
+            transform: "rotateY(180deg)"
+          }}
         >
-          {count.toLocaleString()}{stat.suffix}
-        </motion.h3>
-        
-        <motion.p 
-          className="text-muted-foreground"
-          animate={isHovered ? { y: -2 } : { y: 0 }}
-        >
-          {stat.label}
-        </motion.p>
-        
-        {/* Particle effects on hover */}
-        <motion.div
-          className="absolute top-0 left-0 w-2 h-2 bg-primary rounded-full opacity-0"
-          animate={isHovered ? {
-            opacity: [0, 1, 0],
-            scale: [0, 1, 0],
-            x: [0, 100, 200],
-            y: [0, -20, -40]
-          } : { opacity: 0 }}
-          transition={{ duration: 1, repeat: Infinity }}
-        />
-      </motion.div>
+          <div className={`text-2xl mb-4 ${stat.color}`}>
+            {stat.icon}
+          </div>
+          
+          <h4 className="text-lg font-bold text-primary mb-3 text-center">
+            {stat.label}
+          </h4>
+          
+          <p className="text-sm text-muted-foreground text-center leading-relaxed">
+            {stat.description}
+          </p>
+          
+          <div className="mt-4 w-full h-1 bg-gradient-to-r from-primary to-secondary rounded-full opacity-60"></div>
+        </div>
+      </div>
     </motion.div>
   );
 };

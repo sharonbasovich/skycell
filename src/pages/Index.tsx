@@ -9,6 +9,7 @@ import InteractiveStats from '../components/InteractiveStats';
 import ProjectTimeline from '../components/ProjectTimeline';
 import { Button } from '@/components/ui/button';
 import { BarChart, LineChart } from 'lucide-react';
+
 const FeatureCard = ({
   icon,
   title,
@@ -227,7 +228,7 @@ const Index = () => {
         duration: 0.8,
         delay: 0.2
       }} className="max-w-3xl mx-auto">
-          <motion.h1 initial={{
+          <motion.div initial={{
           opacity: 0,
           y: 20
         }} animate={heroInView ? {
@@ -239,7 +240,13 @@ const Index = () => {
         }} transition={{
           duration: 0.8,
           delay: 0.3
-        }} className="text-4xl font-bold mb-6 gradient-text md:text-9xl">SkyCell</motion.h1>
+        }} className="mb-6">
+            <img 
+              src="/lovable-uploads/3cb1360d-d08c-4526-b709-66fd7a1acb5f.png" 
+              alt="SkyCell Logo"
+              className="w-full max-w-2xl mx-auto h-auto object-contain"
+            />
+          </motion.div>
           <motion.p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto" initial={{
           opacity: 0,
           y: 20

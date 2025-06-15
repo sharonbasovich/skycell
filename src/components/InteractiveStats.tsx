@@ -119,7 +119,8 @@ const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: b
         className="relative w-full h-48 transition-transform duration-700 preserve-3d"
         style={{
           transformStyle: "preserve-3d",
-          transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)"
+          transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
+          transformOrigin: "center center"
         }}
       >
         {/* Front Face - SkyCell Logo */}
@@ -133,7 +134,7 @@ const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: b
               radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
               linear-gradient(45deg, transparent 49%, rgba(255, 255, 255, 0.1) 50%, transparent 51%)
             `,
-            backgroundSize: '100px 100px, 100px 100px, 20px 20px'
+            backgroundSize: '60px 60px, 60px 60px, 12px 12px'
           }}
         >
           <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent rounded-xl"></div>
@@ -155,7 +156,7 @@ const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: b
               radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
               linear-gradient(45deg, transparent 49%, rgba(255, 255, 255, 0.1) 50%, transparent 51%)
             `,
-            backgroundSize: '80px 80px, 80px 80px, 15px 15px'
+            backgroundSize: '50px 50px, 50px 50px, 10px 10px'
           }}
         >
           <div className="absolute inset-0 bg-gradient-to-br from-transparent via-primary/10 to-transparent rounded-xl"></div>

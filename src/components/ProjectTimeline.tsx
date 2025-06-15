@@ -100,7 +100,7 @@ const ProjectTimeline = () => {
 
           {/* Rocket at bottom of timeline */}
           <motion.div
-            className="absolute left-8 bottom-0 w-8 h-8 flex items-center justify-center transform -translate-x-1/2 translate-y-4"
+            className="absolute left-6 bottom-0 w-8 h-8 flex items-center justify-center transform translate-y-4"
             initial={{ opacity: 0, y: -20 }}
             animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: -20 }}
             transition={{ duration: 0.8, delay: 2.5 }}
@@ -119,24 +119,10 @@ const ProjectTimeline = () => {
             >
               <Rocket 
                 size={24} 
-                className="rotate-180" 
+                className="rotate-[225deg]" 
                 fill="currentColor"
               />
             </motion.div>
-            
-            {/* Rocket exhaust trail */}
-            <motion.div
-              className="absolute top-0 left-1/2 transform -translate-x-1/2 w-1 bg-gradient-to-t from-orange-500 via-red-500 to-transparent rounded-full"
-              initial={{ height: 0, opacity: 0 }}
-              animate={inView ? { 
-                height: "20px", 
-                opacity: [0.8, 0.4, 0.8],
-              } : { height: 0, opacity: 0 }}
-              transition={{ 
-                height: { duration: 0.5, delay: 3 },
-                opacity: { duration: 1.5, repeat: Infinity, ease: "easeInOut" }
-              }}
-            />
           </motion.div>
 
           <div className="space-y-12">

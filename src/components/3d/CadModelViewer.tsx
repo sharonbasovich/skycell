@@ -1,11 +1,10 @@
-
 import { Suspense, useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Grid, Environment, ContactShadows, Html, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import PixelReveal from './PixelReveal';
 
-// Camera Controller Component - Completely rewritten
+// Camera Controller Component - Enhanced for better framing
 const CameraController = ({ targetComponent }: { targetComponent: string | null }) => {
   const { camera, controls } = useThree();
   const [isAnimating, setIsAnimating] = useState(false);
@@ -22,26 +21,26 @@ const CameraController = ({ targetComponent }: { targetComponent: string | null 
     
     console.log('Starting camera animation for:', targetComponent);
     
-    // Define component positions and targets
+    // Define optimized component positions and targets for better framing
     const positions: Record<string, { position: THREE.Vector3, target: THREE.Vector3 }> = {
       main_body: { 
-        position: new THREE.Vector3(3, 1, 3), 
+        position: new THREE.Vector3(2.5, 1.5, 2.5), 
         target: new THREE.Vector3(0, 0, 0) 
       },
       antenna: { 
-        position: new THREE.Vector3(2, 2, 2), 
-        target: new THREE.Vector3(0, 0.6, 0) 
+        position: new THREE.Vector3(1.5, 3, 1.5), 
+        target: new THREE.Vector3(0, 0.5, 0) 
       },
       solar: { 
-        position: new THREE.Vector3(4, 1, 1), 
+        position: new THREE.Vector3(3.5, 0.5, 1), 
         target: new THREE.Vector3(1.2, 0, 0) 
       },
       camera: { 
-        position: new THREE.Vector3(1, 1, 3), 
+        position: new THREE.Vector3(1, 1.5, 4), 
         target: new THREE.Vector3(0, 0, 0.6) 
       },
       gps: { 
-        position: new THREE.Vector3(-2, 1, 2), 
+        position: new THREE.Vector3(-2.5, 2, 2.5), 
         target: new THREE.Vector3(-0.8, 0.3, 0) 
       }
     };
@@ -68,7 +67,7 @@ const CameraController = ({ targetComponent }: { targetComponent: string | null 
     if (!isAnimating || !controls) return;
     
     const anim = animationRef.current;
-    anim.progress += delta * 2; // Animation speed
+    anim.progress += delta * 1.5; // Slightly faster animation
     
     if (anim.progress >= 1) {
       // Animation complete
@@ -276,16 +275,19 @@ const CadModelViewer = ({ modelPath = "", selectedComponent = null, onComponentS
     if (componentId) {
       setAnimationTarget(componentId);
       // Clear the target after a short delay to allow for re-triggering
-      setTimeout(() => setAnimationTarget(null), 100);
+      setTimeout(() => setAnimationTarget(null), 150);
     }
   };
   
-  // Handle external component selection (from sidebar)
+  // Handle external component selection (from sidebar) - Enhanced
   useEffect(() => {
     if (selectedComponent) {
       console.log('External selectedComponent changed to:', selectedComponent);
-      setAnimationTarget(selectedComponent);
-      setTimeout(() => setAnimationTarget(null), 100);
+      // Add a small delay to ensure the animation is visible
+      setTimeout(() => {
+        setAnimationTarget(selectedComponent);
+        setTimeout(() => setAnimationTarget(null), 150);
+      }, 100);
     }
   }, [selectedComponent]);
   

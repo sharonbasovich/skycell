@@ -1,3 +1,4 @@
+
 import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
@@ -94,7 +95,7 @@ const ProjectTimeline = () => {
           <div className="absolute left-8 top-0 w-1 h-full">
             {/* Main trail line */}
             <motion.div
-              className="absolute left-0 top-0 w-1 bg-gradient-to-b from-orange-500 via-yellow-400 to-transparent rounded-full"
+              className="absolute left-0 top-0 w-1 bg-gradient-to-b from-transparent via-yellow-400 to-orange-500 rounded-full"
               initial={{ height: 0 }}
               animate={inView ? { height: "100%" } : { height: 0 }}
               transition={{ duration: 2, delay: 0.5 }}
@@ -169,14 +170,14 @@ const ProjectTimeline = () => {
           >
             <div className="relative">
               <Rocket 
-                className="w-8 h-8 text-primary transform rotate-45" 
+                className="w-8 h-8 text-primary transform rotate-[135deg]" 
                 style={{
                   filter: "drop-shadow(0 0 10px rgba(14, 165, 233, 0.8))"
                 }}
               />
               {/* Rocket exhaust */}
               <motion.div
-                className="absolute -bottom-2 -right-2 w-3 h-6 bg-gradient-to-b from-orange-500 to-yellow-400 rounded-full blur-sm"
+                className="absolute -top-2 -left-2 w-3 h-6 bg-gradient-to-t from-orange-500 to-yellow-400 rounded-full blur-sm"
                 animate={{
                   scaleY: [0.8, 1.2, 0.8],
                   opacity: [0.7, 1, 0.7]

@@ -1,4 +1,5 @@
 
+
 import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
@@ -170,14 +171,14 @@ const ProjectTimeline = () => {
           >
             <div className="relative">
               <Rocket 
-                className="w-8 h-8 text-primary transform rotate-[135deg]" 
+                className="w-12 h-12 text-primary transform rotate-[135deg] fill-current" 
                 style={{
-                  filter: "drop-shadow(0 0 10px rgba(14, 165, 233, 0.8))"
+                  filter: "drop-shadow(0 0 15px rgba(14, 165, 233, 0.8))"
                 }}
               />
               {/* Rocket exhaust */}
               <motion.div
-                className="absolute -top-2 -left-2 w-3 h-6 bg-gradient-to-t from-orange-500 to-yellow-400 rounded-full blur-sm"
+                className="absolute -top-3 -left-3 w-4 h-8 bg-gradient-to-t from-orange-500 to-yellow-400 rounded-full blur-sm"
                 animate={{
                   scaleY: [0.8, 1.2, 0.8],
                   opacity: [0.7, 1, 0.7]
@@ -291,3 +292,4 @@ const TimelineItem = ({ item, index, inView }: { item: any, index: number, inVie
 };
 
 export default ProjectTimeline;
+

@@ -151,7 +151,7 @@ const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: b
           transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)"
         }}
       >
-        {/* Front Face - Just the icon */}
+        {/* Front Face - SkyCell Logo */}
         <div
           className="absolute inset-0 bg-card/70 backdrop-blur-md rounded-xl p-6 shadow-lg border border-border/50 backface-hidden flex flex-col justify-center items-center hover:shadow-2xl hover:shadow-primary/20 transition-all duration-300"
           style={{
@@ -161,7 +161,7 @@ const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: b
           }}
         >
           <motion.div
-            className={`text-4xl ${stat.color}`}
+            className="w-16 h-16 flex items-center justify-center"
             animate={{ 
               scale: [1, 1.1, 1],
               rotate: [0, 5, -5, 0]
@@ -175,7 +175,14 @@ const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: b
               filter: "drop-shadow(0 0 8px rgba(14, 165, 233, 0.5))"
             }}
           >
-            {stat.icon}
+            <img 
+              src="https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=400&fit=crop&crop=center" 
+              alt="SkyCell Logo" 
+              className="w-full h-full object-contain rounded-lg"
+              style={{
+                filter: "brightness(1.2) contrast(1.1)"
+              }}
+            />
           </motion.div>
         </div>
 

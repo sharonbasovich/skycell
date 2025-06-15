@@ -69,6 +69,7 @@ const InteractiveStats = () => {
 
 const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: boolean }) => {
   const [count, setCount] = useState(0);
+  const [flipCount, setFlipCount] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
 
   useEffect(() => {
@@ -95,6 +96,31 @@ const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: b
 
     return () => clearTimeout(timer);
   }, [inView, stat.value, index]);
+
+  // Counter animation for flip
+  useEffect(() => {
+    if (!isFlipped) {
+      setFlipCount(0);
+      return;
+    }
+
+    let start = 0;
+    const end = stat.value;
+    const duration = 700; // Slightly shorter than flip duration
+    const increment = end / (duration / 16);
+
+    const flipCounter = setInterval(() => {
+      start += increment;
+      if (start >= end) {
+        setFlipCount(end);
+        clearInterval(flipCounter);
+      } else {
+        setFlipCount(Math.floor(start));
+      }
+    }, 16);
+
+    return () => clearInterval(flipCounter);
+  }, [isFlipped, stat.value]);
 
   return (
     <motion.div
@@ -180,7 +206,7 @@ const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: b
               style={{
                 textShadow: "0 0 10px rgba(14, 165, 233, 0.5)"
               }}>
-            {count.toLocaleString()}{stat.suffix}
+            {flipCount.toLocaleString()}{stat.suffix}
           </h3>
           
           <h4 className="text-sm font-bold text-primary mb-2 text-center">

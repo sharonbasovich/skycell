@@ -1,7 +1,6 @@
 import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
-import { Rocket } from 'lucide-react';
 
 const ProjectTimeline = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -90,105 +89,13 @@ const ProjectTimeline = () => {
         </motion.div>
 
         <div className="relative">
-          {/* Rocket Trail */}
-          <div className="absolute left-8 top-0 w-1 h-full">
-            {/* Main trail line */}
-            <motion.div
-              className="absolute left-0 top-0 w-1 bg-gradient-to-b from-transparent via-yellow-400 to-orange-500 rounded-full"
-              initial={{ height: 0 }}
-              animate={inView ? { height: "100%" } : { height: 0 }}
-              transition={{ duration: 2, delay: 0.5 }}
-            />
-            
-            {/* Glowing particles along the trail */}
-            {[...Array(8)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute w-2 h-2 bg-orange-400 rounded-full blur-sm"
-                style={{
-                  left: '-2px',
-                  top: `${(i + 1) * 12.5}%`
-                }}
-                initial={{ opacity: 0, scale: 0 }}
-                animate={inView ? { 
-                  opacity: [0, 1, 0], 
-                  scale: [0, 1.5, 0],
-                  x: [0, Math.random() * 10 - 5, 0]
-                } : { opacity: 0, scale: 0 }}
-                transition={{ 
-                  duration: 2,
-                  delay: 0.5 + i * 0.1,
-                  repeat: Infinity,
-                  repeatDelay: 3
-                }}
-              />
-            ))}
-            
-            {/* Smaller sparkle particles */}
-            {[...Array(12)].map((_, i) => (
-              <motion.div
-                key={`sparkle-${i}`}
-                className="absolute w-1 h-1 bg-yellow-300 rounded-full"
-                style={{
-                  left: `${Math.random() * 8 - 4}px`,
-                  top: `${Math.random() * 100}%`
-                }}
-                initial={{ opacity: 0 }}
-                animate={inView ? { 
-                  opacity: [0, 1, 0],
-                  scale: [0, 1, 0]
-                } : { opacity: 0 }}
-                transition={{ 
-                  duration: 1.5,
-                  delay: 1 + Math.random() * 2,
-                  repeat: Infinity,
-                  repeatDelay: Math.random() * 4 + 2
-                }}
-              />
-            ))}
-          </div>
-
-          {/* Rocket at the end */}
+          {/* Timeline line */}
           <motion.div
-            className="absolute left-8 bottom-0 transform -translate-x-1/2 translate-y-8"
-            initial={{ opacity: 0, y: 20, rotate: 0 }}
-            animate={inView ? { 
-              opacity: 1, 
-              y: 0, 
-              rotate: [0, -5, 5, 0]
-            } : { opacity: 0, y: 20 }}
-            transition={{ 
-              duration: 1,
-              delay: 2.5,
-              rotate: {
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }
-            }}
-          >
-            <div className="relative">
-              <Rocket 
-                className="w-16 h-16 text-primary transform rotate-180 fill-current" 
-                style={{
-                  filter: "drop-shadow(0 0 15px rgba(14, 165, 233, 0.8))"
-                }}
-              />
-              {/* Rocket exhaust */}
-              <motion.div
-                className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-full w-6 h-10 bg-gradient-to-t from-orange-500 to-yellow-400 rounded-full blur-sm"
-                animate={{
-                  scaleY: [0.8, 1.2, 0.8],
-                  opacity: [0.7, 1, 0.7]
-                }}
-                transition={{
-                  duration: 0.5,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-              />
-            </div>
-          </motion.div>
+            className="absolute left-8 top-0 w-1 bg-gradient-to-b from-primary to-secondary rounded-full"
+            initial={{ height: 0 }}
+            animate={inView ? { height: "100%" } : { height: 0 }}
+            transition={{ duration: 2, delay: 0.5 }}
+          />
 
           <div className="space-y-12">
             {timelineItems.map((item, index) => (

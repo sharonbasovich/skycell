@@ -100,8 +100,11 @@ const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: b
   // Counter animation for flip
   useEffect(() => {
     if (!isFlipped) {
-      setFlipCount(0);
-      return;
+      // Delay the reset to match the flip animation duration
+      const resetTimer = setTimeout(() => {
+        setFlipCount(0);
+      }, 700); // Match the flip animation duration
+      return () => clearTimeout(resetTimer);
     }
 
     let start = 0;
@@ -154,7 +157,7 @@ const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: b
           style={{
             backfaceVisibility: "hidden",
             transform: "rotateY(0deg)",
-            boxShadow: "0 0 20px rgba(14, 165, 233, 0.15), 0 4px 6px -1px rgba(0, 0, 0, 0.1)"
+            boxShadow: "0 0 20px rgba(14, 165, 233, 0.15), 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 0 30px rgba(14, 165, 233, 0.2)"
           }}
         >
           <motion.div
@@ -182,7 +185,7 @@ const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: b
           style={{
             backfaceVisibility: "hidden",
             transform: "rotateY(180deg)",
-            boxShadow: "0 0 30px rgba(14, 165, 233, 0.3), 0 4px 6px -1px rgba(0, 0, 0, 0.1)"
+            boxShadow: "0 0 30px rgba(14, 165, 233, 0.3), 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 0 40px rgba(14, 165, 233, 0.4)"
           }}
         >
           <motion.div

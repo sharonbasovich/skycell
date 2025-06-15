@@ -9,7 +9,6 @@ import InteractiveStats from '../components/InteractiveStats';
 import ProjectTimeline from '../components/ProjectTimeline';
 import { Button } from '@/components/ui/button';
 import { BarChart, LineChart } from 'lucide-react';
-
 const FeatureCard = ({
   icon,
   title,
@@ -20,7 +19,6 @@ const FeatureCard = ({
     triggerOnce: true,
     threshold: 0.1
   });
-
   return <motion.div ref={ref} className="relative bg-card/50 backdrop-blur-md rounded-xl p-6 shadow-lg border border-border/50 overflow-hidden group perspective-1000" style={{
     background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
     backdropFilter: 'blur(10px)',
@@ -101,7 +99,6 @@ const FeatureCard = ({
       <p className="relative z-10 text-muted-foreground my-[11px] px-[18px]">{description}</p>
     </motion.div>;
 };
-
 const Index = () => {
   const {
     scrollYProgress
@@ -118,27 +115,25 @@ const Index = () => {
   const floatingY1 = useTransform(scrollYProgress, [0, 1], [0, -200]);
   const floatingY2 = useTransform(scrollYProgress, [0, 1], [0, -100]);
   const floatingY3 = useTransform(scrollYProgress, [0, 1], [0, -300]);
-
   const location = useLocation();
-
   const handleNavClick = (path: string, e: React.MouseEvent) => {
     if (location.pathname === path) {
       e.preventDefault();
       scrollToTop();
     }
   };
-
   const handleLogoClick = (e: React.MouseEvent) => {
     if (location.pathname === '/') {
       e.preventDefault();
       scrollToTop();
     }
   };
-
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
   };
-
   return <>
       {/* Add custom CSS for animations */}
       <style>
@@ -232,7 +227,7 @@ const Index = () => {
         duration: 0.8,
         delay: 0.2
       }} className="max-w-3xl mx-auto">
-          <motion.h1 className="text-4xl md:text-6xl font-bold mb-6 gradient-text" initial={{
+          <motion.h1 initial={{
           opacity: 0,
           y: 20
         }} animate={heroInView ? {
@@ -244,9 +239,7 @@ const Index = () => {
         }} transition={{
           duration: 0.8,
           delay: 0.3
-        }}>
-            SkyCell: Mesh Network Communication
-          </motion.h1>
+        }} className="text-4xl font-bold mb-6 gradient-text md:text-9xl">SkyCell</motion.h1>
           <motion.p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto" initial={{
           opacity: 0,
           y: 20
@@ -259,9 +252,7 @@ const Index = () => {
         }} transition={{
           duration: 0.8,
           delay: 0.4
-        }}>
-            A high-altitude balloon project creating a mesh network for enhanced aerial communications.
-          </motion.p>
+        }}>A high-altitude balloon project creating an afforadble mesh network for disaster relief.</motion.p>
           
           <motion.div className="flex flex-wrap justify-center gap-4" initial={{
           opacity: 0,
@@ -518,16 +509,16 @@ const Index = () => {
             </div>
             
             <div className="flex gap-6">
-              <Link to="/" className="text-muted-foreground hover:text-primary transition-colors" onClick={(e) => handleNavClick('/', e)}>
+              <Link to="/" className="text-muted-foreground hover:text-primary transition-colors" onClick={e => handleNavClick('/', e)}>
                 Home
               </Link>
-              <Link to="/cad" className="text-muted-foreground hover:text-primary transition-colors" onClick={(e) => handleNavClick('/cad', e)}>
+              <Link to="/cad" className="text-muted-foreground hover:text-primary transition-colors" onClick={e => handleNavClick('/cad', e)}>
                 CAD Models
               </Link>
-              <Link to="/development" className="text-muted-foreground hover:text-primary transition-colors" onClick={(e) => handleNavClick('/development', e)}>
+              <Link to="/development" className="text-muted-foreground hover:text-primary transition-colors" onClick={e => handleNavClick('/development', e)}>
                 Development
               </Link>
-              <Link to="/dashboard" className="text-muted-foreground hover:text-primary transition-colors" onClick={(e) => handleNavClick('/dashboard', e)}>
+              <Link to="/dashboard" className="text-muted-foreground hover:text-primary transition-colors" onClick={e => handleNavClick('/dashboard', e)}>
                 Dashboard
               </Link>
             </div>

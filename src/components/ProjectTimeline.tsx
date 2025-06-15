@@ -1,4 +1,3 @@
-
 import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
@@ -26,25 +25,25 @@ const ProjectTimeline = () => {
     },
     {
       phase: "Phase 2", 
-      title: "Prototype Development",
+      title: "Planning",
       date: "Q2 2024",
-      description: "Development of first working prototype with basic communication capabilities.",
+      description: "Planning hardware through CAD and starting the software",
       icon: "🛠️",
       status: "completed"
     },
     {
       phase: "Phase 3",
-      title: "Field Testing",
+      title: "Prototype Development",
       date: "Q3 2024",
-      description: "Comprehensive field tests and data collection from multiple launches.",
+      description: "Development of first working prototype with basic communication capabilities.",
       icon: "🚀",
       status: "in-progress"
     },
     {
       phase: "Phase 4",
-      title: "Production Ready",
+      title: "Launch!",
       date: "Q4 2024",
-      description: "Final optimization and preparation for mass production deployment.",
+      description: "Testing our payload on a HAB with Apex!",
       icon: "🎯",
       status: "planned"
     }

@@ -124,10 +124,11 @@ const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: b
       >
         {/* Front Face - Just the icon */}
         <div
-          className="absolute inset-0 bg-card/70 backdrop-blur-md rounded-xl p-6 shadow-lg border border-border/50 backface-hidden flex flex-col justify-center items-center"
+          className="absolute inset-0 bg-card/70 backdrop-blur-md rounded-xl p-6 shadow-lg border border-border/50 backface-hidden flex flex-col justify-center items-center hover:shadow-2xl hover:shadow-primary/20 transition-all duration-300"
           style={{
             backfaceVisibility: "hidden",
-            transform: "rotateY(0deg)"
+            transform: "rotateY(0deg)",
+            boxShadow: "0 0 20px rgba(14, 165, 233, 0.15), 0 4px 6px -1px rgba(0, 0, 0, 0.1)"
           }}
         >
           <motion.div
@@ -141,6 +142,9 @@ const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: b
               repeat: Infinity,
               repeatType: "reverse"
             }}
+            style={{
+              filter: "drop-shadow(0 0 8px rgba(14, 165, 233, 0.5))"
+            }}
           >
             {stat.icon}
           </motion.div>
@@ -148,10 +152,11 @@ const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: b
 
         {/* Back Face - Achievement Info */}
         <div
-          className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20 backdrop-blur-md rounded-xl p-6 shadow-lg border border-primary/30 backface-hidden flex flex-col justify-center items-center"
+          className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20 backdrop-blur-md rounded-xl p-6 shadow-lg border border-primary/30 backface-hidden flex flex-col justify-center items-center hover:shadow-2xl hover:shadow-primary/30 transition-all duration-300"
           style={{
             backfaceVisibility: "hidden",
-            transform: "rotateY(180deg)"
+            transform: "rotateY(180deg)",
+            boxShadow: "0 0 30px rgba(14, 165, 233, 0.3), 0 4px 6px -1px rgba(0, 0, 0, 0.1)"
           }}
         >
           <motion.div
@@ -164,11 +169,17 @@ const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: b
               rotate: 0
             }}
             transition={{ duration: 0.5, type: "spring" }}
+            style={{
+              filter: "drop-shadow(0 0 10px rgba(14, 165, 233, 0.7))"
+            }}
           >
             {stat.icon}
           </motion.div>
           
-          <h3 className="text-2xl md:text-3xl font-bold text-primary mb-2">
+          <h3 className="text-2xl md:text-3xl font-bold text-primary mb-2"
+              style={{
+                textShadow: "0 0 10px rgba(14, 165, 233, 0.5)"
+              }}>
             {count.toLocaleString()}{stat.suffix}
           </h3>
           
@@ -180,7 +191,10 @@ const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: b
             {stat.description}
           </p>
           
-          <div className="mt-3 w-full h-1 bg-gradient-to-r from-primary to-secondary rounded-full opacity-60"></div>
+          <div className="mt-3 w-full h-1 bg-gradient-to-r from-primary to-secondary rounded-full opacity-60"
+               style={{
+                 boxShadow: "0 0 8px rgba(14, 165, 233, 0.6)"
+               }}></div>
         </div>
       </div>
     </motion.div>

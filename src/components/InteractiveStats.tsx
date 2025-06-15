@@ -99,13 +99,7 @@ const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: b
 
   // Counter animation for flip
   useEffect(() => {
-    if (!isFlipped) {
-      // Delay the reset to match the flip animation duration
-      const resetTimer = setTimeout(() => {
-        setFlipCount(0);
-      }, 700); // Match the flip animation duration
-      return () => clearTimeout(resetTimer);
-    }
+    if (!isFlipped) return;
 
     let start = 0;
     const end = stat.value;
@@ -141,8 +135,7 @@ const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: b
       } : { opacity: 0, y: 50, rotateX: -15 }}
       className="text-center group cursor-pointer"
       style={{ perspective: "1000px" }}
-      onMouseEnter={() => setIsFlipped(true)}
-      onMouseLeave={() => setIsFlipped(false)}
+      onMouseEnter={() => !isFlipped && setIsFlipped(true)}
     >
       <div
         className="relative w-full h-48 transition-transform duration-700 preserve-3d"

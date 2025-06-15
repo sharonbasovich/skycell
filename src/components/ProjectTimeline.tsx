@@ -1,4 +1,5 @@
 
+
 import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
@@ -120,7 +121,7 @@ const ProjectTimeline = () => {
             >
               <Rocket 
                 size={24} 
-                className="rotate-45" 
+                className="rotate-[135deg]" 
                 fill="currentColor"
               />
             </motion.div>
@@ -226,3 +227,4 @@ const TimelineItem = ({ item, index, inView }: { item: any, index: number, inVie
 };
 
 export default ProjectTimeline;
+

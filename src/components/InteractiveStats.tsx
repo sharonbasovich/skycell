@@ -69,7 +69,6 @@ const InteractiveStats = () => {
 
 const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: boolean }) => {
   const [count, setCount] = useState(0);
-  const [isFlipped, setIsFlipped] = useState(false);
 
   useEffect(() => {
     if (!inView) return;
@@ -110,77 +109,37 @@ const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: b
           stiffness: 100
         }
       } : { opacity: 0, y: 50, rotateX: -15 }}
-      className="text-center group cursor-pointer"
-      style={{ perspective: "1000px" }}
-      onMouseEnter={() => setIsFlipped(true)}
-      onMouseLeave={() => setIsFlipped(false)}
+      className="text-center"
     >
-      <div
-        className="relative w-full h-48 transition-transform duration-700 preserve-3d"
-        style={{
-          transformStyle: "preserve-3d",
-          transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)"
-        }}
-      >
-        {/* Front Face - SkyCell Logo */}
-        <div
-          className="absolute inset-0 bg-card/70 backdrop-blur-md rounded-xl p-6 shadow-lg border border-border/50 backface-hidden flex flex-col justify-center items-center"
-          style={{
-            backfaceVisibility: "hidden",
-            transform: "rotateY(0deg)"
+      <div className="bg-card/70 backdrop-blur-md rounded-xl p-6 shadow-lg border border-border/50 h-48 flex flex-col justify-center items-center">
+        <motion.div
+          className={`text-3xl mb-3 ${stat.color}`}
+          animate={{ 
+            scale: [1, 1.1, 1],
+            rotate: [0, 5, -5, 0]
+          }}
+          transition={{ 
+            duration: 2,
+            repeat: Infinity,
+            repeatType: "reverse"
           }}
         >
-          <img 
-            src="/lovable-uploads/b89dce68-0265-49c8-ac6b-8f70061ff276.png" 
-            alt="SkyCell Logo"
-            className="w-16 h-16 object-contain mb-4 opacity-80"
-          />
-          
-          <h3 className="text-lg font-bold gradient-text">
-            SkyCell
-          </h3>
-          
-          <p className="text-sm text-muted-foreground mt-2">
-            Hover to reveal
-          </p>
-        </div>
-
-        {/* Back Face - Achievement Info */}
-        <div
-          className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20 backdrop-blur-md rounded-xl p-6 shadow-lg border border-primary/30 backface-hidden flex flex-col justify-center items-center"
-          style={{
-            backfaceVisibility: "hidden",
-            transform: "rotateY(180deg)"
-          }}
-        >
-          <motion.div
-            className={`text-3xl mb-3 ${stat.color}`}
-            animate={isFlipped ? { 
-              scale: 1.1,
-              rotate: 360
-            } : { 
-              scale: 1,
-              rotate: 0
-            }}
-            transition={{ duration: 0.5, type: "spring" }}
-          >
-            {stat.icon}
-          </motion.div>
-          
-          <h3 className="text-2xl md:text-3xl font-bold text-primary mb-2">
-            {count.toLocaleString()}{stat.suffix}
-          </h3>
-          
-          <h4 className="text-sm font-bold text-primary mb-2 text-center">
-            {stat.label}
-          </h4>
-          
-          <p className="text-xs text-muted-foreground text-center leading-relaxed">
-            {stat.description}
-          </p>
-          
-          <div className="mt-3 w-full h-1 bg-gradient-to-r from-primary to-secondary rounded-full opacity-60"></div>
-        </div>
+          {stat.icon}
+        </motion.div>
+        
+        <h3 className="text-2xl md:text-3xl font-bold text-primary mb-2">
+          {count.toLocaleString()}{stat.suffix}
+        </h3>
+        
+        <h4 className="text-sm font-bold text-primary mb-2 text-center">
+          {stat.label}
+        </h4>
+        
+        <p className="text-xs text-muted-foreground text-center leading-relaxed">
+          {stat.description}
+        </p>
+        
+        <div className="mt-3 w-full h-1 bg-gradient-to-r from-primary to-secondary rounded-full opacity-60"></div>
       </div>
     </motion.div>
   );

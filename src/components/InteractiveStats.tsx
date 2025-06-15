@@ -176,7 +176,7 @@ const StatCard = ({ stat, index, inView }: { stat: any, index: number, inView: b
             }}
           >
             <img 
-              src="https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=400&fit=crop&crop=center" 
+              src="/lovable-uploads/b87816ce-c243-460c-be26-1d87d2dabc9d.png" 
               alt="SkyCell Logo" 
               className="w-full h-full object-contain rounded-lg"
               style={{

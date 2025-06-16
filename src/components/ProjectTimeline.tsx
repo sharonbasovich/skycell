@@ -1,7 +1,6 @@
 import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
-import { Rocket } from 'lucide-react';
 
 const ProjectTimeline = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -97,34 +96,6 @@ const ProjectTimeline = () => {
             animate={inView ? { height: "100%" } : { height: 0 }}
             transition={{ duration: 2, delay: 0.5 }}
           />
-
-          {/* Rocket at bottom of timeline */}
-          <motion.div
-            className="absolute bottom-0 w-8 h-8 flex items-center justify-center transform translate-y-4"
-            style={{ left: '1.45rem' }}
-            initial={{ opacity: 0, y: -20 }}
-            animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: -20 }}
-            transition={{ duration: 0.8, delay: 2.5 }}
-          >
-            <motion.div
-              className="text-primary"
-              animate={{ 
-                y: [0, -5, 0],
-                scale: [1, 1.1, 1]
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-            >
-              <Rocket 
-                size={24} 
-                className="rotate-[135deg]" 
-                fill="currentColor"
-              />
-            </motion.div>
-          </motion.div>
 
           <div className="space-y-12">
             {timelineItems.map((item, index) => (

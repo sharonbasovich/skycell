@@ -242,7 +242,7 @@ const Index = () => {
           delay: 0.3
         }} className="mb-6">
             <img 
-              src="/lovable-uploads/9880182c-2946-4b92-a6cf-93492202e315.png" 
+              src="/lovable-uploads/3cb1360d-d08c-4526-b709-66fd7a1acb5f.png" 
               alt="SkyCell Logo"
               className="w-full max-w-2xl mx-auto h-auto object-contain"
             />

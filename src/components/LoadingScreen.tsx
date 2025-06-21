@@ -1,6 +1,5 @@
-
-import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 
 interface LoadingScreenProps {
   duration?: number;
@@ -34,39 +33,49 @@ const LoadingScreen = ({ duration = 2500 }: LoadingScreenProps) => {
         transition={{ duration: 0.5 }}
       >
         <motion.div
-          animate={{ 
+          animate={{
             y: [0, -15, 0],
-            rotateZ: [0, 5, -5, 0]
+            rotateZ: [0, 5, -5, 0],
           }}
-          transition={{ 
+          transition={{
             duration: 2,
             repeat: Infinity,
-            ease: "easeInOut" 
+            ease: "easeInOut",
           }}
           className="mb-6"
         >
-          <img 
-            src="/lovable-uploads/b697c43f-db59-439a-b839-3d1c3534fcf2.png" 
-            alt="SkyCell Logo" 
-            className="w-32 h-32 object-contain" 
+          <img
+            src="/lovable-uploads/b697c43f-db59-439a-b839-3d1c3534fcf2.png"
+            alt="SkyCell Logo"
+            className="w-32 h-32 object-contain"
           />
         </motion.div>
-        
+
         <div className="flex items-center gap-2 mt-4">
-          <motion.div 
+          <motion.div
             className="h-2 w-2 bg-primary rounded-full"
             animate={{ scale: [1, 1.5, 1] }}
             transition={{ duration: 0.8, repeat: Infinity, repeatDelay: 0.2 }}
           />
-          <motion.div 
+          <motion.div
             className="h-2 w-2 bg-primary rounded-full"
             animate={{ scale: [1, 1.5, 1] }}
-            transition={{ duration: 0.8, repeat: Infinity, repeatDelay: 0.4, delay: 0.2 }}
+            transition={{
+              duration: 0.8,
+              repeat: Infinity,
+              repeatDelay: 0.4,
+              delay: 0.2,
+            }}
           />
-          <motion.div 
+          <motion.div
             className="h-2 w-2 bg-primary rounded-full"
             animate={{ scale: [1, 1.5, 1] }}
-            transition={{ duration: 0.8, repeat: Infinity, repeatDelay: 0.4, delay: 0.4 }}
+            transition={{
+              duration: 0.8,
+              repeat: Infinity,
+              repeatDelay: 0.4,
+              delay: 0.4,
+            }}
           />
         </div>
       </motion.div>

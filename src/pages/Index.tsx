@@ -118,10 +118,10 @@ const FeatureCard = ({ icon, title, description, delay = 0 }) => {
       >
         {icon}
       </motion.div>
-      <h3 className="relative z-10 text-xl font-bold mb-2 px-[16px]">
+      <h3 className="relative z-10 text-xl font-bold mb-2 px-[16px] text-white">
         {title}
       </h3>
-      <p className="relative z-10 text-muted-foreground my-[11px] px-[18px]">
+      <p className="relative z-10 text-white/80 my-[11px] px-[18px]">
         {description}
       </p>
     </motion.div>

@@ -57,12 +57,56 @@ const BalloonModel = ({ interactive = false, modelPath = "", scale = 1 }) => {
       >
         <Canvas className={interactive ? "interactive" : ""}>
           <PerspectiveCamera makeDefault position={[0, 0, 8]} />
-          <ambientLight intensity={0.5} />
+
+          {/* Enhanced lighting setup for better visibility */}
+          <ambientLight intensity={1.2} color="#ffffff" />
+
+          {/* Main directional light */}
+          <directionalLight
+            position={[5, 5, 5]}
+            intensity={1.5}
+            color="#ffffff"
+            castShadow
+            shadow-mapSize-width={2048}
+            shadow-mapSize-height={2048}
+          />
+
+          {/* Secondary directional light for fill */}
+          <directionalLight
+            position={[-5, 3, -5]}
+            intensity={0.8}
+            color="#ffffff"
+          />
+
+          {/* Top light for better overall illumination */}
+          <directionalLight
+            position={[0, 10, 0]}
+            intensity={1.0}
+            color="#ffffff"
+          />
+
+          {/* Rim light for better definition */}
+          <directionalLight
+            position={[0, 0, 5]}
+            intensity={0.6}
+            color="#ffffff"
+          />
+
+          {/* Additional spot light for focused illumination */}
           <spotLight
             position={[10, 10, 10]}
-            angle={0.15}
+            angle={0.3}
             penumbra={1}
-            intensity={1}
+            intensity={1.2}
+            color="#ffffff"
+            castShadow
+          />
+
+          {/* Environment lighting for better reflections */}
+          <hemisphereLight
+            intensity={0.4}
+            groundColor="#000000"
+            color="#ffffff"
           />
           <Suspense
             fallback={

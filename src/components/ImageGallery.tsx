@@ -1,8 +1,10 @@
 import { useState, useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useInView } from "react-intersection-observer";
+import { Button } from "@/components/ui/button";
 
 const ImageGallery = () => {
+  const [currentSet, setCurrentSet] = useState(2); // Changed to 2 to show Launch Day first
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -14,8 +16,8 @@ const ImageGallery = () => {
     threshold: 0.1,
   });
 
-  // Local gallery images from the public/gallery folder
-  const images = [
+  // First set of images (original 9) - Prototyping
+  const prototypingSet = [
     "/gallery/PXL_20250611_170737813.MP.jpg",
     "/gallery/PXL_20250611_170734721.MP.jpg",
     "/gallery/PXL_20250611_165029317.MP.jpg",
@@ -27,6 +29,20 @@ const ImageGallery = () => {
     "/gallery/PXL_20250619_171928093.MP.jpg",
   ];
 
+  // Second set of images (new 9) - Launch Day
+  const launchDaySet = [
+    "/gallery/PXL_20250621_172905846.MP.jpg",
+    "/gallery/PXL_20250621_125406998.jpg",
+    "/gallery/1000004201.jpg",
+    "/gallery/1000004204.jpg",
+    "/gallery/1000004202.jpg",
+    "/gallery/1000004219.jpg",
+    "/gallery/1000004218.jpg",
+    "/gallery/1000004203.jpg",
+    "/gallery/1000004195.jpg",
+  ];
+
+  const images = currentSet === 1 ? prototypingSet : launchDaySet;
   const y = useTransform(scrollYProgress, [0, 1], [0, -100]);
 
   return (
@@ -46,13 +62,37 @@ const ImageGallery = () => {
           <h2 className="text-3xl font-bold gradient-text mb-4">
             Project Gallery
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
             Explore stunning aerial photography and development milestones from
             our SkyCell project
           </p>
+
+          {/* Toggle Buttons */}
+          <div className="flex justify-center gap-4">
+            <Button
+              variant={currentSet === 2 ? "default" : "outline"}
+              onClick={() => setCurrentSet(2)}
+              className="transition-all duration-300"
+            >
+              Launch Day
+            </Button>
+            <Button
+              variant={currentSet === 1 ? "default" : "outline"}
+              onClick={() => setCurrentSet(1)}
+              className="transition-all duration-300"
+            >
+              Prototyping
+            </Button>
+          </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <motion.div
+          key={currentSet}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
           {images.map((image, index) => {
             const [imageRef, imageInView] = useInView({
               triggerOnce: false,
@@ -62,7 +102,7 @@ const ImageGallery = () => {
 
             return (
               <motion.div
-                key={index}
+                key={`${currentSet}-${index}`}
                 ref={imageRef}
                 initial={{ opacity: 0, scale: 0.8, rotateY: 45 }}
                 animate={
@@ -101,7 +141,9 @@ const ImageGallery = () => {
                 <div className="relative overflow-hidden rounded-xl bg-card shadow-lg border border-border/50 transform-gpu">
                   <motion.img
                     src={image}
-                    alt={`Gallery image ${index + 1}`}
+                    alt={`Gallery image ${index + 1} - ${
+                      currentSet === 1 ? "Prototyping" : "Launch Day"
+                    }`}
                     className="w-full h-64 object-cover"
                     whileHover={{
                       scale: 1.1,
@@ -193,7 +235,7 @@ const ImageGallery = () => {
               </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       </div>
     </motion.section>
   );

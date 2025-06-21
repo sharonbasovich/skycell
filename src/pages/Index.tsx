@@ -376,7 +376,7 @@ const Index = () => {
                 once: true,
               }}
             >
-              <BalloonModel scale={6} />
+              <BalloonModel orbitAngleOffset={Math.PI/2} scale={6} />
             </motion.div>
 
             <motion.div

@@ -8,6 +8,7 @@ import {
   Html,
 } from "@react-three/drei";
 import { useInView } from "react-intersection-observer";
+import { useScroll, useTransform } from "framer-motion";
 import * as THREE from "three";
 import PixelReveal from "./PixelReveal";
 
@@ -39,24 +40,105 @@ const GLBModel = ({ modelPath, interactive = false, scale = 1 }) => {
   );
 };
 
-// Placeholder balloon component removed - now using b1.glb model
+// Smart Camera Component that calculates position based on viewport center
+const SmartCamera = ({
+  scrollYProgress,
+  containerRef,
+  orbitAngleOffset = 0,
+}: {
+  scrollYProgress: any;
+  containerRef: React.RefObject<HTMLDivElement>;
+  orbitAngleOffset?: number;
+}) => {
+  const cameraRef = useRef<THREE.PerspectiveCamera>(null!);
 
-const BalloonModel = ({ interactive = false, modelPath = "", scale = 1 }) => {
+  // Calculate distance from viewport center (0 = center, 1 = edge)
+  const distanceFromCenter = useTransform(scrollYProgress, [0, 1], [1, 0]);
+
+  // Calculate camera distance - closer when centered, further when at edges
+  const cameraDistance = useTransform(
+    distanceFromCenter,
+    [0, 1],
+    [4, 20] // 4 units when centered (full size), 20 units when at edge
+  );
+
+  // Calculate orbit angle based on distance from center
+  const orbitAngle = useTransform(
+    distanceFromCenter,
+    [0, 1],
+    [Math.PI + orbitAngleOffset, Math.PI * 2 + orbitAngleOffset] // 180° + offset when centered (facing forward), 360° + offset when at edge
+  );
+
+  // Calculate camera height - slight variation for depth
+  const cameraHeight = useTransform(
+    distanceFromCenter,
+    [0, 1],
+    [0, 2] // Level when centered, slightly elevated when at edge
+  );
+
+  useFrame(() => {
+    if (cameraRef.current && containerRef.current) {
+      const distance = cameraDistance.get();
+      const angle = orbitAngle.get();
+      const height = cameraHeight.get();
+
+      // Calculate camera position in a circular orbit
+      cameraRef.current.position.x = Math.sin(angle) * distance;
+      cameraRef.current.position.z = Math.cos(angle) * distance;
+      cameraRef.current.position.y = height;
+
+      // Always look at the center
+      cameraRef.current.lookAt(0, 0, 0);
+    }
+  });
+
+  return (
+    <PerspectiveCamera
+      ref={cameraRef}
+      makeDefault
+      position={[0, 0, 4]} // Start at optimal viewing distance
+      fov={60}
+    />
+  );
+};
+
+const BalloonModel = ({
+  interactive = false,
+  modelPath = "",
+  scale = 1,
+  orbitAngleOffset = 0,
+}: {
+  interactive?: boolean;
+  modelPath?: string;
+  scale?: number;
+  orbitAngleOffset?: number;
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const [ref, inView] = useInView({
     triggerOnce: true,
     threshold: 0.3,
     rootMargin: "-50px 0px",
   });
 
+  // Scroll progress for this specific component
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "end start"],
+  });
+
   return (
-    <div ref={ref} className="h-full w-full group cursor-pointer">
+    <div ref={containerRef} className="h-full w-full group cursor-pointer">
       <PixelReveal
         className="h-full w-full"
         gridSize={20}
         delay={inView ? 800 : 0}
       >
         <Canvas className={interactive ? "interactive" : ""}>
-          <PerspectiveCamera makeDefault position={[0, 0, 8]} />
+          <SmartCamera
+            scrollYProgress={scrollYProgress}
+            containerRef={containerRef}
+            orbitAngleOffset={orbitAngleOffset}
+          />
 
           {/* Enhanced lighting setup for better visibility */}
           <ambientLight intensity={1.2} color="#ffffff" />
@@ -131,10 +213,12 @@ const BalloonModel = ({ interactive = false, modelPath = "", scale = 1 }) => {
               />
             </Float>
           </Suspense>
+
+          {/* Disable all orbit controls - no user interaction */}
           <OrbitControls
-            enablePan={true}
-            enableZoom={true}
-            enableRotate={true}
+            enablePan={false}
+            enableZoom={false}
+            enableRotate={false}
           />
         </Canvas>
       </PixelReveal>

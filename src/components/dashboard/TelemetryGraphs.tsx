@@ -92,8 +92,12 @@ const TelemetryGraphs: React.FC<TelemetryGraphsProps> = ({ telemetryData }) => {
               data={combinedData}
               margin={{ top: 20, right: 30, left: 60, bottom: 40 }}
             >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="index" />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                horizontal={true}
+                vertical={false}
+              />
+              <XAxis dataKey="index" hide={true} />
               <YAxis domain={[0, 15000]} />
               <Tooltip
                 contentStyle={{
@@ -101,10 +105,16 @@ const TelemetryGraphs: React.FC<TelemetryGraphsProps> = ({ telemetryData }) => {
                   borderColor: "rgba(100, 116, 139, 0.5)",
                   borderRadius: "0.375rem",
                 }}
-                labelFormatter={(value) => `Time Index: ${value}`}
+                labelFormatter={(value, payload) => {
+                  if (payload && payload.length > 0) {
+                    const dataPoint = payload[0].payload;
+                    return dataPoint.time || `Time Index: ${value}`;
+                  }
+                  return `Time Index: ${value}`;
+                }}
                 formatter={(value, name) => [
                   value,
-                  name === "altitude" ? "Actual Altitude" : "Packet Altitude",
+                  name === "altitude" ? "Actual Altitude" : "Altitude",
                 ]}
               />
 
@@ -138,7 +148,7 @@ const TelemetryGraphs: React.FC<TelemetryGraphsProps> = ({ telemetryData }) => {
 
           {/* Time Index label positioned at bottom center */}
           <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-sm text-muted-foreground">
-            Time Index
+            Time
           </div>
         </div>
       </CardContent>

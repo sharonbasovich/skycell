@@ -102,9 +102,7 @@ const Dashboard = () => {
 
           <div className="flex items-center gap-4 mt-4 md:mt-0">
             <StatusIndicator status="launched" />
-            <span className="text-sm text-muted-foreground">
-              06/21/2025
-            </span>
+            <span className="text-sm text-muted-foreground">06/21/2025</span>
           </div>
         </div>
 
@@ -137,7 +135,7 @@ const Dashboard = () => {
             <TelemetryGraphs telemetryData={telemetryData} />
 
             {/* Camera feed */}
-            <LiveCamera />
+            {/* <LiveCamera /> */}
           </div>
 
           {/* Sidebar column */}
@@ -175,7 +173,7 @@ const Dashboard = () => {
             </Card>
 
             {/* System status */}
-            <SystemStatus systemStatus={systemStatus} />
+            {/* <SystemStatus systemStatus={systemStatus} /> */}
           </div>
         </div>
       </div>

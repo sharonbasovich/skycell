@@ -1,7 +1,7 @@
 
 import React from 'react';
 
-type StatusType = 'online' | 'warning' | 'offline' | 'standby';
+type StatusType = 'launched' | 'warning' | 'offline' | 'standby';
 
 interface StatusIndicatorProps {
   status: StatusType;
@@ -9,7 +9,7 @@ interface StatusIndicatorProps {
 
 const StatusIndicator: React.FC<StatusIndicatorProps> = ({ status }) => {
   const colors = {
-    online: "bg-green-500",
+    launched: "bg-green-500",
     warning: "bg-amber-500",
     offline: "bg-red-500",
     standby: "bg-blue-500"
@@ -18,7 +18,7 @@ const StatusIndicator: React.FC<StatusIndicatorProps> = ({ status }) => {
   return (
     <div className="flex items-center gap-2">
       <div className={`h-3 w-3 rounded-full ${colors[status]} animate-pulse`}></div>
-      <span className="text-sm font-medium capitalize">{status}</span>
+      <span className="text-sm font-medium capitalize">Launched!</span>
     </div>
   );
 };

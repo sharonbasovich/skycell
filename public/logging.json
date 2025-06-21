@@ -1,7 +1,7 @@
 [
   {
     "cpu_temp": 13,
-    "battery_voltage": 4.071,
+    "battery_voltage": 4.771,
     "latitude": 14496.69134,
     "longitude": 1508.65693,
     "altitude": 26100,
@@ -11,37 +11,7 @@
   },
   {
     "cpu_temp": 13,
-    "battery_voltage": 37.866,
-    "latitude": 14496.69134,
-    "longitude": 1427.41277,
-    "altitude": 26100,
-    "uptime": 15648,
-    "rssi": 77,
-    "snr": 77
-  },
-  {
-    "cpu_temp": 13,
-    "battery_voltage": 6.382,
-    "latitude": 14496.69134,
-    "longitude": 1430.70749,
-    "altitude": 43320,
-    "uptime": 15648,
-    "rssi": 77,
-    "snr": 77
-  },
-  {
-    "cpu_temp": 13,
-    "battery_voltage": 40.433,
-    "latitude": 14496.69134,
-    "longitude": 1434.00221,
-    "altitude": 34952,
-    "uptime": 15392,
-    "rssi": 77,
-    "snr": 77
-  },
-  {
-    "cpu_temp": 13,
-    "battery_voltage": 8.949,
+    "battery_voltage": 4.949,
     "latitude": 14496.69134,
     "longitude": 1437.29693,
     "altitude": 34952,
@@ -51,50 +21,10 @@
   },
   {
     "cpu_temp": 13,
-    "battery_voltage": 4.071,
-    "latitude": 14496.69134,
-    "longitude": 1508.65693,
-    "altitude": 26100,
-    "uptime": 15648,
-    "rssi": 77,
-    "snr": 77
-  },
-  {
-    "cpu_temp": 13,
-    "battery_voltage": 37.866,
-    "latitude": 14496.69134,
-    "longitude": 1427.41277,
-    "altitude": 26100,
-    "uptime": 15648,
-    "rssi": 77,
-    "snr": 77
-  },
-  {
-    "cpu_temp": 13,
-    "battery_voltage": 6.382,
+    "battery_voltage": 4.882,
     "latitude": 14496.69134,
     "longitude": 1430.70749,
     "altitude": 43320,
-    "uptime": 15648,
-    "rssi": 77,
-    "snr": 77
-  },
-  {
-    "cpu_temp": 13,
-    "battery_voltage": 40.433,
-    "latitude": 14496.69134,
-    "longitude": 1434.00221,
-    "altitude": 34952,
-    "uptime": 15392,
-    "rssi": 77,
-    "snr": 77
-  },
-  {
-    "cpu_temp": 13,
-    "battery_voltage": 8.949,
-    "latitude": 14496.69134,
-    "longitude": 1437.29693,
-    "altitude": 34952,
     "uptime": 15648,
     "rssi": 77,
     "snr": 77

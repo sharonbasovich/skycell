@@ -4,6 +4,26 @@ import { motion } from "framer-motion";
 import { Switch } from "@/components/ui/switch";
 import { Moon, Sun, Github, FileText } from "lucide-react";
 
+// Custom Balloon Icon Component
+const BalloonIcon = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    {/* Balloon shape */}
+    <ellipse cx="12" cy="8" rx="6" ry="8" />
+    {/* Balloon string */}
+    <line x1="12" y1="16" x2="12" y2="22" />
+    {/* Balloon knot */}
+    <circle cx="12" cy="22" r="1" />
+  </svg>
+);
+
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -171,12 +191,27 @@ const Header = () => {
             <FileText className="h-5 w-5" />
           </motion.a>
 
+          {/* SondeHub Tracker Link */}
+          <motion.a
+            href="https://amateur.sondehub.org/APEX-2-R"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            <BalloonIcon className="h-5 w-5" />
+          </motion.a>
+
           {/* Dark Mode Toggle */}
           <motion.div
             className="flex items-center gap-2"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.25 }}
           >
             <Sun
               className={`h-4 w-4 transition-colors ${

@@ -376,7 +376,7 @@ const Index = () => {
                 once: true,
               }}
             >
-              <BalloonModel />
+              <BalloonModel scale={6} />
             </motion.div>
 
             <motion.div
@@ -404,10 +404,10 @@ const Index = () => {
                 communication system.
               </p>
               <p className="text-lg mb-6 text-muted-foreground">
-                Skycell aims to provide an affordable communications 
-                system that can be quickly established in 
-                disaster relief situations to provide a temporary 
-                communications system using off-the-shelf components.
+                Skycell aims to provide an affordable communications system that
+                can be quickly established in disaster relief situations to
+                provide a temporary communications system using off-the-shelf
+                components.
               </p>
               <ul className="space-y-3">
                 <li className="flex items-center">
@@ -672,14 +672,6 @@ const Index = () => {
               once: true,
             }}
           >
-            <Link to="/cad">
-              <Button
-                size="lg"
-                className="bg-primary hover:bg-primary/80 text-white"
-              >
-                View 3D Models
-              </Button>
-            </Link>
             <Link to="/development">
               <Button
                 variant="outline"
@@ -728,13 +720,6 @@ const Index = () => {
                 onClick={(e) => handleNavClick("/", e)}
               >
                 Home
-              </Link>
-              <Link
-                to="/cad"
-                className="text-muted-foreground hover:text-primary transition-colors"
-                onClick={(e) => handleNavClick("/cad", e)}
-              >
-                CAD Models
               </Link>
               <Link
                 to="/development"

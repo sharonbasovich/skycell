@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,7 +8,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import Header from "./components/Header";
 import LoadingScreen from "./components/LoadingScreen";
 import Index from "./pages/Index";
-import CadViewer from "./pages/CadViewer";
 import Development from "./pages/Development";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
@@ -28,7 +26,6 @@ const App = () => (
           <AnimatePresence mode="wait">
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/cad" element={<CadViewer />} />
               <Route path="/development" element={<Development />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="*" element={<NotFound />} />

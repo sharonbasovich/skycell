@@ -70,7 +70,6 @@ const Header = () => {
 
   const navItems = [
     { name: 'Home', path: '/' },
-    { name: 'CAD Viewer', path: '/cad' },
     { name: 'Development', path: '/development' },
     { name: 'Dashboard', path: '/dashboard' },
   ];

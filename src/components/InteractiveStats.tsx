@@ -10,37 +10,38 @@ const InteractiveStats = () => {
   });
 
   const stats = [
-    { 
-      value: 30000, 
-      suffix: 'm', 
-      label: 'Maximum Altitude',
-      icon: '↗️',
-      color: 'text-blue-500',
-      description: 'Reached new heights in stratospheric communication testing'
+    {
+      value: 29831,
+      suffix: " ft",
+      label: "Maximum Altitude",
+      icon: "🏔️",
+      color: "text-blue-500",
+      description: "Reached new heights in stratospheric communication testing",
     },
-    { 
-      value: 50, 
-      suffix: 'km', 
-      label: 'Communication Range',
-      icon: '📡',
-      color: 'text-green-500',
-      description: 'Established reliable mesh network connections across vast distances'
+    {
+      value: 70,
+      suffix: "+ km",
+      label: "Communication Range",
+      icon: "📡",
+      color: "text-green-500",
+      description: "Established two-way communication using a mesh network",
     },
-    { 
-      value: 12, 
-      suffix: '', 
-      label: 'Sensors Onboard',
-      icon: '🔬',
-      color: 'text-purple-500',
-      description: 'Advanced sensor array for comprehensive atmospheric monitoring'
+    {
+      value: 3,
+      suffix: "",
+      label: "Sensors Onboard",
+      icon: "🔬",
+      color: "text-purple-500",
+      description:
+        "Sensors for monitoring temperature, humidity, altitude, and more",
     },
-    { 
-      value: 6, 
-      suffix: 'h', 
-      label: 'Flight Duration',
-      icon: '⏱️',
-      color: 'text-orange-500',
-      description: 'Continuous operation time during extended test flights'
+    {
+      value: 4,
+      suffix: "",
+      label: "Team Members",
+      icon: "🤝",
+      color: "text-orange-500",
+      description: "Created by four students as a part of HackClub's Apex",
     },
   ];
 
@@ -53,7 +54,7 @@ const InteractiveStats = () => {
           transition={{ duration: 0.8 }}
           className="text-center mb-16"
         >
-          <h2 className="text-3xl font-bold gradient-text mb-4">Project Achievements</h2>
+          <h2 className="text-3xl font-bold gradient-text mb-4">Project Metrics</h2>
           <p className="text-lg text-muted-foreground">Real performance metrics from our SkyCell missions</p>
         </motion.div>
 

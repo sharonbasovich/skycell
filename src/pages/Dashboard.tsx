@@ -15,9 +15,11 @@ import StatusIndicator from "@/components/dashboard/StatusIndicator";
 
 // Import utilities
 import { type TelemetryData } from "@/utils/mockTelemetryUtils";
+import { parseCSVData, type TrajectoryPoint } from "@/utils/csvDataUtils";
 
 const Dashboard = () => {
   const [telemetryData, setTelemetryData] = useState<TelemetryData[]>([]);
+  const [trajectoryData, setTrajectoryData] = useState<TrajectoryPoint[]>([]);
   const [isLive, setIsLive] = useState(true);
   const [systemStatus, setSystemStatus] = useState({
     main: "online" as const,
@@ -56,10 +58,23 @@ const Dashboard = () => {
       }
     };
 
+    const fetchTrajectoryData = async () => {
+      try {
+        const data = await parseCSVData();
+        setTrajectoryData(data.points);
+      } catch (error) {
+        console.error("Failed to fetch trajectory data:", error);
+      }
+    };
+
     fetchData();
+    fetchTrajectoryData();
 
     if (isLive) {
-      const interval = setInterval(fetchData, 5000);
+      const interval = setInterval(() => {
+        fetchData();
+        fetchTrajectoryData();
+      }, 5000);
       return () => clearInterval(interval);
     }
   }, [isLive]);
@@ -77,6 +92,42 @@ const Dashboard = () => {
           latitude: 0,
           longitude: 0,
         };
+
+  const currentTrajectoryPoint =
+    trajectoryData.length > 0
+      ? trajectoryData[trajectoryData.length - 1]
+      : null;
+  const maxAltitude =
+    trajectoryData.length > 0
+      ? Math.max(...trajectoryData.map((p) => p.altitude))
+      : 0;
+  const totalDistance =
+    trajectoryData.length > 1
+      ? trajectoryData.reduce((total, point, index) => {
+          if (index === 0) return 0;
+          const prev = trajectoryData[index - 1];
+          const dLat = (point.latitude - prev.latitude) * 111000;
+          const dLon =
+            (point.longitude - prev.longitude) *
+            111000 *
+            Math.cos((prev.latitude * Math.PI) / 180);
+          return total + Math.sqrt(dLat * dLat + dLon * dLon);
+        }, 0)
+      : 0;
+
+  // Calculate flight duration
+  const actualFlightDuration =
+    trajectoryData.length > 1
+      ? Math.round(
+          (new Date(
+            trajectoryData[trajectoryData.length - 1].datetime
+          ).getTime() -
+            new Date(trajectoryData[0].datetime).getTime()) /
+            (1000 * 60)
+        )
+      : 0;
+
+  const playbackDuration = Math.round(actualFlightDuration / 100); // 100x faster
 
   return (
     <motion.div
@@ -123,7 +174,7 @@ const Dashboard = () => {
           <DataCard
             title="Average Recieved Signal Strength"
             value={lastReading.signalStrength}
-            unit="%"
+            unit="dBm"
             icon={<LucideLineChart />}
           />
         </div>
@@ -144,6 +195,10 @@ const Dashboard = () => {
             <Card className="bg-card/50 backdrop-blur-sm border-border/50">
               <CardHeader>
                 <CardTitle>3D Position</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Use the play button to animate the flight path (100x faster
+                  than real-time)
+                </p>
               </CardHeader>
               <CardContent>
                 <TrajectoryVisualization />
@@ -153,7 +208,10 @@ const Dashboard = () => {
                       Latitude
                     </div>
                     <div className="text-sm font-medium">
-                      {lastReading.latitude.toFixed(3)}°N
+                      {currentTrajectoryPoint
+                        ? currentTrajectoryPoint.latitude.toFixed(3)
+                        : lastReading.latitude.toFixed(3)}
+                      °N
                     </div>
                   </div>
                   <div className="text-center">
@@ -161,12 +219,84 @@ const Dashboard = () => {
                       Longitude
                     </div>
                     <div className="text-sm font-medium">
-                      {lastReading.longitude.toFixed(3)}°W
+                      {currentTrajectoryPoint
+                        ? currentTrajectoryPoint.longitude.toFixed(3)
+                        : lastReading.longitude.toFixed(3)}
+                      °W
                     </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-xs text-muted-foreground">Speed</div>
-                    <div className="text-sm font-medium">43 km/h</div>
+                    <div className="text-xs text-muted-foreground">
+                      Altitude
+                    </div>
+                    <div className="text-sm font-medium">
+                      {currentTrajectoryPoint
+                        ? Math.round(currentTrajectoryPoint.altitude)
+                        : lastReading.altitude}
+                      m
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Trajectory Statistics */}
+            <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+              <CardHeader>
+                <CardTitle>Trajectory Statistics</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      Max Altitude
+                    </span>
+                    <span className="text-sm font-medium">
+                      {Math.round(maxAltitude)}m
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      Total Distance
+                    </span>
+                    <span className="text-sm font-medium">
+                      {Math.round(totalDistance / 1000)}km
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      Data Points
+                    </span>
+                    <span className="text-sm font-medium">
+                      {trajectoryData.length}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      Current Speed
+                    </span>
+                    <span className="text-sm font-medium">
+                      {currentTrajectoryPoint
+                        ? Math.round(currentTrajectoryPoint.speed)
+                        : 0}{" "}
+                      km/h
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      Actual Flight Duration
+                    </span>
+                    <span className="text-sm font-medium">
+                      {actualFlightDuration} min
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      Playback Duration
+                    </span>
+                    <span className="text-sm font-medium text-blue-400">
+                      {playbackDuration} min
+                    </span>
                   </div>
                 </div>
               </CardContent>

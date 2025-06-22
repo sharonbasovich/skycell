@@ -6,7 +6,7 @@
     "longitude": 1508.65693,
     "altitude": 26100,
     "uptime": 15648,
-    "rssi": 77,
+    "rssi": -77,
     "snr": 77
   },
   {
@@ -16,7 +16,7 @@
     "longitude": 1437.29693,
     "altitude": 34952,
     "uptime": 15648,
-    "rssi": 77,
+    "rssi": -77,
     "snr": 77
   },
   {
@@ -26,7 +26,7 @@
     "longitude": 1430.70749,
     "altitude": 43320,
     "uptime": 15648,
-    "rssi": 77,
+    "rssi": -77,
     "snr": 77
   }
 ]

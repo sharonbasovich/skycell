@@ -40,8 +40,18 @@ export const parseCSVData = async (): Promise<ProcessedTrajectoryData> => {
       const values = line.split(",");
       if (values.length < headers.length) continue;
 
+      // Subtract 4 hours from UTC to get EDT
+      let utcDate = new Date(values[0]);
+      if (isNaN(utcDate.getTime())) {
+        utcDate = new Date(Date.parse(values[0]));
+      }
+      // Subtract 4 hours (4 * 60 * 60 * 1000 ms)
+      const edtDate = new Date(utcDate.getTime() - 4 * 60 * 60 * 1000);
+      // Format as ISO string without 'Z' (to avoid confusion with UTC)
+      const edtString = edtDate.toISOString().replace(/Z$/, "");
+
       const point: TrajectoryPoint = {
-        datetime: values[0],
+        datetime: edtString,
         latitude: parseFloat(values[2]) || 0,
         longitude: parseFloat(values[3]) || 0,
         altitude: parseFloat(values[4]) || 0,

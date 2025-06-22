@@ -308,7 +308,25 @@ const PlaybackControls = ({
   );
 };
 
-const TrajectoryVisualization = () => {
+/**
+ * TrajectoryVisualization component
+ * Props:
+ *   onCurrentPointChange?: (point: any | null) => void
+ *     - Called with the current trajectory point (or null) whenever the animation index changes.
+ *   initialCameraPosition?: [number, number, number]
+ *     - The initial position of the camera (x, y, z)
+ *   initialOrbitTarget?: [number, number, number]
+ *     - The initial target for the orbit controls (x, y, z)
+ */
+const TrajectoryVisualization = ({
+  onCurrentPointChange,
+  initialCameraPosition = [25, 45, 60],
+  initialOrbitTarget = [0, 0, 0],
+}: {
+  onCurrentPointChange?: (point: any | null) => void;
+  initialCameraPosition?: [number, number, number];
+  initialOrbitTarget?: [number, number, number];
+}) => {
   const [trajectoryData, setTrajectoryData] =
     useState<ProcessedTrajectoryData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -331,6 +349,16 @@ const TrajectoryVisualization = () => {
 
     loadData();
   }, []);
+
+  // Notify parent of current point change
+  useEffect(() => {
+    if (!trajectoryData || !trajectoryData.points.length) {
+      onCurrentPointChange && onCurrentPointChange(null);
+      return;
+    }
+    onCurrentPointChange &&
+      onCurrentPointChange(trajectoryData.points[currentIndex] || null);
+  }, [currentIndex, trajectoryData, onCurrentPointChange]);
 
   // Playback logic
   useEffect(() => {
@@ -407,7 +435,7 @@ const TrajectoryVisualization = () => {
   return (
     <div className="h-[300px] bg-skycell-dark rounded-lg overflow-hidden relative">
       <Canvas>
-        <PerspectiveCamera makeDefault position={[0, 50, 100]} />
+        <PerspectiveCamera makeDefault position={initialCameraPosition} />
         <ambientLight intensity={0.3} />
         <directionalLight position={[10, 10, 5]} intensity={0.5} />
 
@@ -440,6 +468,7 @@ const TrajectoryVisualization = () => {
           enableRotate={true}
           maxDistance={200}
           minDistance={20}
+          target={initialOrbitTarget}
         />
       </Canvas>
 

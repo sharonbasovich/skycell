@@ -27,6 +27,9 @@ const Dashboard = () => {
     sensors: "online" as const,
     gps: "online" as const,
   });
+  const [currentAnimatedPoint, setCurrentAnimatedPoint] = useState<any | null>(
+    null
+  );
 
   const pageVariants = {
     initial: { opacity: 0 },
@@ -201,14 +204,18 @@ const Dashboard = () => {
                 </p>
               </CardHeader>
               <CardContent>
-                <TrajectoryVisualization />
+                <TrajectoryVisualization
+                  onCurrentPointChange={setCurrentAnimatedPoint}
+                />
                 <div className="grid grid-cols-3 gap-2 mt-3">
                   <div className="text-center">
                     <div className="text-xs text-muted-foreground">
                       Latitude
                     </div>
                     <div className="text-sm font-medium">
-                      {currentTrajectoryPoint
+                      {currentAnimatedPoint
+                        ? currentAnimatedPoint.latitude.toFixed(3)
+                        : currentTrajectoryPoint
                         ? currentTrajectoryPoint.latitude.toFixed(3)
                         : lastReading.latitude.toFixed(3)}
                       °N
@@ -219,7 +226,9 @@ const Dashboard = () => {
                       Longitude
                     </div>
                     <div className="text-sm font-medium">
-                      {currentTrajectoryPoint
+                      {currentAnimatedPoint
+                        ? currentAnimatedPoint.longitude.toFixed(3)
+                        : currentTrajectoryPoint
                         ? currentTrajectoryPoint.longitude.toFixed(3)
                         : lastReading.longitude.toFixed(3)}
                       °W
@@ -230,73 +239,13 @@ const Dashboard = () => {
                       Altitude
                     </div>
                     <div className="text-sm font-medium">
-                      {currentTrajectoryPoint
+                      {currentAnimatedPoint
+                        ? Math.round(currentAnimatedPoint.altitude)
+                        : currentTrajectoryPoint
                         ? Math.round(currentTrajectoryPoint.altitude)
                         : lastReading.altitude}
                       m
                     </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Trajectory Statistics */}
-            <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-              <CardHeader>
-                <CardTitle>Trajectory Statistics</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      Max Altitude
-                    </span>
-                    <span className="text-sm font-medium">
-                      {Math.round(maxAltitude)}m
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      Total Distance
-                    </span>
-                    <span className="text-sm font-medium">
-                      {Math.round(totalDistance / 1000)}km
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      Data Points
-                    </span>
-                    <span className="text-sm font-medium">
-                      {trajectoryData.length}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      Current Speed
-                    </span>
-                    <span className="text-sm font-medium">
-                      {currentTrajectoryPoint
-                        ? Math.round(currentTrajectoryPoint.speed)
-                        : 0}{" "}
-                      km/h
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      Actual Flight Duration
-                    </span>
-                    <span className="text-sm font-medium">
-                      {actualFlightDuration} min
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      Playback Duration
-                    </span>
-                    <span className="text-sm font-medium text-blue-400">
-                      {playbackDuration} min
-                    </span>
                   </div>
                 </div>
               </CardContent>

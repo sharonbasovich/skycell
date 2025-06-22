@@ -470,28 +470,11 @@ const Development = () => {
           {/* Buttons removed */}
         </motion.div>
 
-        <Tabs defaultValue="timeline" className="w-full">
-          <TabsList className="grid w-full max-w-md mx-auto grid-cols-3 mb-8">
-            <TabsTrigger value="timeline">Timeline</TabsTrigger>
+        <Tabs defaultValue="logs" className="w-full">
+          <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8">
             <TabsTrigger value="logs">Dev Logs</TabsTrigger>
             <TabsTrigger value="achievements">Achievements</TabsTrigger>
           </TabsList>
-
-          <TabsContent value="timeline" className="mt-4">
-            <div className="space-y-16 md:space-y-24">
-              {timelineData.map((item, index) => (
-                <InteractiveTimelineItem
-                  key={index}
-                  date={item.date}
-                  title={item.title}
-                  description={item.description}
-                  imageSrc={item.imageSrc}
-                  progress={item.progress}
-                  index={index}
-                />
-              ))}
-            </div>
-          </TabsContent>
 
           <TabsContent value="logs" className="mt-4">
             <Card className="bg-card/50 backdrop-blur-sm border-border/50">

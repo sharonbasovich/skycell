@@ -353,8 +353,8 @@ const Development = () => {
     {
       title: "Maximum Altitude Record",
       description:
-        "Reached 32,418 meters during test flight, breaking our previous altitude record.",
-      value: "32,418",
+        "Reached 29,831 meters during test flight, breaking our previous altitude record.",
+      value: "29,831",
       unit: "m",
       icon: (
         <svg
@@ -375,7 +375,7 @@ const Development = () => {
     {
       title: "Communication Distance",
       description:
-        "Established reliable mesh link at 78km between ground and airborne nodes.",
+        "Established reliable mesh link at 70+km between ground and airborne nodes.",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -398,7 +398,7 @@ const Development = () => {
     {
       title: "Power Efficiency",
       description:
-        "Achieved 76 hours of continuous operation on a single battery charge.",
+        "Achieved over 10 hours of continuous operation on a single battery charge during testing.",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -424,7 +424,7 @@ const Development = () => {
     {
       title: "Data Collection",
       description:
-        "Gathered over 2.3TB of atmospheric and communications data during test flights.",
+        "Established over 2.3TB of atmospheric and communications data during test flights.",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -466,15 +466,12 @@ const Development = () => {
             Follow our progress from concept to launch as we build the SkyCell
             high-altitude mesh network platform.
           </p>
-
-          {/* Buttons removed */}
         </motion.div>
 
         <Tabs defaultValue="logs" className="w-full">
-          <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8">
-            <TabsTrigger value="logs">Dev Logs</TabsTrigger>
-            <TabsTrigger value="achievements">Achievements</TabsTrigger>
-          </TabsList>
+          {/* <TabsList className="grid w-full max-w-md mx-auto grid-cols-1 mb-8"> */}
+            {/* <TabsTrigger value="logs">Dev Logs</TabsTrigger> */}
+          {/* </TabsList> */}
 
           <TabsContent value="logs" className="mt-4">
             <Card className="bg-card/50 backdrop-blur-sm border-border/50">
@@ -499,21 +496,6 @@ const Development = () => {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="achievements" className="mt-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {achievements.map((achievement, index) => (
-                <InteractiveAchievement
-                  key={index}
-                  title={achievement.title}
-                  description={achievement.description}
-                  icon={achievement.icon}
-                  value={achievement.value}
-                  unit={achievement.unit}
-                />
-              ))}
-            </div>
           </TabsContent>
         </Tabs>
 

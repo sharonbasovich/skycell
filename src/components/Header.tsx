@@ -107,9 +107,10 @@ const Header = () => {
       animate={{ y: 0 }}
       transition={{ type: "spring", stiffness: 100, damping: 20 }}
     >
-      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+      <div className="container mx-auto px-4 py-4 flex items-center justify-between relative">
+        {/* Logo */}
         <motion.div
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 flex-shrink-0"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
@@ -127,7 +128,8 @@ const Header = () => {
           </Link>
         </motion.div>
 
-        <nav className="hidden md:flex gap-8">
+        {/* Absolutely centered nav links */}
+        <nav className="hidden md:flex gap-8 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
           {navItems.map((item) => (
             <Link
               key={item.path}
@@ -160,7 +162,8 @@ const Header = () => {
           ))}
         </nav>
 
-        <div className="flex items-center gap-4">
+        {/* Right-side icons */}
+        <div className="flex items-center gap-4 flex-shrink-0">
           {/* GitHub Link */}
           <motion.a
             href="https://github.com/knivier/SkyCell"

@@ -1,202 +1,93 @@
-# Welcome to your Lovable project
+# SkyCell
 
-## Project info
+**A high-altitude balloon project showcase and interactive flight telemetry explorer.**
 
-**URL**: https://lovable.dev/projects/e6c6297e-2c16-4bc9-9002-38bcabf71d1c
+[Live demo](https://skycell.vercel.app/) · [Flight replay](https://skycell.vercel.app/dashboard) · [Hardware and flight software](https://github.com/knivier/SkyCell)
 
-## How can I edit this code?
+[![CI](https://github.com/sharonbasovich/skycell/actions/workflows/ci.yml/badge.svg)](https://github.com/sharonbasovich/skycell/actions/workflows/ci.yml)
 
-There are several ways of editing your application.
+SkyCell was built for Hack Club's APEX high-altitude balloon event. This repository contains the React frontend: a project overview, engineering context, and a browser-based replay of recorded balloon telemetry. The [companion repository](https://github.com/knivier/SkyCell) contains the payload, radio, and ground-station work.
 
-**Use Lovable**
+![SkyCell flight replay dashboard](docs/demo.jpg)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/e6c6297e-2c16-4bc9-9002-38bcabf71d1c) and start prompting.
+## Try the demo
 
-Changes made via Lovable will be committed automatically to this repo.
+1. Open the [flight replay](https://skycell.vercel.app/dashboard).
+2. Play or pause the archive, change playback speed, or scrub the timeline.
+3. Rotate and zoom the 3D trajectory while inspecting the corresponding telemetry.
 
-**Use your preferred IDE**
+The dashboard reads a bundled archive. It does **not** connect to a running balloon or live radio feed. See [data provenance](docs/data.md) for exactly what the demo shows.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Technical highlights
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **One replay clock:** the trajectory, timeline, charts, and current readings share a timestamp-based playback state instead of advancing independently.
+- **Robust telemetry parsing:** header-based CSV parsing handles quoted fields, preserves UTC timestamps, validates coordinates, sorts observations, and removes repeated timestamps. Single-payload validation prevents unrelated tracks from being joined.
+- **3D flight exploration:** React Three Fiber and Three.js render a geographic trajectory with consistent spatial units and interactive camera controls.
+- **Useful failure states:** failed downloads and invalid archives surface as errors instead of invented telemetry or a blank dashboard.
+- **Reproducible checks:** TypeScript checking, ESLint, Vitest tests, and a production build run in GitHub Actions.
 
-Follow these steps:
+## Run locally
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Use Node.js **22.12 or later** (Node.js 24 is used in CI) and npm. No API keys, database, or environment variables are required.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+git clone https://github.com/sharonbasovich/skycell.git
+cd skycell
+npm ci
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Open [http://localhost:8080](http://localhost:8080).
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the Vite development server |
+| `npm run typecheck` | Check application and configuration types |
+| `npm run lint` | Run ESLint |
+| `npm test` | Run the telemetry and replay tests once |
+| `npm run test:watch` | Re-run tests while developing |
+| `npm run build` | Type-check and create the production bundle in `dist/` |
+| `npm run preview` | Preview the production bundle locally |
 
-**Use GitHub Codespaces**
+## Architecture
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/e6c6297e-2c16-4bc9-9002-38bcabf71d1c) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
-
-# SkyCell Frontend
-
-A modern React-based dashboard for visualizing high-altitude balloon telemetry data.
-
-## Features
-
-### 3D Trajectory Visualization
-
-The dashboard now includes a real-time 3D trajectory visualization that uses actual flight data from the `data.csv` file. The visualization includes:
-
-- **Real Flight Path**: Displays the actual trajectory based on latitude, longitude, and altitude data from the CSV
-- **Interactive 3D View**: Rotate, zoom, and pan around the trajectory using mouse controls
-- **Altitude Markers**: Visual markers showing altitude levels every 5km
-- **Current Position**: Shows the balloon's current position with a glowing white sphere
-- **Ground Plane**: A reference plane showing the flight area
-- **Trajectory Statistics**: Real-time statistics including:
-  - Maximum altitude reached
-  - Total distance traveled
-  - Number of data points
-  - Current speed
-  - Flight duration
-
-### 🎬 **Animation Playback System**
-
-The 3D visualization now includes a sophisticated animation system that recreates the actual flight:
-
-- **Play Button**: Start the animation to watch the balloon move along the trajectory
-- **Pause Button**: Pause the animation at any point
-- **Reset Button**: Return to the beginning of the flight
-- **100x Speed**: The animation runs 100 times faster than real-time for an engaging experience
-- **Accurate Timing**: Uses the actual timestamps from the CSV data with speed multiplier
-- **Smooth Interpolation**: The balloon smoothly moves between data points with realistic motion
-- **Progress Bar**: Visual indicator showing the current position in the flight timeline
-- **Time Display**: Shows the current time during playback
-- **Speed Indicator**: Displays the current playback speed (100x real-time)
-- **Automatic Pause**: Animation automatically stops when reaching the end of the flight data
-
-### Data Sources
-
-The 3D visualization uses data from:
-
-- `public/data.csv` - Contains actual flight telemetry data with columns:
-  - `datetime` - Timestamp for accurate animation timing
-  - `lat` - Latitude coordinates
-  - `lon` - Longitude coordinates
-  - `alt` - Altitude in meters
-  - `speed` - Ground speed in km/h
-  - `ascent_rate` - Rate of ascent/descent
-  - `temp` - Temperature readings
-  - `batt` - Battery voltage
-
-### Technical Implementation
-
-- Built with React Three Fiber for 3D rendering
-- Uses Three.js for 3D graphics
-- Real-time data parsing from CSV
-- Smooth animation using requestAnimationFrame
-- Accurate timing based on actual flight timestamps with 100x speed multiplier
-- Responsive design that works on desktop and mobile
-- Smooth animations and transitions
-
-## Getting Started
-
-1. Install dependencies:
-
-```bash
-npm install
+```text
+public/data.csv
+      │
+      ▼
+csvDataUtils.ts — parse, validate, sort, deduplicate
+      │
+      ▼
+Dashboard.tsx — archive loading and replay controls
+      │
+      ▼
+use-flight-replay.ts — elapsed time and current sample
+      ├── 3D trajectory
+      ├── telemetry charts
+      └── current readings
 ```
 
-2. Start the development server:
+The frontend uses **React, TypeScript, Vite, Tailwind CSS, React Three Fiber, Three.js, and Recharts**. Route loading separates the showcase from the dashboard's heavier charting and 3D code.
 
-```bash
-npm run dev
-```
-
-3. Open your browser to `http://localhost:5173`
-
-## How to Use the Animation
-
-1. **Start Animation**: Click the play button (▶️) to begin the flight replay at 100x speed
-2. **Pause/Resume**: Click the pause button (⏸️) to pause at any point
-3. **Reset**: Click the reset button (🔄) to return to the beginning
-4. **3D Navigation**: Use your mouse to:
-   - **Left click + drag**: Rotate the view around the trajectory
-   - **Scroll wheel**: Zoom in/out
-   - **Right click + drag**: Pan the view
-5. **Monitor Progress**: Watch the progress bar, time display, and speed indicator
-6. **Duration Info**: Check the statistics panel to see both actual and playback durations
-
-## Project Structure
-
-```
+```text
 src/
-├── components/
-│   ├── dashboard/
-│   │   └── TrajectoryVisualization.tsx  # 3D trajectory component with 100x animation
-│   └── ...
-├── utils/
-│   ├── csvDataUtils.ts                  # CSV parsing utilities
-│   └── ...
-└── pages/
-    └── Dashboard.tsx                    # Main dashboard page
+  pages/                      # Project overview, engineering notes, dashboard
+  components/dashboard/       # Trajectory and telemetry visualization
+  hooks/use-flight-replay.ts   # Shared timestamp-based replay state
+  utils/replayClock.ts         # Clock and playback transitions
+  utils/csvDataUtils.ts        # CSV validation and trajectory calculations
+  utils/csvDataUtils.test.ts   # Data and replay regression tests
+public/
+  data.csv                    # Bundled APEX tracker archive
+  gallery/                    # Project and launch photographs
+  b1.glb                      # Downloadable 3D model
+docs/data.md                  # Archive source, schema, and limits
 ```
 
-## Data Format
+## Deployment
 
-The CSV file should contain the following columns:
+The demo runs on Vercel. `vercel.json` configures `npm ci`, the checked production build, and direct navigation to the client-side routes. Import this repository into Vercel to create another deployment; the build output is `dist/`.
 
-- `datetime` - Timestamp of the reading (used for animation timing)
-- `lat` - Latitude in decimal degrees
-- `lon` - Longitude in decimal degrees
-- `alt` - Altitude in meters
-- `speed` - Ground speed in km/h
-- `ascent_rate` - Rate of ascent/descent in m/s
-- `temp` - Temperature in Celsius
-- `batt` - Battery voltage
+## Scope and limitations
 
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License.
+The archive is a partial flight recording. The replay interpolates position only between observations at most 60 seconds apart; longer gaps hold the last position and break the plotted path. Interpolated positions are visual estimates, and sensor readings remain the latest received values. The included APEX tracker data is separate from SkyCell's experimental 915 MHz mesh payload. This repository is a project demo and archive explorer, not a flight-control system.

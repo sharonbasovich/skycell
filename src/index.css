@@ -45,8 +45,8 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 200 98% 39%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 194 88% 70%;
+    --primary-foreground: 220 40% 10%;
 
     --secondary: 260 84% 60%;
     --secondary-foreground: 0 0% 100%;
@@ -73,7 +73,29 @@
 
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  html {
+    scroll-padding-top: 6rem;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  :where(a, button, summary, [tabindex]):focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 4px;
+  }
+  summary::-webkit-details-marker {
+    display: none;
   }
 }
 
@@ -121,7 +143,7 @@
 
 /* Gradient Text */
 .gradient-text {
-  background: linear-gradient(90deg, #0EA5E9, #8B5CF6);
+  background: linear-gradient(90deg, #0ea5e9, #8b5cf6);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

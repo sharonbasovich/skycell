@@ -8,6 +8,7 @@ import {
   Play,
   Radio,
   Route,
+  Trophy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ImageGallery from "@/components/ImageGallery";
@@ -56,9 +57,16 @@ const Index = () => (
       />
       <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-5 py-12 md:grid-cols-[1.15fr_0.85fr] md:gap-12 md:px-8 md:py-16">
         <div className="max-w-xl">
-          <p className="mb-6 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-cyan-300">
-            <span className="h-1.5 w-1.5 rounded-full bg-cyan-300" />{" "}
-            High-altitude radio experiment
+          <p className="mb-6 inline-flex items-center gap-3 rounded-lg border border-amber-300/30 bg-amber-300/[0.08] px-4 py-3 text-amber-200">
+            <Trophy size={23} className="shrink-0" aria-hidden="true" />
+            <span>
+              <span className="block text-base font-semibold tracking-tight">
+                1st place at Hack Club APEX
+              </span>
+              <span className="mt-0.5 block text-xs text-amber-100/80">
+                2025 · High-altitude balloon hackathon
+              </span>
+            </span>
           </p>
           <h1 className="text-[clamp(2.7rem,5.5vw,4.7rem)] font-semibold leading-[1.04] tracking-[-0.045em]">
             A network above
@@ -67,7 +75,7 @@ const Index = () => (
           </h1>
           <p className="mt-7 max-w-lg text-base leading-relaxed text-slate-300 md:text-lg">
             Four students. One balloon mission. SkyCell tested LoRa / Meshtastic
-            links from the stratosphere at Hack Club APEX 2025.
+            links from the stratosphere.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button
@@ -92,7 +100,7 @@ const Index = () => (
           </div>
           <div className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/15 pt-5 font-mono text-[11px] uppercase tracking-[0.1em] text-slate-400">
             <span>APEX / June 2025</span>
-            <span className="text-cyan-200">1st place</span>
+            <span>High-altitude radio experiment</span>
             <span>Hardware + software</span>
           </div>
         </div>

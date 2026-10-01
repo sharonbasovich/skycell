@@ -1,34 +1,50 @@
 # SkyCell
 
-**A high-altitude balloon project showcase and interactive flight telemetry explorer.**
+**First place at Hack Club APEX 2025.**
 
-[Live demo](https://skycell.vercel.app/) · [Flight replay](https://skycell.vercel.app/dashboard) · [Hardware and flight software](https://github.com/knivier/SkyCell)
+SkyCell is a high-altitude balloon communications experiment built by **four students**. The mission reached **approximately 30 km altitude** and established a **70 km LoRa / Meshtastic radio link**. The project brought together Python flight software, radio hardware, ground-station logging, and a React / TypeScript flight explorer.
+
+[Explore the demo](https://skycell.vercel.app/) · [Open flight replay](https://skycell.vercel.app/dashboard) · [Flight & ground-station source](https://github.com/knivier/SkyCell)
 
 [![CI](https://github.com/sharonbasovich/skycell/actions/workflows/ci.yml/badge.svg)](https://github.com/sharonbasovich/skycell/actions/workflows/ci.yml)
 
-SkyCell was built for Hack Club's APEX high-altitude balloon event. This repository contains the React frontend: a project overview, engineering context, and a browser-based replay of recorded balloon telemetry. The [companion repository](https://github.com/knivier/SkyCell) contains the payload, radio, and ground-station work.
-
 ![SkyCell flight replay dashboard](docs/demo.jpg)
 
-## Try the demo
+This repository contains the **React frontend**: the project showcase, engineering notes, and browser replay. The team's [companion repository](https://github.com/knivier/SkyCell) contains the payload, radio, and flight / ground-station software.
 
-1. Open the [flight replay](https://skycell.vercel.app/dashboard).
-2. Play or pause the archive, change playback speed, or scrub the timeline.
-3. Rotate and zoom the 3D trajectory while inspecting the corresponding telemetry.
+## Explore the flight
 
-The dashboard reads a bundled archive. It does **not** connect to a running balloon or live radio feed. See [data provenance](docs/data.md) for exactly what the demo shows.
+Play, pause, reset, or scrub the timeline at **1×, 25×, 100×, or 250× speed**. Follow the position in an interactive 3D trajectory or a north-up ground track while the telemetry charts and current readings follow the same replay clock. Browsers without WebGL 2 use the ground-track view.
 
-## Technical highlights
+The demo replays an archived APEX / SondeHub tracker recording. It runs without a radio receiver, API credentials, or a backend.
 
-- **One replay clock:** the trajectory, timeline, charts, and current readings share a timestamp-based playback state instead of advancing independently.
-- **Robust telemetry parsing:** header-based CSV parsing handles quoted fields, preserves UTC timestamps, validates coordinates, sorts observations, and removes repeated timestamps. Single-payload validation prevents unrelated tracks from being joined.
-- **3D flight exploration:** React Three Fiber and Three.js render a geographic trajectory with consistent spatial units and interactive camera controls.
-- **Useful failure states:** failed downloads and invalid archives surface as errors instead of invented telemetry or a blank dashboard.
-- **Reproducible checks:** TypeScript checking, ESLint, Vitest tests, and a production build run in GitHub Actions.
+## Engineering
+
+**Stack:** React · TypeScript · Vite · Tailwind CSS · React Three Fiber · Three.js · Recharts
+
+```text
+CSV archive → validated UTC observations → shared replay clock
+                                                ├── 3D / ground trajectory
+                                                ├── telemetry charts
+                                                └── current readings
+```
+
+- **Validated ingestion:** a header-based CSV parser handles quoted fields and missing sensor values, validates timestamps and coordinates, sorts observations, and deduplicates timestamps. Single-payload validation prevents unrelated flights from becoming one track.
+- **Timestamp-based playback:** a shared clock drives all views. Binary search selects the current observation; short intervals interpolate position, while reception gaps over 60 seconds hold the last position and break the plotted path.
+- **Geographic visualization:** latitude, longitude, and altitude are projected into consistent spatial units for the Three.js trajectory. Orbit controls support rotation and zoom; an SVG ground track provides a fallback.
+- **Responsive loading and failure handling:** the dashboard and 3D code load separately from the showcase. Failed archive requests and invalid data produce explicit retry states.
+
+The **16 regression tests** cover CSV parsing, UTC offsets, duplicate observations, mixed payloads, reception gaps, HTTP failures, the bundled archive, and seeking during playback. GitHub Actions runs ESLint, Vitest, strict TypeScript checks, and the production build on pushes and pull requests.
+
+## Archive provenance
+
+The bundled [`public/data.csv`](public/data.csv) contains **125 APEX-2-T observations from June 21, 2025**, exported from the APEX tracker / SondeHub data. It spans **18:11:06–19:17:21 UTC** and records a peak altitude of **29,510 m**.
+
+This tracker archive uses **Horus Binary v2 around 432.625 MHz** and is separate from SkyCell's **915 MHz mesh payload telemetry**. The browser demo displays a partial flight recording rather than a live radio feed. Sensor values remain the latest received readings; interpolated positions are estimates between nearby observations. See [data documentation](docs/data.md) for the schema, source, and replay semantics.
 
 ## Run locally
 
-Use Node.js **22.12 or later** (Node.js 24 is used in CI) and npm. No API keys, database, or environment variables are required.
+Use **Node.js 24** (the CI version) or Node.js 22.12+ and npm.
 
 ```bash
 git clone https://github.com/sharonbasovich/skycell.git
@@ -39,55 +55,15 @@ npm run dev
 
 Open [http://localhost:8080](http://localhost:8080).
 
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` | Start the Vite development server |
-| `npm run typecheck` | Check application and configuration types |
-| `npm run lint` | Run ESLint |
-| `npm test` | Run the telemetry and replay tests once |
-| `npm run test:watch` | Re-run tests while developing |
-| `npm run build` | Type-check and create the production bundle in `dist/` |
-| `npm run preview` | Preview the production bundle locally |
-
-## Architecture
-
-```text
-public/data.csv
-      │
-      ▼
-csvDataUtils.ts — parse, validate, sort, deduplicate
-      │
-      ▼
-Dashboard.tsx — archive loading and replay controls
-      │
-      ▼
-use-flight-replay.ts — elapsed time and current sample
-      ├── 3D trajectory
-      ├── telemetry charts
-      └── current readings
-```
-
-The frontend uses **React, TypeScript, Vite, Tailwind CSS, React Three Fiber, Three.js, and Recharts**. Route loading separates the showcase from the dashboard's heavier charting and 3D code.
-
-```text
-src/
-  pages/                      # Project overview, engineering notes, dashboard
-  components/dashboard/       # Trajectory and telemetry visualization
-  hooks/use-flight-replay.ts   # Shared timestamp-based replay state
-  utils/replayClock.ts         # Clock and playback transitions
-  utils/csvDataUtils.ts        # CSV validation and trajectory calculations
-  utils/csvDataUtils.test.ts   # Data and replay regression tests
-public/
-  data.csv                    # Bundled APEX tracker archive
-  gallery/                    # Project and launch photographs
-  b1.glb                      # Downloadable 3D model
-docs/data.md                  # Archive source, schema, and limits
-```
+| Command              | Purpose                                               |
+| -------------------- | ----------------------------------------------------- |
+| `npm run typecheck`  | Check application and configuration types             |
+| `npm run lint`       | Run ESLint                                            |
+| `npm test`           | Run the regression tests                              |
+| `npm run test:watch` | Re-run tests while developing                         |
+| `npm run build`      | Type-check and build the production bundle in `dist/` |
+| `npm run preview`    | Preview the production bundle locally                 |
 
 ## Deployment
 
-The demo runs on Vercel. `vercel.json` configures `npm ci`, the checked production build, and direct navigation to the client-side routes. Import this repository into Vercel to create another deployment; the build output is `dist/`.
-
-## Scope and limitations
-
-The archive is a partial flight recording. The replay interpolates position only between observations at most 60 seconds apart; longer gaps hold the last position and break the plotted path. Interpolated positions are visual estimates, and sensor readings remain the latest received values. The included APEX tracker data is separate from SkyCell's experimental 915 MHz mesh payload. This repository is a project demo and archive explorer, not a flight-control system.
+The [live demo](https://skycell.vercel.app/) runs on Vercel. [`vercel.json`](vercel.json) configures `npm ci`, the checked production build, and direct navigation to `/dashboard` and `/development`. Import this repository into Vercel to deploy another instance; no environment variables are required.

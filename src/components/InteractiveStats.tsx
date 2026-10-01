@@ -6,7 +6,12 @@ const stats = [
     detail: "Into the stratosphere",
   },
   { value: "70", unit: "km", label: "Radio link", detail: "LoRa / Meshtastic" },
-  { value: "1st", unit: "", label: "At APEX", detail: "Hack Club · 2025" },
+  {
+    value: "1st",
+    unit: "place",
+    label: "APEX 2025 result",
+    detail: "Hack Club hackathon winner",
+  },
   {
     value: "4",
     unit: "",

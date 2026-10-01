@@ -14,11 +14,13 @@ function RouteEffects() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
     const page =
-      pathname === "/dashboard"
-        ? "Flight replay"
-        : pathname === "/development"
-          ? "Engineering"
-          : "Balloon telemetry";
+      pathname === "/"
+        ? "APEX 2025 winner"
+        : pathname === "/dashboard"
+          ? "Flight replay"
+          : pathname === "/development"
+            ? "Engineering"
+            : "Balloon telemetry";
     document.title = `SkyCell · ${page}`;
   }, [pathname, key]);
   return null;

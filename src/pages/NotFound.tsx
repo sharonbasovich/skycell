@@ -1,27 +1,30 @@
-import { useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { Link } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
 
-const NotFound = () => {
-  const location = useLocation();
-
-  useEffect(() => {
-    console.error(
-      "404 Error: User attempted to access non-existent route:",
-      location.pathname
-    );
-  }, [location.pathname]);
-
+export default function NotFound() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">404</h1>
-        <p className="text-xl text-gray-600 mb-4">Oops! Page not found</p>
-        <a href="/" className="text-blue-500 hover:text-blue-700 underline">
-          Return to Home
-        </a>
+    <section className="container mx-auto flex min-h-[75vh] max-w-4xl flex-col justify-center px-6 py-12">
+      <p className="mb-4 font-mono text-sm text-primary">404 / OFF COURSE</p>
+      <h1 className="text-4xl font-semibold tracking-tight sm:text-6xl">
+        This page isn't on the flight path.
+      </h1>
+      <p className="mt-5 text-lg text-muted-foreground">
+        Explore the mission or open the archived telemetry replay.
+      </p>
+      <div className="mt-8 flex flex-wrap gap-4">
+        <Link
+          to="/"
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-5 py-3 font-medium text-primary-foreground"
+        >
+          Back to the mission <ArrowRight size={18} />
+        </Link>
+        <Link
+          to="/dashboard"
+          className="inline-flex min-h-11 items-center rounded-lg border border-border px-5 py-3 font-medium"
+        >
+          Open flight replay
+        </Link>
       </div>
-    </div>
+    </section>
   );
-};
-
-export default NotFound;
+}

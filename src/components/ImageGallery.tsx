@@ -1,243 +1,153 @@
-import { useState, useRef } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { useInView } from "react-intersection-observer";
-import { Button } from "@/components/ui/button";
+import { useRef, useState } from "react";
+import { Expand } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import MissionReveal from "./MissionReveal";
+
+type Photo = { src: string; title: string; description: string };
+const photos: Record<"launch" | "build", Photo[]> = {
+  launch: [
+    {
+      src: "/gallery/PXL_20250621_172905846.MP.jpg",
+      title: "Launch day",
+      description:
+        "The APEX balloon train and payloads rising into a blue sky.",
+    },
+    {
+      src: "/gallery/1000004204.jpg",
+      title: "Flight-ready payload",
+      description:
+        "Insulated payload enclosure with the radio antenna mounted for flight.",
+    },
+    {
+      src: "/gallery/1000004195.jpg",
+      title: "Final electronics assembly",
+      description:
+        "Payload electronics, power connections, and radio hardware on the workbench.",
+    },
+  ],
+  build: [
+    {
+      src: "/gallery/PXL_20250611_170737813.MP.jpg",
+      title: "Sensor prototyping",
+      description: "A Raspberry Pi Pico wired to a sensor on a breadboard.",
+    },
+    {
+      src: "/gallery/PXL_20250614_005833983.MP.jpg",
+      title: "Iterating on the circuit",
+      description: "Breadboard wiring during electronics development.",
+    },
+    {
+      src: "/gallery/PXL_20250619_171928093.MP.jpg",
+      title: "Radio preparation",
+      description:
+        "A powered Heltec radio connected to its battery before launch.",
+    },
+  ],
+};
 
 const ImageGallery = () => {
-  const [currentSet, setCurrentSet] = useState(2); // Changed to 2 to show Launch Day first
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start end", "end start"],
-  });
-
-  const { ref, inView } = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  });
-
-  // First set of images (original 9) - Prototyping
-  const prototypingSet = [
-    "/gallery/PXL_20250611_170737813.MP.jpg",
-    "/gallery/PXL_20250611_170734721.MP.jpg",
-    "/gallery/PXL_20250611_165029317.MP.jpg",
-    "/gallery/IMG_0338.jpg",
-    "/gallery/PXL_20250612_173202946.MP.jpg",
-    "/gallery/PXL_20250614_005833983.MP.jpg",
-    "/gallery/PXL_20250616_173452433.MP.jpg",
-    "/gallery/IMG_0356.jpg",
-    "/gallery/PXL_20250619_171928093.MP.jpg",
-  ];
-
-  // Second set of images (new 9) - Launch Day
-  const launchDaySet = [
-    "/gallery/PXL_20250621_172905846.MP.jpg",
-    "/gallery/PXL_20250621_125406998.jpg",
-    "/gallery/1000004201.jpg",
-    "/gallery/1000004204.jpg",
-    "/gallery/1000004202.jpg",
-    "/gallery/1000004219.jpg",
-    "/gallery/1000004218.jpg",
-    "/gallery/1000004203.jpg",
-    "/gallery/1000004195.jpg",
-  ];
-
-  const images = currentSet === 1 ? prototypingSet : launchDaySet;
-  const y = useTransform(scrollYProgress, [0, 1], [0, -100]);
-
+  const [view, setView] = useState<"launch" | "build">("launch");
+  const [selected, setSelected] = useState<Photo | null>(null);
+  const photoTrigger = useRef<HTMLButtonElement | null>(null);
   return (
-    <motion.section
-      ref={containerRef}
-      className="relative py-20 px-4"
-      style={{ y }}
-    >
-      <div className="container mx-auto max-w-6xl">
-        <motion.div
-          ref={ref}
-          initial={{ opacity: 0, y: 50 }}
-          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-16"
-        >
-          <h2 className="text-3xl font-bold gradient-text mb-4">
-            Project Gallery
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-            Explore stunning aerial photography and development milestones from
-            our SkyCell project
-          </p>
-
-          {/* Toggle Buttons */}
-          <div className="flex justify-center gap-4">
-            <Button
-              variant={currentSet === 2 ? "default" : "outline"}
-              onClick={() => setCurrentSet(2)}
-              className="transition-all duration-300"
-            >
-              Launch Day
-            </Button>
-            <Button
-              variant={currentSet === 1 ? "default" : "outline"}
-              onClick={() => setCurrentSet(1)}
-              className="transition-all duration-300"
-            >
-              Prototyping
-            </Button>
+    <section id="gallery" className="border-y border-border bg-muted/40">
+      <div className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
+        <MissionReveal className="mb-9 flex flex-wrap items-end justify-between gap-6">
+          <div>
+            <p className="mb-3 font-mono text-xs uppercase tracking-[0.18em] text-primary">
+              02 / In the field
+            </p>
+            <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
+              Built, tested, flown.
+            </h2>
+            <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground">
+              A look at the real hardware and the days that took it from a
+              breadboard to the sky.
+            </p>
           </div>
-        </motion.div>
-
-        <motion.div
-          key={currentSet}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-        >
-          {images.map((image, index) => {
-            const [imageRef, imageInView] = useInView({
-              triggerOnce: false,
-              threshold: 0.3,
-              rootMargin: "-10% 0px -10% 0px",
-            });
-
-            return (
-              <motion.div
-                key={`${currentSet}-${index}`}
-                ref={imageRef}
-                initial={{ opacity: 0, scale: 0.8, rotateY: 45 }}
-                animate={
-                  inView
-                    ? {
-                        opacity: imageInView ? 1 : 0.3,
-                        scale: 1,
-                        rotateY: 0,
-                        transition: {
-                          delay: index * 0.1,
-                          duration: 0.6,
-                          type: "spring",
-                          stiffness: 100,
-                        },
-                      }
-                    : { opacity: 0, scale: 0.8, rotateY: 45 }
-                }
-                whileHover={{
-                  scale: 1.05,
-                  y: -8,
-                  transition: {
-                    duration: 0.3,
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 20,
-                  },
-                }}
-                className="relative group cursor-pointer"
+          <div
+            className="inline-flex rounded-lg border border-border bg-background p-1"
+            role="group"
+            aria-label="Photo collection"
+          >
+            {(["launch", "build"] as const).map((value) => (
+              <button
+                type="button"
+                key={value}
+                onClick={() => setView(value)}
+                aria-pressed={view === value}
+                className={`min-h-11 rounded-md px-4 text-sm font-medium transition-colors ${view === value ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"}`}
               >
-                {/* Glow effect background */}
-                <motion.div
-                  className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/20 via-secondary/20 to-primary/20 opacity-0 group-hover:opacity-100 blur-xl scale-110"
-                  transition={{ duration: 0.3 }}
+                {value === "launch" ? "Launch day" : "Prototyping"}
+              </button>
+            ))}
+          </div>
+        </MissionReveal>
+        <div className="grid gap-6 md:grid-cols-3">
+          {photos[view].map((photo) => (
+            <figure key={photo.src}>
+              <button
+                type="button"
+                onClick={(event) => {
+                  photoTrigger.current = event.currentTarget;
+                  setSelected(photo);
+                }}
+                aria-label={`Enlarge photo: ${photo.title}`}
+                className="group relative block w-full overflow-hidden rounded-lg border border-border bg-background"
+              >
+                <img
+                  src={photo.src}
+                  alt={photo.description}
+                  width="800"
+                  height="600"
+                  loading="lazy"
+                  decoding="async"
+                  className="aspect-[4/3] w-full object-cover transition-transform duration-300 motion-reduce:transition-none group-hover:scale-[1.03]"
                 />
-
-                <div className="relative overflow-hidden rounded-xl bg-card shadow-lg border border-border/50 transform-gpu">
-                  <motion.img
-                    src={image}
-                    alt={`Gallery image ${index + 1} - ${
-                      currentSet === 1 ? "Prototyping" : "Launch Day"
-                    }`}
-                    className="w-full h-64 object-cover"
-                    whileHover={{
-                      scale: 1.1,
-                      filter: "brightness(1.1) contrast(1.1)",
-                      transition: { duration: 0.4 },
-                    }}
-                  />
-
-                  {/* Animated gradient overlay */}
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-secondary/20"
-                    initial={{ opacity: 0, scale: 1.2 }}
-                    whileHover={{
-                      opacity: 1,
-                      scale: 1,
-                      transition: { duration: 0.3 },
-                    }}
-                  />
-
-                  {/* Floating particles effect */}
-                  <motion.div
-                    className="absolute inset-0 overflow-hidden rounded-xl"
-                    initial={{ opacity: 0 }}
-                    whileHover={{ opacity: 1 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <motion.div
-                      className="absolute top-2 left-2 w-2 h-2 bg-primary rounded-full"
-                      animate={{
-                        y: [0, -10, 0],
-                        opacity: [0.5, 1, 0.5],
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        delay: 0,
-                      }}
-                    />
-                    <motion.div
-                      className="absolute top-4 right-4 w-1.5 h-1.5 bg-secondary rounded-full"
-                      animate={{
-                        y: [0, -8, 0],
-                        opacity: [0.3, 0.8, 0.3],
-                      }}
-                      transition={{
-                        duration: 1.8,
-                        repeat: Infinity,
-                        delay: 0.5,
-                      }}
-                    />
-                    <motion.div
-                      className="absolute bottom-3 left-3 w-1 h-1 bg-primary/60 rounded-full"
-                      animate={{
-                        y: [0, -6, 0],
-                        opacity: [0.4, 0.9, 0.4],
-                      }}
-                      transition={{
-                        duration: 2.2,
-                        repeat: Infinity,
-                        delay: 1,
-                      }}
-                    />
-                  </motion.div>
-
-                  {/* Animated border */}
-                  <motion.div
-                    className="absolute inset-0 rounded-xl border-2 border-transparent"
-                    whileHover={{
-                      borderColor: "hsl(var(--primary))",
-                      boxShadow: "0 0 20px rgba(2, 132, 199, 0.3)",
-                      transition: { duration: 0.3 },
-                    }}
-                  />
-
-                  {/* Shimmer effect */}
-                  <motion.div
-                    className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100"
-                    style={{
-                      background:
-                        "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)",
-                      transform: "translateX(-100%)",
-                    }}
-                    whileHover={{
-                      x: ["-100%", "100%"],
-                      transition: { duration: 0.8, ease: "easeInOut" },
-                    }}
-                  />
-                </div>
-              </motion.div>
-            );
-          })}
-        </motion.div>
+                <span className="absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-md bg-slate-950/75 text-white">
+                  <Expand size={16} />
+                </span>
+              </button>
+              <figcaption className="mt-4">
+                <span className="text-sm font-semibold">{photo.title}</span>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  {photo.description}
+                </p>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
       </div>
-    </motion.section>
+      <Dialog
+        open={selected !== null}
+        onOpenChange={(open) => {
+          if (!open) setSelected(null);
+        }}
+      >
+        <DialogContent
+          className="max-w-5xl p-5"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            photoTrigger.current?.focus();
+          }}
+        >
+          <DialogTitle>{selected?.title}</DialogTitle>
+          <DialogDescription>{selected?.description}</DialogDescription>
+          {selected && (
+            <img
+              src={selected.src}
+              alt={selected.description}
+              className="max-h-[72vh] w-full rounded-md object-contain"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </section>
   );
 };
 

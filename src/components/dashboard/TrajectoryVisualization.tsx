@@ -1,489 +1,327 @@
+import { Component, type ReactNode, useMemo, useState } from "react";
 import { Canvas } from "@react-three/fiber";
+import { Html, Line, OrbitControls } from "@react-three/drei";
 import {
-  OrbitControls,
-  PerspectiveCamera,
-  Stars,
-  Text,
-} from "@react-three/drei";
-import * as THREE from "three";
-import { useMemo, useEffect, useState, useRef } from "react";
-import {
-  parseCSVData,
   latLonTo3D,
+  splitTrajectory,
   type ProcessedTrajectoryData,
+  type TrajectoryPoint,
 } from "@/utils/csvDataUtils";
-import { Play, Pause, RotateCcw } from "lucide-react";
 
-// Animation speed multiplier (100x faster than real time)
-const ANIMATION_SPEED_MULTIPLIER = 100;
+interface Props {
+  data: ProcessedTrajectoryData;
+  point: TrajectoryPoint;
+  index: number;
+}
 
-// Component for the ground plane
-const GroundPlane = ({
-  bounds,
-}: {
-  bounds: ProcessedTrajectoryData["bounds"];
-}) => {
-  const groundSize =
-    Math.max(
-      (bounds.lon.max - bounds.lon.min) * 111000,
-      (bounds.lat.max - bounds.lat.min) * 111000
-    ) * 0.001; // Scale down for visualization
+const projected = (
+  point: TrajectoryPoint,
+  data: ProcessedTrajectoryData,
+): [number, number, number] => {
+  const { x, y, z } = latLonTo3D(
+    point.latitude,
+    point.longitude,
+    point.altitude,
+    data.center.lat,
+    data.center.lon,
+    0.001,
+  );
+  return [x, y, z];
+};
 
+function GroundTrack({ data, point }: Props) {
+  const locations = data.points.map((observation) =>
+    projected(observation, data),
+  );
+  const width = Math.max(1, ...locations.map(([x]) => Math.abs(x))) * 2;
+  const height = Math.max(1, ...locations.map(([, , z]) => Math.abs(z))) * 2;
+  const scale = Math.min(330 / width, 250 / height);
+  const [x, , z] = projected(point, data);
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
-      <planeGeometry args={[groundSize, groundSize]} />
-      <meshStandardMaterial
-        color="#1F2937"
-        transparent
-        opacity={0.3}
-        side={THREE.DoubleSide}
+    <div className="flex h-full flex-col justify-center p-5">
+      <svg
+        viewBox="0 0 400 320"
+        className="mx-auto h-full max-h-[370px] w-full"
+        role="img"
+        aria-label="Two dimensional ground track. North is up and east is right."
+      >
+        <defs>
+          <pattern
+            id="track-grid"
+            width="25"
+            height="25"
+            patternUnits="userSpaceOnUse"
+          >
+            <path
+              d="M 25 0 L 0 0 0 25"
+              fill="none"
+              stroke="#263449"
+              strokeWidth="1"
+            />
+          </pattern>
+        </defs>
+        <rect
+          x="10"
+          y="10"
+          width="380"
+          height="300"
+          rx="12"
+          fill="url(#track-grid)"
+        />
+        {splitTrajectory(data.points).map((segment, index) => (
+          <polyline
+            key={index}
+            points={segment
+              .map((observation) => {
+                const [east, , south] = projected(observation, data);
+                return `${200 + east * scale},${160 + south * scale}`;
+              })
+              .join(" ")}
+            fill="none"
+            stroke="#38bdf8"
+            strokeWidth="2"
+          />
+        ))}
+        <circle
+          cx={200 + x * scale}
+          cy={160 + z * scale}
+          r="6"
+          fill="#f8fafc"
+          stroke="#38bdf8"
+          strokeWidth="3"
+        />
+        <text x="200" y="28" textAnchor="middle" fill="#94a3b8" fontSize="12">
+          N
+        </text>
+        <text x="375" y="165" textAnchor="middle" fill="#94a3b8" fontSize="12">
+          E
+        </text>
+      </svg>
+      <p className="mt-3 text-center text-xs text-muted-foreground">
+        Ground track · equal horizontal scale · no map baselayer
+      </p>
+    </div>
+  );
+}
+
+class SceneBoundary extends Component<
+  { children: ReactNode; fallback: ReactNode; onFailure: () => void },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch() {
+    this.props.onFailure();
+  }
+  render() {
+    return this.state.failed ? this.props.fallback : this.props.children;
+  }
+}
+
+function FlightScene({ data, point, index }: Props) {
+  const path = useMemo(
+    () => data.points.map((observation) => projected(observation, data)),
+    [data],
+  );
+  const current = projected(point, data);
+  const segments = useMemo(
+    () =>
+      splitTrajectory(data.points).map((segment) =>
+        segment.map((observation) => projected(observation, data)),
+      ),
+    [data],
+  );
+  const completed = splitTrajectory([
+    ...data.points.slice(0, index + 1),
+    point,
+  ]).map((segment) =>
+    segment.map((observation) => projected(observation, data)),
+  );
+  const horizontalExtent = Math.max(
+    10,
+    ...path.flatMap(([x, , z]) => [Math.abs(x), Math.abs(z)]),
+  );
+  const size = Math.ceil((horizontalExtent * 2.4) / 10) * 10;
+  const top = Math.ceil(data.bounds.alt.max / 5000) * 5;
+  const target = useMemo<[number, number, number]>(
+    () => [0, top / 2, 0],
+    [top],
+  );
+  const distance = Math.max(size * 0.85, top * 1.4);
+  const camera = useMemo(
+    () => ({
+      position: [distance * 0.8, top + distance * 0.25, distance] as [
+        number,
+        number,
+        number,
+      ],
+      fov: 43,
+      near: 0.1,
+      far: 1000,
+    }),
+    [distance, top],
+  );
+  return (
+    <Canvas camera={camera} dpr={[1, 1.5]}>
+      <color attach="background" args={["#0b1220"]} />
+      <ambientLight intensity={1} />
+      <directionalLight position={[10, 30, 20]} intensity={1.5} />
+      <gridHelper args={[size, size / 5, "#475569", "#243246"]} />
+      {segments.map(
+        (segment, i) =>
+          segment.length > 1 && (
+            <Line
+              key={`path-${i}`}
+              points={segment}
+              color="#38bdf8"
+          lineWidth={2}
+              transparent
+          opacity={0.65}
+            />
+          ),
+      )}
+      {completed.map(
+        (segment, i) =>
+          segment.length > 1 && (
+            <Line
+              key={`completed-${i}`}
+              points={segment}
+              color="#38bdf8"
+              lineWidth={3}
+            />
+          ),
+      )}
+      <Line
+        points={[[current[0], 0, current[2]], current]}
+        color="#94a3b8"
+        lineWidth={1}
+        dashed
+        dashSize={0.5}
+        gapSize={0.5}
       />
-    </mesh>
-  );
-};
-
-// Component for the trajectory path
-const TrajectoryPath = ({
-  points,
-  center,
-  scale = 0.001,
-}: {
-  points: any[];
-  center: { lat: number; lon: number };
-  scale?: number;
-}) => {
-  const trajectoryGeometry = useMemo(() => {
-    if (points.length < 2) return null;
-
-    const trajectoryPoints = points.map((point) => {
-      const coords = latLonTo3D(
-        point.latitude,
-        point.longitude,
-        point.altitude,
-        center.lat,
-        center.lon,
-        scale
-      );
-      return new THREE.Vector3(coords.x, coords.y, coords.z);
-    });
-
-    return new THREE.BufferGeometry().setFromPoints(trajectoryPoints);
-  }, [points, center, scale]);
-
-  if (!trajectoryGeometry) return null;
-
-  return (
-    <primitive
-      object={
-        new THREE.Line(
-          trajectoryGeometry,
-          new THREE.LineBasicMaterial({
-            color: "#0EA5E9",
-            opacity: 0.8,
-            transparent: true,
-            linewidth: 2,
-          })
-        )
-      }
-    />
-  );
-};
-
-// Component for the animated balloon
-const AnimatedBalloon = ({
-  points,
-  center,
-  scale = 0.001,
-  currentIndex,
-  isPlaying,
-}: {
-  points: any[];
-  center: { lat: number; lon: number };
-  scale?: number;
-  currentIndex: number;
-  isPlaying: boolean;
-}) => {
-  const [interpolatedPosition, setInterpolatedPosition] = useState<{
-    x: number;
-    y: number;
-    z: number;
-  } | null>(null);
-  const animationRef = useRef<number>();
-
-  useEffect(() => {
-    if (
-      !isPlaying ||
-      points.length === 0 ||
-      currentIndex >= points.length - 1
-    ) {
-      // Set to exact position when not playing or at the end
-      if (points.length > 0 && currentIndex < points.length) {
-        const point = points[currentIndex];
-        const coords = latLonTo3D(
-          point.latitude,
-          point.longitude,
-          point.altitude,
-          center.lat,
-          center.lon,
-          scale
-        );
-        setInterpolatedPosition(coords);
-      }
-      return;
-    }
-
-    const startTime = Date.now();
-    const startPoint = points[currentIndex];
-    const endPoint = points[currentIndex + 1];
-
-    // Calculate time difference between points and apply speed multiplier
-    const startTimestamp = new Date(startPoint.datetime).getTime();
-    const endTimestamp = new Date(endPoint.datetime).getTime();
-    const duration =
-      (endTimestamp - startTimestamp) / ANIMATION_SPEED_MULTIPLIER;
-
-    // If points are too close in time, use a minimum duration
-    const minDuration = 20; // 20ms minimum (reduced for faster playback)
-    const actualDuration = Math.max(duration, minDuration);
-
-    const animate = () => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / actualDuration, 1);
-
-      // Linear interpolation between points
-      const startCoords = latLonTo3D(
-        startPoint.latitude,
-        startPoint.longitude,
-        startPoint.altitude,
-        center.lat,
-        center.lon,
-        scale
-      );
-      const endCoords = latLonTo3D(
-        endPoint.latitude,
-        endPoint.longitude,
-        endPoint.altitude,
-        center.lat,
-        center.lon,
-        scale
-      );
-
-      const interpolated = {
-        x: startCoords.x + (endCoords.x - startCoords.x) * progress,
-        y: startCoords.y + (endCoords.y - startCoords.y) * progress,
-        z: startCoords.z + (endCoords.z - startCoords.z) * progress,
-      };
-
-      setInterpolatedPosition(interpolated);
-
-      if (progress < 1) {
-        animationRef.current = requestAnimationFrame(animate);
-      }
-    };
-
-    animationRef.current = requestAnimationFrame(animate);
-
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [currentIndex, isPlaying, points, center, scale]);
-
-  if (!interpolatedPosition) return null;
-
-  return (
-    <group
-      position={[
-        interpolatedPosition.x,
-        interpolatedPosition.y,
-        interpolatedPosition.z,
-      ]}
-    >
-      {/* Balloon */}
-      <mesh>
-        <sphereGeometry args={[2, 32, 32]} />
+      <mesh position={current}>
+        <sphereGeometry args={[0.45, 20, 20]} />
         <meshStandardMaterial
-          color="#FFFFFF"
-          emissive="#FFFFFF"
-          emissiveIntensity={0.2}
+          color="#f8fafc"
+          emissive="#38bdf8"
+          emissiveIntensity={0.5}
         />
       </mesh>
-
-      {/* Payload */}
-      <mesh position={[0, -3, 0]}>
-        <boxGeometry args={[1.5, 1, 1.5]} />
-        <meshStandardMaterial color="#8B5CF6" />
+      <mesh position={path[0]}>
+        <sphereGeometry args={[0.2, 12, 12]} />
+        <meshBasicMaterial color="#94a3b8" />
       </mesh>
-
-      {/* Connection line */}
-      <mesh position={[0, -1.5, 0]}>
-        <cylinderGeometry args={[0.1, 0.1, 3]} />
-        <meshStandardMaterial color="#FFFFFF" />
-      </mesh>
-
-      {/* Position light */}
-      <pointLight
-        position={[0, 0, 0]}
-        intensity={2}
-        distance={10}
-        color="#FFFFFF"
+      <Line
+        points={[
+          [-size / 2, 0, -size / 2],
+          [-size / 2, top, -size / 2],
+        ]}
+        color="#475569"
+        lineWidth={1}
       />
-
-      {/* Current time display */}
-      {points[currentIndex] && (
-        <Text
-          position={[0, 5, 0]}
-          fontSize={1}
-          color="#FFFFFF"
-          anchorX="center"
-          anchorY="middle"
-        >
-          {new Date(points[currentIndex].datetime).toLocaleTimeString()}
-        </Text>
+      {Array.from({ length: Math.floor(top / 5) + 1 }, (_, i) => i * 5).map(
+        (altitude) => (
+          <Html
+            key={altitude}
+            position={[-size / 2, altitude, -size / 2]}
+            center
+          >
+            <span className="whitespace-nowrap rounded bg-[#0b1220]/80 px-1.5 py-0.5 text-[10px] text-slate-400">
+              {altitude} km
+            </span>
+          </Html>
+        ),
       )}
-    </group>
+      <Html position={[0, 0, -size / 2]} center>
+        <span className="text-[11px] text-slate-400">N</span>
+      </Html>
+      <Html position={[size / 2, 0, 0]} center>
+        <span className="text-[11px] text-slate-400">E</span>
+      </Html>
+      <OrbitControls
+        target={target}
+        makeDefault
+        minDistance={15}
+        maxDistance={250}
+        enableDamping
+      />
+    </Canvas>
   );
+}
+
+const supportsWebGL = () => {
+  try {
+    const canvas = document.createElement("canvas");
+    // Three.js r176 requires WebGL 2. Older contexts should use the SVG view.
+    const context = canvas.getContext("webgl2");
+    context?.getExtension("WEBGL_lose_context")?.loseContext();
+    return Boolean(context);
+  } catch {
+    return false;
+  }
 };
 
-// Playback controls component
-const PlaybackControls = ({
-  isPlaying,
-  onPlay,
-  onPause,
-  onReset,
-  currentIndex,
-  totalPoints,
-  currentTime,
-}: {
-  isPlaying: boolean;
-  onPlay: () => void;
-  onPause: () => void;
-  onReset: () => void;
-  currentIndex: number;
-  totalPoints: number;
-  currentTime: string;
-}) => {
-  const progress =
-    totalPoints > 0 ? (currentIndex / (totalPoints - 1)) * 100 : 0;
-
+export default function TrajectoryVisualization(props: Props) {
+  const [threeDAvailable, setThreeDAvailable] = useState(supportsWebGL);
+  const [groundView, setGroundView] = useState(!threeDAvailable);
+  const handleSceneFailure = () => {
+    setThreeDAvailable(false);
+    setGroundView(true);
+  };
+  const fallback = <GroundTrack {...props} />;
   return (
-    <div className="absolute bottom-4 left-4 right-4 bg-black/50 backdrop-blur-sm rounded-lg p-3">
-      <div className="flex items-center gap-3">
-        <button
-          onClick={isPlaying ? onPause : onPlay}
-          className="flex items-center justify-center w-10 h-10 bg-blue-600 hover:bg-blue-700 rounded-full transition-colors"
-        >
-          {isPlaying ? (
-            <Pause size={16} className="text-white" />
-          ) : (
-            <Play size={16} className="text-white ml-0.5" />
-          )}
-        </button>
-
-        <button
-          onClick={onReset}
-          className="flex items-center justify-center w-10 h-10 bg-gray-600 hover:bg-gray-700 rounded-full transition-colors"
-        >
-          <RotateCcw size={16} className="text-white" />
-        </button>
-
-        <div className="flex-1">
-          <div className="flex justify-between text-xs text-white mb-1">
-            <span>{currentTime}</span>
-            <span>{Math.round(progress)}%</span>
-          </div>
-          <div className="w-full bg-gray-700 rounded-full h-2">
-            <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <div className="text-xs text-white mt-1">
-            Speed: {ANIMATION_SPEED_MULTIPLIER}x real-time
-          </div>
+    <section
+      className="overflow-hidden rounded-2xl border border-border/70 bg-[#0b1220]"
+      aria-label="Flight trajectory"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-5 py-4">
+        <div>
+          <h2 className="font-semibold">Flight trajectory</h2>
+          <p
+            className="mt-1 text-xs text-muted-foreground"
+            role={!threeDAvailable ? "status" : undefined}
+          >
+            {!threeDAvailable
+              ? "3D unavailable · ground track (north up)"
+              : groundView
+                ? "North up · ground position"
+                : "Drag to orbit · scroll to zoom · grid spacing 5 km"}
+          </p>
+        </div>
+        <div className="inline-flex rounded-lg border border-border p-1 text-xs">
+          <button
+            onClick={() => setGroundView(false)}
+            aria-pressed={!groundView}
+            disabled={!threeDAvailable}
+            className={`min-h-10 rounded-md px-3 py-1.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-40 ${!groundView ? "bg-primary/20 text-primary" : "text-muted-foreground"}`}
+          >
+            3D path
+          </button>
+          <button
+            onClick={() => setGroundView(true)}
+            aria-pressed={groundView}
+            className={`min-h-10 rounded-md px-3 py-1.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${groundView ? "bg-primary/20 text-primary" : "text-muted-foreground"}`}
+          >
+            Ground track
+          </button>
         </div>
       </div>
-    </div>
-  );
-};
-
-/**
- * TrajectoryVisualization component
- * Props:
- *   onCurrentPointChange?: (point: any | null) => void
- *     - Called with the current trajectory point (or null) whenever the animation index changes.
- *   initialCameraPosition?: [number, number, number]
- *     - The initial position of the camera (x, y, z)
- *   initialOrbitTarget?: [number, number, number]
- *     - The initial target for the orbit controls (x, y, z)
- */
-const TrajectoryVisualization = ({
-  onCurrentPointChange,
-  initialCameraPosition = [25, 45, 60],
-  initialOrbitTarget = [0, 0, 0],
-}: {
-  onCurrentPointChange?: (point: any | null) => void;
-  initialCameraPosition?: [number, number, number];
-  initialOrbitTarget?: [number, number, number];
-}) => {
-  const [trajectoryData, setTrajectoryData] =
-    useState<ProcessedTrajectoryData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const intervalRef = useRef<NodeJS.Timeout>();
-
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        const data = await parseCSVData();
-        setTrajectoryData(data);
-      } catch (error) {
-        console.error("Failed to load trajectory data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, []);
-
-  // Notify parent of current point change
-  useEffect(() => {
-    if (!trajectoryData || !trajectoryData.points.length) {
-      onCurrentPointChange && onCurrentPointChange(null);
-      return;
-    }
-    onCurrentPointChange &&
-      onCurrentPointChange(trajectoryData.points[currentIndex] || null);
-  }, [currentIndex, trajectoryData, onCurrentPointChange]);
-
-  // Playback logic
-  useEffect(() => {
-    if (!isPlaying || !trajectoryData || trajectoryData.points.length === 0) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-      return;
-    }
-
-    if (currentIndex >= trajectoryData.points.length - 1) {
-      setIsPlaying(false);
-      return;
-    }
-
-    const currentPoint = trajectoryData.points[currentIndex];
-    const nextPoint = trajectoryData.points[currentIndex + 1];
-
-    // Calculate time difference and apply speed multiplier
-    const currentTime = new Date(currentPoint.datetime).getTime();
-    const nextTime = new Date(nextPoint.datetime).getTime();
-    const timeDiff = (nextTime - currentTime) / ANIMATION_SPEED_MULTIPLIER;
-
-    // Use minimum interval for very close points
-    const interval = Math.max(timeDiff, 20); // Reduced from 50ms for faster playback
-
-    intervalRef.current = setTimeout(() => {
-      setCurrentIndex((prev) => prev + 1);
-    }, interval);
-
-    return () => {
-      if (intervalRef.current) {
-        clearTimeout(intervalRef.current);
-      }
-    };
-  }, [isPlaying, currentIndex, trajectoryData]);
-
-  const handlePlay = () => {
-    setIsPlaying(true);
-  };
-
-  const handlePause = () => {
-    setIsPlaying(false);
-  };
-
-  const handleReset = () => {
-    setIsPlaying(false);
-    setCurrentIndex(0);
-  };
-
-  if (loading) {
-    return (
-      <div className="h-[300px] bg-skycell-dark rounded-lg overflow-hidden flex items-center justify-center">
-        <div className="text-white">Loading trajectory data...</div>
+      <div className="h-[360px] sm:h-[420px]">
+        {groundView ? (
+          fallback
+        ) : (
+          <SceneBoundary fallback={fallback} onFailure={handleSceneFailure}>
+            <FlightScene {...props} />
+          </SceneBoundary>
+        )}
       </div>
-    );
-  }
-
-  if (!trajectoryData || trajectoryData.points.length === 0) {
-    return (
-      <div className="h-[300px] bg-skycell-dark rounded-lg overflow-hidden flex items-center justify-center">
-        <div className="text-white">No trajectory data available</div>
-      </div>
-    );
-  }
-
-  const scale = 0.001; // Scale factor for visualization
-  const currentTime = trajectoryData.points[currentIndex]?.datetime
-    ? new Date(
-        trajectoryData.points[currentIndex].datetime
-      ).toLocaleTimeString()
-    : "";
-
-  return (
-    <div className="h-[300px] bg-skycell-dark rounded-lg overflow-hidden relative">
-      <Canvas>
-        <PerspectiveCamera makeDefault position={initialCameraPosition} />
-        <ambientLight intensity={0.3} />
-        <directionalLight position={[10, 10, 5]} intensity={0.5} />
-
-        {/* Ground plane */}
-        <GroundPlane bounds={trajectoryData.bounds} />
-
-        {/* Trajectory path */}
-        <TrajectoryPath
-          points={trajectoryData.points}
-          center={trajectoryData.center}
-          scale={scale}
-        />
-
-        {/* Animated balloon */}
-        <AnimatedBalloon
-          points={trajectoryData.points}
-          center={trajectoryData.center}
-          scale={scale}
-          currentIndex={currentIndex}
-          isPlaying={isPlaying}
-        />
-
-        {/* Stars background */}
-        <Stars radius={200} depth={50} count={2000} factor={2} />
-
-        {/* Camera controls */}
-        <OrbitControls
-          enablePan={true}
-          enableZoom={true}
-          enableRotate={true}
-          maxDistance={200}
-          minDistance={20}
-          target={initialOrbitTarget}
-        />
-      </Canvas>
-
-      {/* Playback controls */}
-      <PlaybackControls
-        isPlaying={isPlaying}
-        onPlay={handlePlay}
-        onPause={handlePause}
-        onReset={handleReset}
-        currentIndex={currentIndex}
-        totalPoints={trajectoryData.points.length}
-        currentTime={currentTime}
-      />
-    </div>
+      <p className="border-t border-border/60 px-5 py-3 text-xs leading-relaxed text-muted-foreground">
+        Short intervals interpolate position; gaps over 60 seconds hold the last
+        observation and break the path.
+        {!groundView && " Grid height 0 represents recorded altitude 0."}
+      </p>
+    </section>
   );
-};
-
-export default TrajectoryVisualization;
+}

@@ -11,6 +11,10 @@ node_modules
 dist
 dist-ssr
 *.local
+.vercel
+coverage
+.vitest
+*.tsbuildinfo
 
 # Editor directories and files
 .vscode/*

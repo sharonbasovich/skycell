@@ -1,159 +1,212 @@
-import React, { useState, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
-  LineChart,
-  Line,
+  Area,
   CartesianGrid,
+  ComposedChart,
+  Line,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Scatter,
-  ScatterChart,
 } from "recharts";
+import {
+  formatUTC,
+  OBSERVATION_GAP_MS,
+  type TrajectoryPoint,
+} from "@/utils/csvDataUtils";
 
-interface TelemetryData {
-  altitude: number;
-  temperature: number;
-  pressure: number;
-  batteryVoltage: string;
-  signalStrength: number;
-  dataRate: number;
-  latitude: number;
-  longitude: number;
+interface Props {
+  points: TrajectoryPoint[];
+  timestamp: number;
+  onSeek: (elapsed: number) => void;
 }
 
-interface AltitudeData {
-  time: string;
-  altitude: number;
-  index: number;
-}
-
-interface TelemetryGraphsProps {
-  telemetryData: TelemetryData[];
-}
-
-const TelemetryGraphs: React.FC<TelemetryGraphsProps> = ({ telemetryData }) => {
-  const [csvData, setCsvData] = useState<AltitudeData[]>([]);
-
-  useEffect(() => {
-    const fetchCsvData = async () => {
-      try {
-        const response = await fetch("/altitude.csv");
-        const csvText = await response.text();
-
-        // Parse CSV data
-        const lines = csvText.split("\n").slice(1); // Skip header
-        const parsedData = lines
-          .filter((line) => line.trim())
-          .map((line, index) => {
-            const [time, altitude] = line.split(",");
-            return {
-              time: time.replace(/"/g, ""),
-              altitude: parseInt(altitude),
-              index: index,
-            };
-          });
-
-        setCsvData(parsedData);
-      } catch (error) {
-        console.error("Failed to fetch CSV data:", error);
-      }
-    };
-
-    fetchCsvData();
-  }, []);
-
-  // Create combined data with packet points positioned at appropriate indices
-  const combinedData = csvData.map((point, index) => {
-    return {
+export default function TelemetryGraphs({ points, timestamp, onSeek }: Props) {
+  const start = points[0].timestamp;
+  const end = points[points.length - 1].timestamp;
+  const data = points.flatMap((point, index) => {
+    const sample = {
       ...point,
-      packetAltitude: null,
+      altitudeKm: (point.altitude / 1000) as number | null,
     };
+    const previous = points[index - 1];
+    return previous && point.timestamp - previous.timestamp > OBSERVATION_GAP_MS
+      ? [
+          {
+            ...sample,
+            timestamp: (point.timestamp + previous.timestamp) / 2,
+            altitudeKm: null,
+            speed: null,
+            temperature: null,
+          },
+          sample,
+        ]
+      : [sample];
   });
-
-  // Add packet data at the beginning of the timeline
-  const packetData = telemetryData.map((packet, index) => ({
-    index: index,
-    packetAltitude: packet.altitude * 0.3048, // Convert feet to meters
-    time: `Packet ${index + 1}`,
-    altitude: null,
-  }));
-
+  const tooltip = {
+    backgroundColor: "#111b2c",
+    borderColor: "#334155",
+    borderRadius: 10,
+    color: "#e2e8f0",
+    fontSize: 12,
+  };
+  const seekFromChart = (state: { activeLabel?: string | number } | null) => {
+    if (typeof state?.activeLabel === "number")
+      onSeek(state.activeLabel - start);
+  };
   return (
-    <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-      <CardHeader>
-        <CardTitle>Altitude Data</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="h-[500px] relative">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-              data={combinedData}
-              margin={{ top: 20, right: 30, left: 60, bottom: 40 }}
-            >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                horizontal={true}
-                vertical={false}
-              />
-              <XAxis dataKey="index" hide={true} />
-              <YAxis domain={[0, 15000]} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "rgba(15, 23, 42, 0.8)",
-                  borderColor: "rgba(100, 116, 139, 0.5)",
-                  borderRadius: "0.375rem",
-                }}
-                labelFormatter={(value, payload) => {
-                  if (payload && payload.length > 0) {
-                    const dataPoint = payload[0].payload;
-                    return dataPoint.time || `Time Index: ${value}`;
-                  }
-                  return `Time Index: ${value}`;
-                }}
-                formatter={(value, name) => [
-                  value,
-                  name === "altitude" ? "Actual Altitude" : "Altitude",
-                ]}
-              />
-
-              {/* Background line showing actual altitude data */}
-              <Line
-                type="monotone"
-                dataKey="altitude"
-                stroke="#0EA5E9"
-                strokeWidth={2}
-                dot={false}
-                name="Actual Altitude"
-              />
-
-              {/* Overlay packet data as scatter points */}
-              <Scatter
-                data={packetData}
-                dataKey="packetAltitude"
-                fill="#F59E0B"
-                stroke="#F59E0B"
-                strokeWidth={2}
-                r={6}
-                name="Packet Data"
-              />
-            </LineChart>
-          </ResponsiveContainer>
-
-          {/* Altitude label positioned at center-left */}
-          <div className="absolute left-2 top-1/2 transform -translate-y-1/2 -rotate-90 origin-left text-sm text-muted-foreground">
-            Altitude (m)
-          </div>
-
-          {/* Time Index label positioned at bottom center */}
-          <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-sm text-muted-foreground">
-            Time
-          </div>
+    <section
+      className="rounded-2xl border border-border/70 bg-card/40 p-4 sm:p-5"
+      aria-label="Archived telemetry charts"
+    >
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h2 className="font-semibold">Altitude profile</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Click the chart to seek · recorded samples over UTC time
+          </p>
         </div>
-      </CardContent>
-    </Card>
+        <span className="text-xs text-sky-400">Altitude (km)</span>
+      </div>
+      <div className="h-[270px] w-full min-w-0">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart
+            data={data}
+            margin={{ top: 8, right: 6, left: -16, bottom: 4 }}
+            onClick={seekFromChart}
+          >
+            <defs>
+              <linearGradient id="altitude-fill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.25} />
+                <stop offset="100%" stopColor="#38bdf8" stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid
+              stroke="#263449"
+              strokeDasharray="3 5"
+              vertical={false}
+            />
+            <XAxis
+              dataKey="timestamp"
+              type="number"
+              domain={[start, Math.max(end, start + 1)]}
+              tickFormatter={(value) => formatUTC(value).slice(0, 5)}
+              tick={{ fontSize: 11, fill: "#94a3b8" }}
+              tickLine={false}
+              axisLine={false}
+              minTickGap={30}
+            />
+            <YAxis
+              domain={[0, "auto"]}
+              tick={{ fontSize: 11, fill: "#94a3b8" }}
+              tickLine={false}
+              axisLine={false}
+            />
+            <Tooltip
+              contentStyle={tooltip}
+              labelFormatter={(value) => `${formatUTC(Number(value))} UTC`}
+              formatter={(value: number) => [
+                `${value.toFixed(2)} km`,
+                "Altitude",
+              ]}
+            />
+            <Area
+              dataKey="altitudeKm"
+              type="linear"
+              stroke="#38bdf8"
+              strokeWidth={2}
+              fill="url(#altitude-fill)"
+              connectNulls={false}
+              isAnimationActive={false}
+            />
+            <ReferenceLine
+              x={timestamp}
+              stroke="#f8fafc"
+              strokeWidth={1}
+              strokeDasharray="4 4"
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="mt-5 grid gap-5 sm:grid-cols-2">
+        {[
+          {
+            key: "speed",
+            title: "Ground speed",
+            unit: "km/h",
+            color: "#a78bfa",
+          },
+          {
+            key: "temperature",
+            title: "Tracker temperature",
+            unit: "°C",
+            color: "#fbbf24",
+          },
+        ].map(({ key, title, unit, color }) => (
+          <div key={key} className="min-w-0 border-t border-border/60 pt-4">
+            <div className="mb-3 flex justify-between text-xs">
+              <h3 className="font-medium">{title}</h3>
+              <span className="text-muted-foreground">{unit}</span>
+            </div>
+            <div className="h-[150px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart
+                  data={data}
+                  margin={{ top: 5, right: 6, left: -16, bottom: 0 }}
+                  onClick={seekFromChart}
+                >
+                  <CartesianGrid
+                    stroke="#263449"
+                    strokeDasharray="3 5"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="timestamp"
+                    type="number"
+                    domain={[start, Math.max(end, start + 1)]}
+                    tickFormatter={(value) => formatUTC(value).slice(0, 5)}
+                    tick={{ fontSize: 10, fill: "#94a3b8" }}
+                    tickLine={false}
+                    axisLine={false}
+                    minTickGap={45}
+                  />
+                  <YAxis
+                    domain={["auto", "auto"]}
+                    tick={{ fontSize: 10, fill: "#94a3b8" }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <Tooltip
+                    contentStyle={tooltip}
+                    labelFormatter={(value) =>
+                      `${formatUTC(Number(value))} UTC`
+                    }
+                    formatter={(value: number) => [`${value} ${unit}`, title]}
+                  />
+                  <Line
+                    dataKey={key}
+                    type="linear"
+                    stroke={color}
+                    strokeWidth={1.8}
+                    dot={false}
+                    connectNulls={false}
+                    isAnimationActive={false}
+                  />
+                  <ReferenceLine
+                    x={timestamp}
+                    stroke="#f8fafc"
+                    strokeDasharray="4 4"
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="mt-4 text-xs leading-5 text-muted-foreground">
+        Blank sections mark reception gaps longer than 60 seconds. They are not
+        filled with estimated measurements.
+      </p>
+    </section>
   );
-};
-
-export default TelemetryGraphs;
+}

@@ -64,7 +64,7 @@ const Index = () => (
                 1st place at Hack Club APEX
               </span>
               <span className="mt-0.5 block text-xs text-amber-100/80">
-                2025 · High-altitude balloon hackathon
+                2025 · International research hackathon
               </span>
             </span>
           </p>

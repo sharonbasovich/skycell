@@ -5,6 +5,8 @@
   "installCommand": "npm ci",
   "outputDirectory": "dist",
   "rewrites": [
+    { "source": "/drafts/:path*", "destination": "/index.html" },
+    { "source": "/original", "destination": "/index.html" },
     { "source": "/dashboard", "destination": "/index.html" },
     { "source": "/development", "destination": "/index.html" }
   ]

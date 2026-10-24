@@ -22,3 +22,12 @@ References are design/interaction research, not copied proprietary assets. Exist
 ## Acceptance and evidence
 
 Each draft must show its complete direction and defining behavior, preserve data provenance, provide functional navigation/replay, and remain readable without horizontal overflow at 360, 390, 768, and 1440 px. Build, lint, existing regression tests, desktop/phone browser inspection, scroll behavior and reduced-motion checks are required. Record actual checks in the final QA note; do not imply final production readiness.
+
+Verified October 24, 2026:
+
+- ESLint, TypeScript and production build pass. All 16 existing parser/replay tests pass.
+- IAB desktop inspection and a serial Playwright matrix cover the comparison hub and all three draft routes at 360, 390, 768 and 1440 px. No document overflow, broken images, or browser page errors were found. Larger conceptual illustration layers are intentionally clipped inside their scene.
+- Ascent's desktop scene remains sticky at 76 px while the balloon moves with scroll. Mobile and reduced-motion views use a static scene and normal text flow.
+- Explorer play/pause, keyboard End seeking to the final timestamp, reset, 250x speed selection and ground-track switching pass at 390 and 1440 px. Playback controls were moved before the viewer so they appear in the first viewport. Native timeline touch height increased to 44 px.
+- Project photos, specification copy, and archive identity were visually reviewed. The source archive, shared replay clock, parser and existing 3D component are unchanged.
+- Evidence: `C:/Users/Sharon/Documents/ChatGPT/skycell-draft-qa/browser-qa-results.json` plus desktop/mobile PNGs in the same folder. This is a design comparison, not a complete screen-reader, device-performance, or production-release audit. Existing 3D camera rotation remains pointer-based; timeline and ground-track mode have keyboard controls.

@@ -1,6 +1,6 @@
 # SkyCell ascent experience
 
-Sharon selected the ascent idea, specifically requested 3D, then asked for a much more ambitious implementation from scratch. This branch starts at original `origin/main` (16d83f3), not the comparison draft branch. The original validated archive parser, clock and replay remain reusable engineering foundations. The presentation and scene are new.
+Sharon selected the ascent idea and requested 3D. The ascent experience originated from `origin/main` (`16d83f3`), independently of the rough comparison draft. The current `codex/skycell-cinematic` revision starts from the earlier ascent commit `080078f` and rebuilds the assets, renderer and camera treatment. The validated archive parser, clock and replay remain reusable engineering foundations.
 
 ## Design contract
 
@@ -12,11 +12,22 @@ Hero allowed copy: SkyCell; Ascent; Build; Flight replay; “A small radio. A mu
 
 ## Full page and motion
 
-- Fixed quiet navigation, one integrated four-viewport journey. Hero and three explanatory chapters sit alongside a persistent 3D world; the scene evolves through payload detail, radio connection and a wide stratospheric horizon. Scroll is ordinary browser scrolling, never captured or forced. Native chapter buttons provide direct navigation.
-- True Three.js/R3F geometry: actual-inspired twin spherical helium balloons, thin train/tethers and suspended instruments, a white insulated enclosure, blue attachment, black side antenna, ground station, curved Earth and restrained atmospheric rim. Camera and communication arc are conceptual, not a reconstruction of the flight.
-- Existing Framer Motion drives a progress value. GPU work is demand-based, with finite convergence and no endless ambient rotation. No external 51 MB model, remote environment map or unnecessary postprocessing. A pause control freezes scene movement. Mobile uses centered framing above the text. Reduced-motion and WebGL failure have a useful static equivalent and all prose remains visible.
-- Calm white/pale-sky evidence sections follow: actual launch and hardware photos, engineering specifications, native post-flight lessons, then a navy archive chapter and source footer.
-- Replay uses the real partial APEX tracker/SondeHub archive and is explicitly distinct from SkyCell’s 915 MHz payload telemetry. It is never labeled live.
+- Fixed navigation and four HTML chapters accompany one persistent Three.js/R3F world. Ordinary browser scrolling drives the scene. Chapter buttons scroll explicitly to each panel’s top, independently of global header scroll padding. Real hardware/launch photographs, specifications and post-flight lessons follow, then the archive replay.
+- `CinematicTrain` loads original self-hosted GLBs: a photo-observed foam payload and a seamless latex balloon reused for the twin-balloon train. Geometry/camera coordinates use metres. EPS maps, lid join, clear tape, generic recovery labels, blue attachment, cable loop and telescopic antenna give the enclosure its visible construction. The editable Blender source and scripts remain in [`tools/asset-pipeline`](../tools/asset-pipeline/README.md).
+- One sun direction drives the key light, thin-latex backscatter, Earth surface and analytic atmosphere. An oriented Poly Haven pure-noon HDR supplies PMREM lighting. The environment uses kilometres, a 6,371 km Earth radius and a local east/up/north frame at 42°N, 71°W. NASA global June albedo/cloud maps transition into georeferenced regional MODIS Terra true-color imagery dated June 21, 2024. Its 0.5° edge feather excludes the independent global cloud overlay in the regional interior, whose source already contains clouds.
+- Raw scroll samples four camera holds and arc-length cubic travel paths, with C² eased arrivals/departures. A **single desired-pose filter** blends current position, look target, lens and environment altitude toward that sample with the same 12/s exponential alpha. A large reverse jump blends directly toward the hero pose instead of replaying the payload waypoint. Responsive rigs preserve framing; convergence stops demand rendering. Pause holds the current pose; resume retargets current scroll.
+- Reduced motion and unavailable/failed WebGL preserve every HTML chapter and use responsive poster captures from the final scene in native Chrome. There are no synthetic radio arcs or ground pedestal.
+- Replay uses the real partial APEX tracker/SondeHub archive, explicitly separate from SkyCell’s 915 MHz payload telemetry. It is never labeled live.
+
+## Rendering and asset limits
+
+The GLBs are original exterior interpretations from photographs, not scans or dimensioned engineering models. Unseen surfaces, creases and exact tape overlaps are interpreted; recovery labels are generic. The closed enclosure does not expose invented internals. Nominal dimensions, bounds and triangle counts are in [`asset-metadata.json`](../public/models/cinematic/asset-metadata.json).
+
+Camera travel, illustrative altitude, latex response, ocean appearance and analytic scattering are concept-illustration choices, not measurements or an archived-flight reconstruction. The regional image is historical geographic context from **2024-06-21**, not a photo of the 2025 flight or its weather. See [`asset-credits.md`](asset-credits.md) for sources and reuse terms.
+
+Earth shades into a cached linear HalfFloat render target, capped at 1024 CSS pixels wide on desktop or 640 on compact canvases, preserving the actual camera projection and aspect. The target updates only when camera/projection, altitude, sun or target changes; its display pass applies tone mapping/output conversion once. It uses about 5 MiB at the tested 1440×900 desktop canvas and about 1 MiB in the phone canvas. Compared with the DPR-scaled foreground, these dimensions reduce expensive Earth-shader pixels by approximately 4.45× desktop and 2.25× phone; these are pixel-count reductions, not FPS measurements.
+
+The regional map is chosen once per Canvas mount: 2048² below 900 CSS pixels or a 2048 texture-size limit; otherwise 4096². Six selected scene assets total **7,468,679 bytes desktop** or **4,857,081 bytes compact**, before application code, font and project photos. Final native-renderer posters add **30,508 / 5,574 bytes** for desktop/mobile. Estimated RGBA texture allocation with mipmaps is **138.7 / 74.7 MiB** for desktop/compact Earth maps, before the render target, GLBs, HDR and PMREM. Compressed transfer sizes do not establish GPU memory or frame time.
 
 ## Facts and limits
 
@@ -24,16 +35,16 @@ SkyCell: approximately 30 km mission altitude, 70 km LoRa/Meshtastic link at 915
 
 Archive: APEX-2-T, 125 observations, June 21 2025 18:11:06–19:17:21 UTC, 29,510 m peak in this partial recording. Keep reception gaps, held sensor values and original provenance.
 
-## Observable completion
+## Verification scope
 
-Production build, lint and existing regression tests pass. Inspect all four scene milestones at desktop, tablet and phone widths, verify framing/contrast and actual visible 3D. Check native anchors/chapter controls, pause/resume, reduced-motion changes, no WebGL, context failure, route teardown/re-entry, archive playback and broken resources. Record draw/triangle counts and idle rendering evidence; software Chromium is not a phone GPU benchmark. Separate branch preview only; main and production aliases remain unchanged.
+Check all four holds and transitions at desktop, tablet and phone widths, including framing, text contrast, asset loading and ordinary scrolling. Exercise native anchors/chapter controls, pause/resume, reduced-motion changes, unavailable WebGL, context loss/recovery, route teardown/re-entry and archive playback. Record draw/triangle counts and rendering after camera convergence; desktop software Chromium viewports do not establish physical-phone FPS.
 
-## Verification, October 24, 2026
+## Verification status, October 24, 2026
 
-- ESLint, TypeScript and production build pass. All 16 original parser/replay tests pass; the archive, parser and replay clock are unchanged.
-- IAB desktop rendering and a serial Chromium/Playwright matrix cover 360×780, 390×844, 375×667, 768×1024, 1440×900 and 1272×716. All four milestones render genuine WebGL 3D with correct asset/font loading and no document overflow. Mobile text/toolbar overlap and the hard canvas edge were corrected, then affected phone states were rechecked.
-- Native chapter buttons and cross-route Build anchors work. Pause holds the camera/stage while the page scrolls; resume follows the current chapter. Photo lightbox Escape restores focus. Post-flight lessons expand. Detailed archive play/pause and keyboard seeking still work.
-- Reduced motion and unsupported WebGL preserve all four HTML chapters and use the static illustration; they avoid loading the Three.js scene. Simulated context loss shows a fallback; Reload 3D clears loader state and recovers.
-- Scene metrics after repeated route re-entry plateau around 35 geometries, 4 textures, 35 draw calls and 35,000 triangles. Render counts stop changing after camera convergence. A single React invalidation on pause is expected and is not continuing motion. These are renderer counters and idle behavior checks, not GPU timings or an FPS claim.
-- Browser evidence and the harness are retained outside the source tree at `C:/Users/Sharon/Documents/ChatGPT/skycell-ascent-qa/`. The Chromium phone viewports use a software backend; physical phone GPUs and screen readers were not tested.
-- The initially integrated Canvas fallback incorrectly reported failure even with WebGL available; it was replaced with an inert fallback. Retrying a failed lazy import/texture now reloads the page rather than reusing rejected caches. Hash navigation waits for lazy content without an arbitrary timeout.
+Lint, typecheck, production build and **29 tests** pass. The six-viewport matrix covers **360×780, 390×844, 375×667, 768×1024, 1440×900 and 1272×716**, with 24 retained screenshots. Final interaction checks pass for chapter buttons, pause/resume, keyboard dialog focus, expandable lessons, replay completion, three route cycles, reduced motion, unavailable WebGL and context loss/reload. The rerun asserts frozen camera pose and progress while paused; it does not treat one extra R3F commit render as scene movement. It recorded zero issues, page errors or failed requests.
+
+Native Chrome recordings use an **RTX 3070 through D3D11**, at 1440×900 desktop and an emulated 390×844 viewport. Each records **1,099 requestAnimationFrame samples**, with median intervals around **13.3 ms** and p95 around **13.5 ms** on a 75 Hz display. These describe browser frame intervals on this hardware, not isolated GPU timings or physical-phone performance. Camera poses remain finite, and fast wide-to-hero jumps avoid the payload waypoint in both recordings. Over a 600 ms idle check, render counts stay **1599→1599 desktop** and **1606→1606 emulated mobile**.
+
+Kiro completed an independent text review, not a visual inspection. Devin completed and archived a [browser audit of the earlier baseline](https://app.devin.ai/sessions/cf9c886a9f1f4099ac23e4d9fee4a1a9); its fast-reverse finding motivated the direct desired-pose filter. Baseline findings do not validate the replacement scene. Audit reports, browser recordings and QA evidence are retained outside Git.
+
+Initial software-renderer timing prompted the bounded Earth render target. Its shaded-pixel reduction is not a measured causal FPS speedup; no controlled before/after hardware benchmark was run. Hardware evidence covers only the RTX 3070. Real phones and Safari remain untested. The archive parser and replay retain their existing provenance and semantics.

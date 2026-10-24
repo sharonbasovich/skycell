@@ -193,7 +193,7 @@ export default function FieldStory() {
       </section>
 
       <footer className="field-footer">
-        <div className="field-container field-footer-inner"><a href="#top" className="field-wordmark">SkyCell</a><p>A student experiment in high-altitude communication.<br /><a href="https://svs.gsfc.nasa.gov/2915/" target="_blank" rel="noopener noreferrer">Earth imagery: NASA / GSFC</a></p><nav aria-label="Project resources"><a href="https://github.com/knivier/SkyCell" target="_blank" rel="noopener noreferrer">Flight & ground source <ArrowUpRight size={14} aria-hidden="true" /></a><a href="https://github.com/sharonbasovich/skycell" target="_blank" rel="noopener noreferrer">Website source <ArrowUpRight size={14} aria-hidden="true" /></a></nav></div>
+        <div className="field-container field-footer-inner"><a href="#top" className="field-wordmark">SkyCell</a><p>A student experiment in high-altitude communication.<br /><a href="https://www.earthdata.nasa.gov/data/tools/gibs" target="_blank" rel="noopener noreferrer">Earth imagery: NASA / GIBS</a></p><nav aria-label="Project resources"><a href="https://github.com/knivier/SkyCell" target="_blank" rel="noopener noreferrer">Flight & ground source <ArrowUpRight size={14} aria-hidden="true" /></a><a href="https://github.com/sharonbasovich/skycell" target="_blank" rel="noopener noreferrer">Website source <ArrowUpRight size={14} aria-hidden="true" /></a></nav></div>
       </footer>
 
       <Dialog open={selectedPhoto !== null} onOpenChange={(open) => { if (!open) setSelectedPhoto(null); }}>

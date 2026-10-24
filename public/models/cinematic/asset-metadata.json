@@ -1,0 +1,64 @@
+{
+  "units": "metres",
+  "source_axes": "X length, -Y labelled face, Z up; GLB Y up",
+  "origin": "centre of EPS enclosure; balloon centre approximately origin",
+  "foam_body_dimensions_metres": [
+    0.55,
+    0.22,
+    0.19
+  ],
+  "reference_photos": [
+    "public/gallery/1000004204.jpg",
+    "public/gallery/1000004195.jpg"
+  ],
+  "original_reconstruction": true,
+  "label_note": "Generic recovery labels; no original contact information reproduced.",
+  "assets": [
+    {
+      "file": "payload-cinematic.glb",
+      "bytes": 1351300,
+      "triangles": 20074,
+      "mesh_objects": 26,
+      "source_bounds_xyz_metres": {
+        "min": [
+          -0.729716420173645,
+          -0.11174999922513962,
+          -0.09653892368078232
+        ],
+        "max": [
+          0.2764846384525299,
+          0.11148463934659958,
+          0.18458199501037598
+        ]
+      },
+      "gltf_dimensions_xyz_metres": [
+        1.006201058626175,
+        0.2811209186911583,
+        0.2232346385717392
+      ]
+    },
+    {
+      "file": "balloon-latex.glb",
+      "bytes": 308100,
+      "triangles": 13632,
+      "mesh_objects": 3,
+      "source_bounds_xyz_metres": {
+        "min": [
+          -0.8128089904785156,
+          -0.8315383791923523,
+          -0.9779999852180481
+        ],
+        "max": [
+          0.8370944261550903,
+          0.8256142139434814,
+          0.8320000171661377
+        ]
+      },
+      "gltf_dimensions_xyz_metres": [
+        1.649903416633606,
+        1.8100000023841858,
+        1.6571525931358337
+      ]
+    }
+  ]
+}

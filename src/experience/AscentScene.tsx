@@ -1,167 +1,113 @@
-import { Component, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Component, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import type { MotionValue } from "framer-motion";
-import { ACESFilmicToneMapping, BufferAttribute, BufferGeometry, CatmullRomCurve3, Group, Line as ThreeLine, LineDashedMaterial, MathUtils, PerspectiveCamera, PMREMGenerator, Sphere, SRGBColorSpace, TextureLoader, Vector3 } from "three";
-import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import BalloonTrain, { GroundStation } from "./scene/BalloonTrain";
-import { createAtmosphereMaterial } from "./scene/materials";
+import { ACESFilmicToneMapping, Euler, MathUtils, PerspectiveCamera, PMREMGenerator, Vector3 } from "three";
+import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
+import CinematicEarth from "./scene/CinematicEarth";
+import CinematicTrain from "./scene/CinematicTrain";
+import { sampleCinematicCamera } from "./scene/cinematicCamera";
+import type { CinematicFrame } from "./scene/cinematicTypes";
 
-interface Props {
-  progress: MotionValue<number>;
-  reducedMotion: boolean;
-  paused: boolean;
-  onReady?: () => void;
-  onFailure?: (error?: Error) => void;
-}
-
+interface Props { progress: MotionValue<number>; reducedMotion: boolean; paused: boolean; onReady?: () => void; onFailure?: (error?: Error) => void }
 class SceneBoundary extends Component<{ children: ReactNode; onFailure: (error?: Error) => void }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
-  componentDidCatch(error: Error) {
-    console.error("SkyCell ascent scene failed:", error);
-    this.props.onFailure(error);
-  }
+  componentDidCatch(error: Error) { console.error("SkyCell ascent scene failed:", error); this.props.onFailure(error); }
   render() { return this.state.failed ? null : this.props.children; }
-}
-
-function Globe() {
-  const map = useLoader(TextureLoader, `${import.meta.env.BASE_URL}textures/earth-blue-marble-2048.webp`);
-  const gl = useThree((state) => state.gl);
-  const atmosphereMaterial = useMemo(createAtmosphereMaterial, []);
-  useMemo(() => {
-    map.colorSpace = SRGBColorSpace;
-    map.anisotropy = Math.min(4, gl.capabilities.getMaxAnisotropy());
-    // Default TextureLoader flipY + SphereGeometry UVs put the image's north
-    // at the top of the sphere. This is an albedo map, not an environment map.
-    return map;
-  }, [map, gl]);
-  // useLoader owns a shared cache entry for the NASA texture; each Globe owns
-  // only its atmosphere material. Do not dispose a cache texture on unmount.
-  useEffect(() => () => { atmosphereMaterial.dispose(); }, [atmosphereMaterial]);
-  return (
-    <group position={[0, -46.4, -3]} rotation={[0, -0.3, 0.23]}>
-      <mesh><sphereGeometry args={[44.3, 96, 64]} /><meshStandardMaterial map={map} color="#ffffff" roughness={1} metalness={0} envMapIntensity={0.12} /></mesh>
-      <mesh material={atmosphereMaterial}><sphereGeometry args={[44.75, 72, 48]} /></mesh>
-    </group>
-  );
 }
 
 function World({ progress, paused, reducedMotion, onReady, onFailure, wrapper }: Props & { wrapper: React.RefObject<HTMLDivElement> }) {
   const { gl, camera, scene, size, invalidate } = useThree();
-  const train = useRef<Group>(null);
-  const current = useRef(reducedMotion ? 0.82 : MathUtils.clamp(progress.get(), 0, 1));
+  const hdr = useLoader(RGBELoader, `${import.meta.env.BASE_URL}textures/cinematic/qwantani_noon_puresky_1k.hdr`);
+  const current = useRef(MathUtils.clamp(progress.get(), 0, 1));
   const target = useRef(current.current);
   const initialized = useRef(false);
   const ready = useRef(false);
-  const frameCount = useRef(0);
-  const stageAttribute = useRef(-1);
-  const vectors = useMemo(() => ({ position: new Vector3(), look: new Vector3() }), []);
-  const paths = useMemo(() => ({
-    camera: new CatmullRomCurve3([new Vector3(10.7, 9.5, 28.3), new Vector3(5.3, 2.8, 8.1), new Vector3(14.5, 14.4, 34.0), new Vector3(25.0, 23.0, 47.0)], false, "centripetal"),
-    look: new CatmullRomCurve3([new Vector3(0, 7.45, 0), new Vector3(0.85, 0.65, 0), new Vector3(0, 10.0, 0), new Vector3(0, 7.2, -1.0)], false, "centripetal"),
-  }), []);
-  const radio = useMemo(() => {
-    const geometry = new BufferGeometry();
-    geometry.setAttribute("position", new BufferAttribute(new Float32Array(65 * 3), 3));
-    geometry.setAttribute("lineDistance", new BufferAttribute(new Float32Array(65), 1));
-    geometry.boundingSphere = new Sphere(new Vector3(0, 5, 0), 65);
-    const material = new LineDashedMaterial({ color: "#a2d0ff", transparent: true, opacity: 0, dashSize: 0.24, gapSize: 0.18, depthWrite: false });
-    return new ThreeLine(geometry, material);
-  }, []);
+  const count = useRef(0);
+  const frame = useRef<CinematicFrame>({ progress: current.current, altitudeKm: 18, sunDirection: new Vector3(-.3801334253, .7631884173, .5225342273).normalize() });
+  const vectors = useMemo(() => ({ position: new Vector3(), look: new Vector3(), settledPosition: new Vector3(), settledLook: new Vector3() }), []);
+  const cameraState = useMemo(() => ({ fov: 30, altitudeKm: 18, shot: 0 }), []);
+  const settledLens = useRef({ fov: 30, altitudeKm: 18 });
 
-  useEffect(() => {
-    const room = new RoomEnvironment();
+  useLayoutEffect(() => {
     const generator = new PMREMGenerator(gl);
-    const environment = generator.fromScene(room, 0.04, 0.1, 80);
+    const environment = generator.fromEquirectangular(hdr);
     const previous = scene.environment;
     scene.environment = environment.texture;
-    scene.environmentIntensity = 0.75;
-    generator.dispose(); room.dispose();
+    scene.environmentIntensity = .45;
+    scene.environmentRotation = new Euler(0, -Math.PI / 2, 0);
+    generator.dispose();
+    gl.shadowMap.autoUpdate = false;
+    gl.shadowMap.needsUpdate = true;
     invalidate();
     return () => { scene.environment = previous; environment.dispose(); };
-  }, [gl, scene, invalidate]);
-
+  }, [gl, scene, hdr, invalidate]);
   useEffect(() => {
     const lost = (event: Event) => { event.preventDefault(); onFailure?.(new Error("WebGL context lost")); };
     gl.domElement.addEventListener("webglcontextlost", lost);
     return () => gl.domElement.removeEventListener("webglcontextlost", lost);
   }, [gl, onFailure]);
-
-  useEffect(() => () => { radio.geometry.dispose(); radio.material.dispose(); }, [radio]);
-
   useEffect(() => {
-    if (!paused) target.current = reducedMotion ? 0.82 : MathUtils.clamp(progress.get(), 0, 1);
+    if (!paused) target.current = MathUtils.clamp(progress.get(), 0, 1);
     invalidate();
-    return progress.on("change", (value) => {
-      if (!paused && !reducedMotion) { target.current = MathUtils.clamp(value, 0, 1); invalidate(); }
-    });
+    return progress.on("change", (value) => { if (!paused && !reducedMotion) { target.current = MathUtils.clamp(value, 0, 1); invalidate(); } });
   }, [progress, paused, reducedMotion, invalidate]);
-
-  useEffect(() => {
-    const perspective = camera as PerspectiveCamera;
-    const narrow = size.width / Math.max(size.height, 1) < 1.15;
-    perspective.fov = narrow ? 43 : 35;
-    perspective.setViewOffset(size.width, size.height, narrow ? 0 : -size.width * 0.22, 0, size.width, size.height);
-    perspective.updateProjectionMatrix();
-    invalidate();
-  }, [camera, size.width, size.height, invalidate]);
-
   useFrame((_, delta) => {
-    const difference = target.current - current.current;
-    if (!paused) current.current = reducedMotion || !initialized.current ? target.current : current.current + difference * (1 - Math.exp(-7 * Math.min(delta, 0.05)));
-    initialized.current = true;
+    const alpha = 1 - Math.exp(-12 * Math.min(delta, .1));
+    if (!paused) {
+      const difference = target.current - current.current;
+      current.current = !initialized.current || Math.abs(difference) < .00001 ? target.current : current.current + difference * alpha;
+    }
     const p = current.current;
-    paths.camera.getPoint(p, vectors.position);
-    paths.look.getPoint(p, vectors.look);
-    camera.position.copy(vectors.position);
-    camera.lookAt(vectors.look);
-    const lift = MathUtils.smoothstep(p, 0.37, 1) * 4.6;
-    if (train.current) {
-      train.current.position.set(0.55 * MathUtils.smoothstep(p, 0.35, 1), lift, 0);
-      train.current.rotation.set(0.018 * Math.sin(p * Math.PI), -0.09 + p * 0.13, 0.025 - p * 0.055);
+    const narrow = size.width / Math.max(size.height, 1) < 1.3;
+    // Filter the desired pose once, rather than replaying every intervening
+    // waypoint after a large scroll jump. Fast reverse never dives through the
+    // payload close-up while the reader is already back at the hero.
+    const sample = sampleCinematicCamera(target.current, narrow, vectors.position, vectors.look, cameraState);
+    if (!initialized.current) {
+      vectors.settledPosition.copy(vectors.position);
+      vectors.settledLook.copy(vectors.look);
+      settledLens.current = { fov: sample.fov, altitudeKm: sample.altitudeKm };
+    } else if (!paused) {
+      vectors.settledPosition.lerp(vectors.position, alpha);
+      vectors.settledLook.lerp(vectors.look, alpha);
+      settledLens.current.fov = MathUtils.lerp(settledLens.current.fov, sample.fov, alpha);
+      settledLens.current.altitudeKm = MathUtils.lerp(settledLens.current.altitudeKm, sample.altitudeKm, alpha);
     }
-    const positions = radio.geometry.attributes.position.array as Float32Array;
-    const distances = radio.geometry.attributes.lineDistance.array as Float32Array;
-    const endX = 0.55 * MathUtils.smoothstep(p, 0.35, 1);
-    let lastX = -6.61, lastY = -1.41, lastZ = 1.6, distance = 0;
-    for (let i = 0; i <= 64; i++) {
-      const t = i / 64, u = 1 - t;
-      const x = u*u*-6.61 + 2*u*t*-1.8 + t*t*endX;
-      const y = u*u*-1.41 + 2*u*t*(lift + 6) + t*t*(lift + 0.2);
-      const z = u*u*1.6 + 2*u*t*1.4;
-      positions[i*3] = x; positions[i*3+1] = y; positions[i*3+2] = z;
-      distance += Math.hypot(x-lastX, y-lastY, z-lastZ);
-      distances[i] = distance; lastX = x; lastY = y; lastZ = z;
-    }
-    radio.geometry.attributes.position.needsUpdate = true;
-    radio.geometry.attributes.lineDistance.needsUpdate = true;
-    radio.material.opacity = MathUtils.smoothstep(p, 0.37, 0.56) * 0.45;
-    radio.visible = p > 0.37;
-    frameCount.current++;
-    const node = wrapper.current;
-    if (node) {
-      node.dataset.renderCount = String(frameCount.current);
-      const stage = Math.min(3, Math.max(0, Math.round(p * 3)));
-      if (stage !== stageAttribute.current) { node.dataset.sceneStage = String(stage); stageAttribute.current = stage; }
-      if (frameCount.current === 3 || frameCount.current % 30 === 0) {
+    initialized.current = true;
+    camera.position.copy(vectors.settledPosition);
+    camera.lookAt(vectors.settledLook);
+    const perspective = camera as PerspectiveCamera;
+    perspective.fov = settledLens.current.fov;
+    perspective.setViewOffset(size.width, size.height, narrow ? 0 : -size.width * .22, 0, size.width, size.height);
+    perspective.updateProjectionMatrix();
+    camera.updateMatrixWorld();
+    frame.current.progress = p;
+    frame.current.altitudeKm = settledLens.current.altitudeKm;
+    count.current++;
+    if (wrapper.current) {
+      const node = wrapper.current;
+      node.dataset.renderCount = String(count.current);
+      node.dataset.sceneStage = String(sample.shot);
+      node.dataset.sceneProgress = p.toFixed(5);
+      node.dataset.cameraPosition = `${camera.position.x.toFixed(5)},${camera.position.y.toFixed(5)},${camera.position.z.toFixed(5)}`;
+      node.dataset.cameraTarget = `${vectors.settledLook.x.toFixed(5)},${vectors.settledLook.y.toFixed(5)},${vectors.settledLook.z.toFixed(5)}`;
+      if (count.current === 3 || count.current % 30 === 0) {
         node.dataset.drawCalls = String(gl.info.render.calls);
         node.dataset.triangles = String(gl.info.render.triangles);
         node.dataset.geometries = String(gl.info.memory.geometries);
         node.dataset.textures = String(gl.info.memory.textures);
       }
     }
-    if (!ready.current && frameCount.current > 1) { ready.current = true; onReady?.(); }
-    if ((!paused && Math.abs(target.current - current.current) > 0.00008) || frameCount.current < 3) invalidate();
-  });
-
+    if (!ready.current && count.current > 2) { ready.current = true; onReady?.(); }
+    const unsettled = Math.abs(target.current - p) > .00001 || vectors.settledPosition.distanceToSquared(vectors.position) > 1e-8 || vectors.settledLook.distanceToSquared(vectors.look) > 1e-8 || Math.abs(settledLens.current.fov - sample.fov) > .0001;
+    if ((!paused && unsettled) || count.current < 4) invalidate();
+  }, -1);
+  const lightPosition = frame.current.sunDirection.clone().multiplyScalar(20);
   return <>
-    <hemisphereLight args={["#d8eaff", "#3d588a", 2.0]} />
-    <directionalLight position={[-8, 18, 12]} color="#fff4d9" intensity={3.0} />
-    <directionalLight position={[8, 10, -8]} color="#8fbeff" intensity={2.6} />
-    <Globe />
-    <GroundStation />
-    <primitive object={radio} />
-    <group ref={train}><BalloonTrain /></group>
+    <CinematicEarth frame={frame} />
+    <directionalLight position={lightPosition} intensity={3.3} color="#fff8ed" castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-1.2} shadow-camera-right={1.2} shadow-camera-top={1.2} shadow-camera-bottom={-1.2} shadow-camera-near={1} shadow-camera-far={40} shadow-bias={-.0001} shadow-normalBias={.0006} />
+    <CinematicTrain frame={frame} />
   </>;
 }
 
@@ -173,16 +119,13 @@ export default function AscentScene(props: Props) {
   const failed = useCallback((error?: Error) => {
     const failure = error ?? new Error("WebGL scene unavailable");
     if (wrapper.current) wrapper.current.dataset.sceneError = failure.message;
-    setState("error");
-    onFailure?.(failure);
+    setState("error"); onFailure?.(failure);
   }, [onFailure]);
-  return (
-    <div ref={wrapper} data-scene-state={state} data-render-backend="webgl2" aria-hidden="true" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}>
-      <SceneBoundary onFailure={failed}>
-        <Canvas dpr={[1, 1.5]} frameloop="demand" camera={{ position: [10.7, 9.5, 28.3], fov: 35, near: 0.1, far: 180 }} gl={{ alpha: true, antialias: true, powerPreference: "high-performance", toneMapping: ACESFilmicToneMapping, toneMappingExposure: 1.05 }} fallback={<span>A conceptual balloon train above a curved horizon.</span>} style={{ width: "100%", height: "100%" }}>
-          <World {...props} onReady={ready} onFailure={failed} wrapper={wrapper} />
-        </Canvas>
-      </SceneBoundary>
-    </div>
-  );
+  return <div ref={wrapper} data-scene-state={state} data-render-backend="webgl2" aria-hidden="true" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}>
+    <SceneBoundary onFailure={failed}>
+      <Canvas shadows dpr={[1, 1.5]} frameloop="demand" camera={{ position: [5.2, 22.3, 7], fov: 30, near: .035, far: 160 }} gl={{ alpha: false, antialias: true, powerPreference: "high-performance", toneMapping: ACESFilmicToneMapping, toneMappingExposure: .9 }} fallback={<span>A twin-balloon train above Earth.</span>} style={{ width: "100%", height: "100%" }}>
+        <World {...props} onReady={ready} onFailure={failed} wrapper={wrapper} />
+      </Canvas>
+    </SceneBoundary>
+  </div>;
 }

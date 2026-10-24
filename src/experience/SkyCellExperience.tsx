@@ -15,32 +15,11 @@ class SceneBoundary extends Component<{ children: ReactNode; onFailure: (error?:
 }
 
 function StaticAscent() {
-  return (
-    <svg className="sky-static-scene" viewBox="0 0 800 850" fill="none" aria-hidden="true">
-      <defs>
-        <radialGradient id="static-earth"><stop stopColor="#65a8e6" /><stop offset=".65" stopColor="#20639b" /><stop offset="1" stopColor="#10365c" /></radialGradient>
-        <radialGradient id="static-balloon" cx=".32" cy=".25"><stop stopColor="#fff" /><stop offset=".65" stopColor="#f0f5fc" /><stop offset="1" stopColor="#b1c9e5" /></radialGradient>
-        <linearGradient id="static-foam"><stop stopColor="#fffef7" /><stop offset="1" stopColor="#b6c5db" /></linearGradient>
-      </defs>
-      <ellipse cx="450" cy="1000" rx="620" ry="370" fill="url(#static-earth)" />
-      <path d="M-120 850C110 610 575 545 920 780" stroke="#a2d7ff" strokeWidth="3" opacity=".6" />
-      <g transform="translate(450 20) rotate(-7)">
-        <ellipse cx="0" cy="135" rx="93" ry="105" fill="url(#static-balloon)" />
-        <path d="M0 239v65" stroke="#e5effe" strokeWidth="1" />
-        <ellipse cx="0" cy="350" rx="63" ry="68" fill="url(#static-balloon)" />
-        <path d="M0 417v125m0-80 8 10-8 40-8-40 8-10" stroke="#e4edfa" />
-        <rect x="-8" y="477" width="16" height="22" rx="2" fill="#edf3fb" />
-        <path d="M0 543v32" stroke="#d5e3f7" />
-        <path d="m-27 577 48-8 12 24-48 9-12-25Z" fill="url(#static-foam)" />
-        <path d="m21 569 12 24 0 16-12-24v-16Z" fill="#9facbd" />
-        <path d="m-27 577 48-8v16l-48 8v-16Z" fill="#f6f5ec" />
-        <path d="m26 591 64 22" stroke="#142c4c" strokeWidth="3" />
-        <circle cx="-2" cy="570" r="5" fill="#3465c1" />
-      </g>
-    </svg>
-  );
+  return <picture className="sky-static-scene" aria-hidden="true">
+    <source media="(max-width: 700px)" srcSet="/posters/ascent-mobile.webp" />
+    <img src="/posters/ascent-desktop.webp" alt="" width="1440" height="900" fetchPriority="high" />
+  </picture>;
 }
-
 export default function SkyCellExperience() {
   const journeyRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({ target: journeyRef, offset: ["start start", "end end"] });
@@ -51,7 +30,7 @@ export default function SkyCellExperience() {
   const [failed, setFailed] = useState(false);
   const [failureReason, setFailureReason] = useState("");
   const [capable, setCapable] = useState(false);
-  const background = useTransform(scrollYProgress, [0, .34, .68, 1], ["#1647d1", "#1245ad", "#0b326f", "#07162e"]);
+  const background = useTransform(scrollYProgress, [0, .34, .68, 1], ["#132b4d", "#0f2745", "#0c1e37", "#071426"]);
   const handleReady = useCallback(() => { setReady(true); setFailureReason(""); }, []);
   const handleFailure = useCallback((error?: Error) => { setFailed(true); setReady(false); setFailureReason(error?.message || "WebGL scene unavailable"); }, []);
 
@@ -66,7 +45,10 @@ export default function SkyCellExperience() {
     } catch { setCapable(false); }
   }, []);
 
-  const goToChapter = (index: number) => document.getElementById(`journey-${index}`)?.scrollIntoView({ behavior: reducedMotion ? "instant" : "smooth", block: "start" });
+  const goToChapter = (index: number) => {
+    const panel = document.getElementById(`journey-${index}`);
+    if (panel) window.scrollTo({ top: panel.getBoundingClientRect().top + window.scrollY, behavior: reducedMotion ? "instant" : "smooth" });
+  };
   const showScene = capable && !reducedMotion && !failed;
 
   return (
@@ -79,7 +61,7 @@ export default function SkyCellExperience() {
           </div>
           <div className="sky-scene-shade" aria-hidden="true" />
           <div className="sky-journey-tools">
-            <p>Conceptual illustration<span>Not to scale or flight data</span></p>
+            <p>Illustrative reconstruction<span>Historical Earth imagery</span></p>
             {showScene ? <button type="button" onClick={() => setPaused((value) => !value)} aria-pressed={paused} aria-label={paused ? "Resume 3D scene movement" : "Pause 3D scene movement"}>{paused ? <Play size={14} aria-hidden="true" /> : <Pause size={14} aria-hidden="true" />}<span>{paused ? "Resume scene" : "Pause scene"}</span></button> : <span className="sky-static-label">{reducedMotion ? "Reduced motion" : failed ? "Static view" : "Illustrated view"}</span>}
             {failed && capable && !reducedMotion && <button type="button" onClick={() => window.location.reload()}>Reload 3D</button>}
           </div>

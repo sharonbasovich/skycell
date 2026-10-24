@@ -20,6 +20,12 @@ The demo replays an archived APEX / SondeHub tracker recording. It runs without 
 
 ## Engineering
 
+### 3D ascent experience
+
+The `codex/skycell-ascent` preview branch replaces the showcase presentation with a new scroll-driven Three.js experience. The model is a conceptual illustration inspired by the actual twin-balloon train and insulated payload, with camera views for the full train, payload detail, radio connection, and stratospheric horizon. It does not reconstruct the archived flight.
+
+The scene uses demand rendering, finite camera convergence, a pause control, and a static equivalent for reduced motion or unavailable WebGL. The NASA Blue Marble surface and Manrope typeface are self-hosted with their [credits and licensing](docs/asset-credits.md). Real project photos, specifications and flight lessons support the illustration. The original replay engine and its provenance remain intact. See the [design and verification notes](docs/ascent-experience.md).
+
 **Stack:** React · TypeScript · Vite · Tailwind CSS · React Three Fiber · Three.js · Recharts
 
 ```text

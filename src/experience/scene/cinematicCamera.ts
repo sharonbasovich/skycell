@@ -1,98 +1,65 @@
 import { MathUtils, Vector3 } from "three";
+import type { FlightDynamicsPose } from "./flightDynamics";
 
-export interface CinematicCameraSample {
-  fov: number;
-  altitudeKm: number;
-  /** Nearest narrative composition; the followed vehicle remains the subject. */
-  shot: number;
-  /** Subject target position in the viewport, measured from its top-left. */
-  screenX: number;
-  screenY: number;
-}
-
-interface Composition {
-  position: Vector3;
-  fov: number;
-  altitudeKm: number;
-  screenX: number;
-  screenY: number;
-}
-
-const TARGET = new Vector3(0, 2.05, 0);
-const TRAVEL = [[.06, .29], [.40, .62], [.75, .96]] as const;
-const ALTITUDES = [8, 14, 23, 30] as const;
-
-function composition(position: [number, number, number], fov: number, index: number, screenX: number, screenY = .5): Composition {
-  return { position: new Vector3(...position), fov, altitudeKm: ALTITUDES[index], screenX, screenY };
-}
-
-// A modest following arc keeps the same complete balloon/payload in view.
-// Layout shifts make room for each piece of the story, without inspecting the
-// upper balloon, diving down the line, or retreating to an unrelated wide shot.
-const DESKTOP = [
-  composition([5.8, 3.6, 13.5], 30, 0, .72),
-  composition([5.2, 3, 13.2], 30, 1, .32, .525),
-  composition([4.5, 2.8, 13.5], 31, 2, .70),
-  composition([6.5, 3.4, 16], 32, 3, .70, .43),
-] as const;
-const MOBILE = [
-  composition([4, 2.8, 13], 38, 0, .62, .57),
-  composition([3.8, 2.8, 13], 39, 1, .40, .42),
-  composition([4.1, 2.8, 13.2], 39, 2, .65, .58),
-  composition([4, 2.8, 13.5], 40, 3, .73, .42),
-] as const;
-
-/** Zero endpoint velocity/acceleration, with no overshoot at reading holds. */
-function easeTravel(t: number): number {
-  return MathUtils.clamp(t * t * t * (t * (t * 6 - 15) + 10), 0, 1);
-}
-
-/**
- * Pure and reversible composition sampler. Hardware/camera positions are in
- * local metres; illustrative environment altitude is independently in km.
- * Pass reusable vectors and sampleOut to avoid allocations during live scroll.
- * The parent owns input filtering, projection offsets and the visible clock.
- */
-export function sampleCinematicCamera(
-  progress: number,
-  narrow: boolean,
-  positionOut: Vector3,
-  targetOut: Vector3,
-  sampleOut: CinematicCameraSample = { fov: 30, altitudeKm: 8, shot: 0, screenX: .72, screenY: .5 },
-): CinematicCameraSample {
+export { STORY_STOPS } from "../storyTiming";
+const HOLDS = [[0, .055], [.125, .205], [.300, .365], [.425, .505], [.570, .645], [.705, .775], [.835, .905], [.965, 1]] as const;
+export interface CinematicCameraSample { fov: number; altitudeKm: number; shot: number; screenX: number; screenY: number }
+type Anchor = "flight" | "payload" | "inside" | "radio" | "power" | "recording";
+interface Shot { anchor: Anchor; offset: [number, number, number]; fov: number; x: number; y: number }
+const DESKTOP: Shot[] = [
+  { anchor: "flight", offset: [6.7, 3.1, 16.6], fov: 32, x: .72, y: .54 },
+  { anchor: "flight", offset: [7.6, 2.5, 15.4], fov: 33, x: .35, y: .50 },
+  { anchor: "payload", offset: [.98, .58, 1.38], fov: 34, x: .68, y: .53 },
+  { anchor: "inside", offset: [.78, .70, 1.22], fov: 37, x: .66, y: .55 },
+  { anchor: "radio", offset: [-2.5, 1.3, 4.2], fov: 35, x: .68, y: .54 },
+  { anchor: "power", offset: [.70, .56, 1.04], fov: 37, x: .66, y: .55 },
+  { anchor: "recording", offset: [62, 24, 10], fov: 35, x: .65, y: .43 },
+  { anchor: "flight", offset: [7.8, 3.2, 18], fov: 34, x: .71, y: .53 },
+];
+const MOBILE: Shot[] = [
+  { anchor: "flight", offset: [5.1, 2.4, 18], fov: 40, x: .60, y: .62 },
+  { anchor: "flight", offset: [6.5, 2.2, 17.5], fov: 40, x: .43, y: .43 },
+  { anchor: "payload", offset: [1.05, .63, 1.70], fov: 43, x: .52, y: .64 },
+  { anchor: "inside", offset: [.98, .90, 1.72], fov: 43, x: .50, y: .64 },
+  { anchor: "radio", offset: [-2.8, 1.4, 5.4], fov: 43, x: .56, y: .64 },
+  { anchor: "power", offset: [.98, .79, 1.58], fov: 43, x: .52, y: .63 },
+  { anchor: "recording", offset: [62, 24, 10], fov: 43, x: .50, y: .465 },
+  { anchor: "flight", offset: [5.2, 2.4, 18.3], fov: 41, x: .61, y: .60 },
+];
+const ease = (value: number) => { const t = MathUtils.clamp(value, 0, 1); return t * t * t * (t * (t * 6 - 15) + 10); };
+export function storyFlightProgress(progress: number): number {
   const p = Number.isNaN(progress) ? 0 : MathUtils.clamp(progress, 0, 1);
-  const compositions = narrow ? MOBILE : DESKTOP;
-  targetOut.copy(TARGET);
-  for (let index = 0; index < TRAVEL.length; index++) {
-    const [start, end] = TRAVEL[index];
-    const from = compositions[index];
-    if (p <= start) {
-      positionOut.copy(from.position);
-      sampleOut.fov = from.fov;
-      sampleOut.altitudeKm = from.altitudeKm;
-      sampleOut.shot = index;
-      sampleOut.screenX = from.screenX;
-      sampleOut.screenY = from.screenY;
-      return sampleOut;
-    }
-    if (p < end) {
-      const to = compositions[index + 1];
-      const eased = easeTravel((p - start) / (end - start));
-      positionOut.lerpVectors(from.position, to.position, eased);
-      sampleOut.fov = MathUtils.lerp(from.fov, to.fov, eased);
-      sampleOut.altitudeKm = MathUtils.lerp(from.altitudeKm, to.altitudeKm, eased);
-      sampleOut.screenX = MathUtils.lerp(from.screenX, to.screenX, eased);
-      sampleOut.screenY = MathUtils.lerp(from.screenY, to.screenY, eased);
-      sampleOut.shot = eased < .5 ? index : index + 1;
-      return sampleOut;
-    }
+  return .7 * ease(p / .26) + .3 * ease((p - .54) / .12);
+}
+function anchorPosition(kind: Anchor, f: number, pose: FlightDynamicsPose | undefined, out: Vector3) {
+  if (kind === "recording") return out.set(0, 27.5, -25);
+  if (kind === "flight") return pose ? out.copy(pose.midpoint) : out.set(0, 2.05 + 28 * f, 0);
+  out.set(kind === "power" ? .155 : kind === "radio" ? -.20 : 0, kind === "inside" ? .13 : kind === "power" ? .10 : .035, kind === "power" ? -.025 : 0);
+  if (pose) out.applyQuaternion(pose.payloadQuaternion).add(pose.payloadPosition);
+  else out.y += 28 * f;
+  return out;
+}
+/** One reversible camera journey through the same moving vehicle and its evidence. */
+export function sampleCinematicCamera(
+  progress: number, narrow: boolean, positionOut: Vector3, targetOut: Vector3,
+  sampleOut: CinematicCameraSample = { fov: 32, altitudeKm: 8, shot: 0, screenX: .72, screenY: .54 },
+  pose?: FlightDynamicsPose, scratch: Vector3 = new Vector3(),
+): CinematicCameraSample {
+  const p = Number.isNaN(progress) ? 0 : MathUtils.clamp(progress, 0, 1), shots = narrow ? MOBILE : DESKTOP, f = storyFlightProgress(p);
+  let fromIndex = shots.length - 1, toIndex = fromIndex, blend = 0;
+  for (let i = 0; i < HOLDS.length - 1; i++) {
+    if (p <= HOLDS[i][1]) { fromIndex = toIndex = i; break; }
+    if (p < HOLDS[i + 1][0]) { fromIndex = i; toIndex = i + 1; blend = ease((p - HOLDS[i][1]) / (HOLDS[i + 1][0] - HOLDS[i][1])); break; }
   }
-  const last = compositions[3];
-  positionOut.copy(last.position);
-  sampleOut.fov = last.fov;
-  sampleOut.altitudeKm = last.altitudeKm;
-  sampleOut.shot = 3;
-  sampleOut.screenX = last.screenX;
-  sampleOut.screenY = last.screenY;
+  const from = shots[fromIndex], to = shots[toIndex];
+  anchorPosition(from.anchor, f, pose, targetOut);
+  anchorPosition(to.anchor, f, pose, scratch);
+  targetOut.lerp(scratch, blend);
+  positionOut.set(MathUtils.lerp(from.offset[0], to.offset[0], blend), MathUtils.lerp(from.offset[1], to.offset[1], blend), MathUtils.lerp(from.offset[2], to.offset[2], blend)).add(targetOut);
+  sampleOut.fov = MathUtils.lerp(from.fov, to.fov, blend);
+  sampleOut.screenX = MathUtils.lerp(from.x, to.x, blend);
+  sampleOut.screenY = MathUtils.lerp(from.y, to.y, blend);
+  sampleOut.altitudeKm = 8 + f * 22;
+  sampleOut.shot = blend < .5 ? fromIndex : toIndex;
   return sampleOut;
 }

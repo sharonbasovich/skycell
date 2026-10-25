@@ -2,18 +2,12 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefO
 import { useFrame, useLoader, useThree } from "@react-three/fiber";
 import { ClampToEdgeWrapping, HalfFloatType, LinearFilter, LinearSRGBColorSpace, Matrix3, Matrix4, Mesh, NoColorSpace, OrthographicCamera, PlaneGeometry, RepeatWrapping, Scene, ShaderMaterial, SRGBColorSpace, TextureLoader, Vector3, Vector4, WebGLRenderTarget } from "three";
 import type { CinematicFrame } from "./cinematicTypes";
+import { EARTH_RADIUS_KM, sampleGeographicObserver } from "./spatialEnvironment";
 
-const EARTH_RADIUS_KM = 6371;
-
-/** A bounded illustrative drift, separate from the recorded APEX trajectory. */
-function setIllustrativeEarthBasis(matrix: Matrix3, progress: number) {
-  const p = Math.max(0, Math.min(progress, 1));
-  const travel = p * p * (3 - 2 * p);
-  // 66 km east / 18 km north is geographic context for this ascent story.
-  // Keeping the observer on the local up axis preserves its radial altitude
-  // and horizon geometry; only the geographic lookup basis moves underneath it.
-  const latitude = 42 * Math.PI / 180 + 18 * travel / EARTH_RADIUS_KM;
-  const longitude = -71 * Math.PI / 180 + 66 * travel / (EARTH_RADIUS_KM * Math.cos(latitude));
+/** Fixed east/up/north frame over Massachusetts, not an animated texture basis. */
+function setLocalEarthBasis(matrix: Matrix3) {
+  const latitude = 42 * Math.PI / 180;
+  const longitude = -71 * Math.PI / 180;
   const sinLat = Math.sin(latitude), cosLat = Math.cos(latitude);
   const sinLon = Math.sin(longitude), cosLon = Math.cos(longitude);
   matrix.set(
@@ -21,6 +15,17 @@ function setIllustrativeEarthBasis(matrix: Matrix3, progress: number) {
     0, sinLat, cosLat,
     cosLon, cosLat * sinLon, -sinLat * sinLon,
   );
+}
+
+function closeProjection(a: Matrix4, b: Matrix4, tolerance: number) {
+  for (let i = 0; i < 16; i++) if (Math.abs(a.elements[i] - b.elements[i]) > tolerance) return false;
+  return true;
+}
+
+const ROTATION_ELEMENTS = [0, 1, 2, 4, 5, 6, 8, 9, 10] as const;
+function closeRotation(a: Matrix4, b: Matrix4, tolerance: number) {
+  for (const i of ROTATION_ELEMENTS) if (Math.abs(a.elements[i] - b.elements[i]) > tolerance) return false;
+  return true;
 }
 
 const vertexShader = /* glsl */ `
@@ -227,18 +232,21 @@ void main() {
 const displayFragmentShader = /* glsl */ `
 varying vec2 vNdc;
 uniform sampler2D uBackdrop;
+uniform float uOpacity;
 void main() {
-  gl_FragColor = vec4(texture2D(uBackdrop, vNdc * 0.5 + 0.5).rgb, 1.0);
+  gl_FragColor = vec4(texture2D(uBackdrop, vNdc * 0.5 + 0.5).rgb, uOpacity);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`;
 
 interface Props {
   frame: MutableRefObject<CinematicFrame>;
+  /** Poster fixtures opt out; live maps blend over the immediate physical sky. */
+  fadeIn?: boolean;
 }
 
 /** Depthless kilometre environment behind the metre-scale floating-origin rig. */
-export default function CinematicEarth({ frame }: Props) {
+export default function CinematicEarth({ frame, fadeIn = true }: Props) {
   const gl = useThree((state) => state.gl);
   const width = useThree((state) => state.size.width);
   const height = useThree((state) => state.size.height);
@@ -254,7 +262,7 @@ export default function CinematicEarth({ frame }: Props) {
   ]);
   const resources = useMemo(() => {
     const localToEarth = new Matrix3();
-    setIllustrativeEarthBasis(localToEarth, 0);
+    setLocalEarthBasis(localToEarth);
     const earthMaterial = new ShaderMaterial({
       vertexShader,
       fragmentShader,
@@ -275,17 +283,18 @@ export default function CinematicEarth({ frame }: Props) {
     const displayMaterial = new ShaderMaterial({
       vertexShader,
       fragmentShader: displayFragmentShader,
-      depthTest: false,
+      transparent: true,
+      depthTest: true,
       depthWrite: false,
       toneMapped: true,
-      uniforms: { uBackdrop: { value: null } },
+      uniforms: { uBackdrop: { value: null }, uOpacity: { value: 0 } },
     });
     const geometry = new PlaneGeometry(2, 2);
     const earthScene = new Scene();
     const quad = new Mesh(geometry, earthMaterial);
     quad.frustumCulled = false;
     earthScene.add(quad);
-    return { earthMaterial, displayMaterial, geometry, earthScene, camera: new OrthographicCamera(-1, 1, 1, -1, 0, 1) };
+    return { earthMaterial, displayMaterial, geometry, earthScene, camera: new OrthographicCamera(-1, 1, 1, -1, 0, 1), worldEye: new Vector3(), geographicEye: new Vector3() };
   }, [surface, clouds, regional]);
 
   // Shade the background at bounded CSS resolution, independently of the
@@ -309,12 +318,12 @@ export default function CinematicEarth({ frame }: Props) {
     target: null as WebGLRenderTarget | null,
     projection: new Matrix4(),
     world: new Matrix4(),
-    progress: NaN,
-    altitudeKm: NaN,
+    eyeKm: new Vector3(Infinity, Infinity, Infinity),
     sun: new Vector3(),
     viewport: new Vector4(),
     scissor: new Vector4(),
   });
+  const fadeAge = useRef(0);
 
   useLayoutEffect(() => {
     surface.colorSpace = SRGBColorSpace;
@@ -345,23 +354,40 @@ export default function CinematicEarth({ frame }: Props) {
     // useLoader owns shared texture cache entries; do not dispose them here.
   }, [resources]);
 
-  useFrame(({ camera }) => {
+  useFrame(({ camera, invalidate }, delta) => {
     const previous = cache.current;
     const state = frame.current;
+    if (fadeIn && fadeAge.current < .45) {
+      // This is bounded asset-loading UI, independent of paused flight time.
+      // Clamp the first timestep after a long image decode/compile pause.
+      const step = Number.isFinite(delta) ? Math.min(Math.max(delta, 0), .05) : 1 / 60;
+      fadeAge.current = Math.min(.45, fadeAge.current + step);
+      if (fadeAge.current < .45) invalidate();
+    }
+    const fade = Math.min(fadeAge.current / .45, 1);
+    // Alpha belongs only to the final pass, so its animation never invalidates
+    // the cached Earth render target. A paused rig therefore stays still while
+    // its newly available background completes this one loading transition.
+    resources.displayMaterial.uniforms.uOpacity.value = fadeIn ? fade * fade * (3 - 2 * fade) : 1;
+    const flightProgress = state.flightProgress ?? state.progress;
+    resources.worldEye.setFromMatrixPosition(camera.matrixWorld);
+    sampleGeographicObserver(flightProgress, state.altitudeKm, resources.worldEye, resources.geographicEye);
+    // Wind follow moves the camera by centimetres, which is sub-pixel against
+    // a globe kilometres away. Preserve the cached backdrop until translation
+    // exceeds 2 m or ray direction/lens changes by about a quarter target pixel.
+    // Spatial clouds still render their genuine foreground parallax each frame.
+    const rotationTolerance = .5 / Math.max(bufferHeight * Math.abs(camera.projectionMatrix.elements[5]), 1);
+    const projectionTolerance = .5 / Math.max(bufferWidth, bufferHeight);
     if (previous.target === target
-      && previous.progress === state.progress
-      && previous.altitudeKm === state.altitudeKm
+      && previous.eyeKm.distanceToSquared(resources.geographicEye) < .000004
       && previous.sun.equals(state.sunDirection)
-      && previous.projection.equals(camera.projectionMatrix)
-      && previous.world.equals(camera.matrixWorld)) return;
+      && closeProjection(previous.projection, camera.projectionMatrix, projectionTolerance)
+      && closeRotation(previous.world, camera.matrixWorld, rotationTolerance)) return;
 
     const uniforms = resources.earthMaterial.uniforms;
     uniforms.uProjectionInverse.value.copy(camera.projectionMatrixInverse);
     uniforms.uCameraRotation.value.setFromMatrix4(camera.matrixWorld);
-    uniforms.uEyeKm.value.setFromMatrixPosition(camera.matrixWorld).multiplyScalar(0.001);
-    // This story starts above the real 6 km cloud shell, never at ground level.
-    uniforms.uEyeKm.value.y += EARTH_RADIUS_KM + Math.max(8, state.altitudeKm);
-    setIllustrativeEarthBasis(uniforms.uLocalToEarth.value, state.progress);
+    uniforms.uEyeKm.value.copy(resources.geographicEye);
     uniforms.uSunDirection.value.copy(state.sunDirection);
     if (uniforms.uSunDirection.value.lengthSq() < 0.000001) uniforms.uSunDirection.value.set(0, 1, 0);
     uniforms.uSunDirection.value.normalize();
@@ -386,8 +412,7 @@ export default function CinematicEarth({ frame }: Props) {
     previous.target = target;
     previous.projection.copy(camera.projectionMatrix);
     previous.world.copy(camera.matrixWorld);
-    previous.progress = state.progress;
-    previous.altitudeKm = state.altitudeKm;
+    previous.eyeKm.copy(resources.geographicEye);
     previous.sun.copy(state.sunDirection);
   }, 0);
 

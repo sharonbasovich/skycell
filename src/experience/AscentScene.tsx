@@ -1,15 +1,19 @@
-import { Component, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Component, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import type { MotionValue } from "framer-motion";
-import { ACESFilmicToneMapping, Euler, MathUtils, PerspectiveCamera, PMREMGenerator, Vector3 } from "three";
+import { ACESFilmicToneMapping, DirectionalLight, Euler, MathUtils, Object3D, PerspectiveCamera, PMREMGenerator, Vector3 } from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 import CinematicEarth from "./scene/CinematicEarth";
 import CinematicTrain from "./scene/CinematicTrain";
 import FlightClouds from "./scene/FlightClouds";
-import { sampleCinematicCamera } from "./scene/cinematicCamera";
+import { sampleCinematicCamera, storyFlightProgress } from "./scene/cinematicCamera";
+import { createFlightDynamicsPose, sampleFlightDynamics } from "./scene/flightDynamics";
+import RecordedTrajectory from "./scene/RecordedTrajectory";
+import ProgressiveSky from "./scene/ProgressiveSky";
+import type { ProcessedTrajectoryData } from "@/utils/csvDataUtils";
 import type { CinematicFrame } from "./scene/cinematicTypes";
 
-interface Props { progress: MotionValue<number>; presentedProgress: MotionValue<number>; reducedMotion: boolean; paused: boolean; active: boolean; onReady?: () => void; onFailure?: (error?: Error) => void }
+interface Props { progress: MotionValue<number>; presentedProgress: MotionValue<number>; reducedMotion: boolean; paused: boolean; active: boolean; archive: ProcessedTrajectoryData | null; selectedObservation: number; pointer: React.MutableRefObject<{ x: number; y: number }>; onReady?: () => void; onFailure?: (error?: Error) => void }
 class SceneBoundary extends Component<{ children: ReactNode; onFailure: (error?: Error) => void }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
@@ -17,18 +21,35 @@ class SceneBoundary extends Component<{ children: ReactNode; onFailure: (error?:
   render() { return this.state.failed ? null : this.props.children; }
 }
 
-function World({ progress, presentedProgress, paused, active, onReady, onFailure, wrapper }: Props & { wrapper: React.RefObject<HTMLDivElement> }) {
-  const { gl, camera, scene, size, invalidate } = useThree();
+function EnvironmentLighting() {
+  const { gl, scene, invalidate } = useThree();
   const hdr = useLoader(RGBELoader, `${import.meta.env.BASE_URL}textures/cinematic/qwantani_noon_puresky_1k.hdr`);
+  useLayoutEffect(() => {
+    const generator = new PMREMGenerator(gl), environment = generator.fromEquirectangular(hdr), previous = scene.environment;
+    scene.environment = environment.texture;
+    scene.environmentIntensity = .45;
+    scene.environmentRotation = new Euler(0, -Math.PI / 2, 0);
+    generator.dispose(); invalidate();
+    return () => { scene.environment = previous; environment.dispose(); };
+  }, [gl, scene, hdr, invalidate]);
+  return null;
+}
+
+function World({ progress, presentedProgress, paused, active, archive, selectedObservation, pointer, onReady, onFailure, wrapper }: Props & { wrapper: React.RefObject<HTMLDivElement> }) {
+  const { gl, camera, size, invalidate } = useThree();
   const current = useRef(MathUtils.clamp(progress.get(), 0, 1));
   const running = useRef(false);
   const wasPaused = useRef(paused);
-  const resume = useRef<{ from: number; elapsed: number } | null>(null);
+  const resume = useRef<{ from: number; elapsed: number; duration: number } | null>(null);
   const ready = useRef(false);
+  const rigMounted = useRef(false), rigFrames = useRef(0);
+  const handleRigReady = useCallback(() => { rigMounted.current = true; rigFrames.current = 0; invalidate(); }, [invalidate]);
   const count = useRef(0);
   const timings = useRef({ samples: new Float32Array(120), count: 0 });
   const frame = useRef<CinematicFrame>({ progress: current.current, altitudeKm: 8, elapsedSeconds: 0, sunDirection: new Vector3(-.3801334253, .7631884173, .5225342273).normalize() });
-  const vectors = useMemo(() => ({ position: new Vector3(), look: new Vector3() }), []);
+  const vectors = useMemo(() => ({ position: new Vector3(), look: new Vector3(), scratch: new Vector3(), offset: new Vector3(), pose: createFlightDynamicsPose(), cameraPose: createFlightDynamicsPose(), lightTarget: new Object3D() }), []);
+  const keyLight = useRef<DirectionalLight>(null);
+  const pointerLook = useRef({ x: 0, y: 0 });
   const sample = useMemo(() => ({ fov: 30, altitudeKm: 8, shot: 0, screenX: .72, screenY: .5 }), []);
   const gpuRenderer = useMemo(() => {
     const context = gl.getContext();
@@ -36,20 +57,6 @@ function World({ progress, presentedProgress, paused, active, onReady, onFailure
     return debug ? String(context.getParameter(debug.UNMASKED_RENDERER_WEBGL)) : "WebGL2";
   }, [gl]);
 
-  useLayoutEffect(() => {
-    const generator = new PMREMGenerator(gl);
-    const environment = generator.fromEquirectangular(hdr);
-    const previous = scene.environment;
-    scene.environment = environment.texture;
-    scene.environmentIntensity = .45;
-    scene.environmentRotation = new Euler(0, -Math.PI / 2, 0);
-    generator.dispose();
-    // The rig now performs restrained motion, including the suspension loop.
-    // Its small contact shadows use one bounded 1K map rather than a stale map.
-    gl.shadowMap.autoUpdate = true;
-    invalidate();
-    return () => { scene.environment = previous; environment.dispose(); };
-  }, [gl, scene, hdr, invalidate]);
   useEffect(() => {
     const lost = (event: Event) => { event.preventDefault(); onFailure?.(new Error("WebGL context lost")); };
     gl.domElement.addEventListener("webglcontextlost", lost);
@@ -61,7 +68,7 @@ function World({ progress, presentedProgress, paused, active, onReady, onFailure
       resume.current = null;
     } else {
       const next = MathUtils.clamp(progress.get(), 0, 1);
-      if (wasPaused.current && active && Math.abs(next - frame.current.progress) > .0001) resume.current = { from: frame.current.progress, elapsed: 0 };
+      if (wasPaused.current && active && Math.abs(next - frame.current.progress) > .0001) resume.current = { from: frame.current.progress, elapsed: 0, duration: .3 + Math.abs(next - frame.current.progress) * .75 };
       current.current = next;
     }
     wasPaused.current = paused;
@@ -90,25 +97,43 @@ function World({ progress, presentedProgress, paused, active, onReady, onFailure
     let p = current.current;
     if (resume.current && playing) {
       resume.current.elapsed += dt;
-      const t = MathUtils.clamp(resume.current.elapsed / .3, 0, 1);
+      const t = MathUtils.clamp(resume.current.elapsed / resume.current.duration, 0, 1);
       p = MathUtils.lerp(resume.current.from, current.current, t * t * (3 - 2 * t));
       if (t === 1) resume.current = null;
     }
-    sampleCinematicCamera(p, size.width <= 700, vectors.position, vectors.look, sample);
+    const f = storyFlightProgress(p);
+    frame.current.flightProgress = f;
+    sampleFlightDynamics(f, frame.current.elapsedSeconds, vectors.pose);
+    const inspection = p > .25 && p < .80;
+    // A wide following shot trails the envelope slightly. Inspection instead
+    // follows the actual payload, so small details remain readable in motion.
+    sampleFlightDynamics(f, Math.max(0, frame.current.elapsedSeconds - (inspection ? 0 : .32)), vectors.cameraPose);
+    const portraitComposition = size.width <= 700 || size.width / size.height < 0.95;
+    sampleCinematicCamera(p, portraitComposition, vectors.position, vectors.look, sample, vectors.cameraPose, vectors.scratch);
+    if (inspection) {
+      pointerLook.current.x = MathUtils.damp(pointerLook.current.x, pointer.current.x, 4, dt);
+      pointerLook.current.y = MathUtils.damp(pointerLook.current.y, pointer.current.y, 4, dt);
+      vectors.offset.subVectors(vectors.position, vectors.look).applyAxisAngle(vectors.scratch.set(0, 1, 0), pointerLook.current.x * .08);
+      vectors.offset.y += pointerLook.current.y * .025;
+      vectors.position.copy(vectors.look).add(vectors.offset);
+    } else if (p > .80 && p < .94) {
+      const orbit = MathUtils.smoothstep(p, .80, .835) * (1 - MathUtils.smoothstep(p, .905, .94));
+      vectors.position.x += Math.sin(frame.current.elapsedSeconds * .10) * orbit * 2;
+    }
     camera.position.copy(vectors.position);
     camera.lookAt(vectors.look);
     const perspective = camera as PerspectiveCamera;
     perspective.fov = sample.fov;
-    const tablet = size.width > 700 && size.width < 1050;
-    const screenX = .5 + (sample.screenX - .5) * (tablet ? 1.2 : 1);
-    const shortPhoneOffset = size.width <= 700 && size.height < 650 ? .04 * (1 - MathUtils.smoothstep(p, .06, .29)) - .02 * MathUtils.smoothstep(p, .8, .98) : 0;
-    const screenY = sample.screenY + shortPhoneOffset;
+    const screenX = sample.screenX;
+    const screenY = sample.screenY;
     perspective.setViewOffset(size.width, size.height, -(screenX - .5) * size.width, -(screenY - .5) * size.height, size.width, size.height);
     perspective.updateProjectionMatrix();
     camera.updateMatrixWorld();
     frame.current.progress = p;
-    presentedProgress.set(p);
+    if (rigMounted.current) presentedProgress.set(p);
     frame.current.altitudeKm = sample.altitudeKm;
+    vectors.lightTarget.position.copy(vectors.pose.payloadPosition);
+    if (keyLight.current) keyLight.current.position.copy(vectors.pose.payloadPosition).addScaledVector(frame.current.sunDirection, 80);
     count.current++;
     if (wrapper.current) {
       const node = wrapper.current;
@@ -119,6 +144,9 @@ function World({ progress, presentedProgress, paused, active, onReady, onFailure
       node.dataset.sceneTime = frame.current.elapsedSeconds.toFixed(5);
       node.dataset.playing = String(playing);
       node.dataset.balloonCount = "1";
+      node.dataset.payloadPosition = `${vectors.pose.payloadPosition.x.toFixed(4)},${vectors.pose.payloadPosition.y.toFixed(4)},${vectors.pose.payloadPosition.z.toFixed(4)}`;
+      node.dataset.balloonPosition = `${vectors.pose.balloonPosition.x.toFixed(4)},${vectors.pose.balloonPosition.y.toFixed(4)},${vectors.pose.balloonPosition.z.toFixed(4)}`;
+      node.dataset.tetherAngle = MathUtils.radToDeg(Math.acos(MathUtils.clamp(vectors.pose.tetherDirection.y, -1, 1))).toFixed(3);
       node.dataset.cameraPosition = `${camera.position.x.toFixed(5)},${camera.position.y.toFixed(5)},${camera.position.z.toFixed(5)}`;
       node.dataset.cameraTarget = `${vectors.look.x.toFixed(5)},${vectors.look.y.toFixed(5)},${vectors.look.z.toFixed(5)}`;
       if (count.current === 3 || count.current % 45 === 0) {
@@ -134,15 +162,19 @@ function World({ progress, presentedProgress, paused, active, onReady, onFailure
         }
       }
     }
-    if (!ready.current && count.current > 2) { ready.current = true; onReady?.(); }
-    if (playing || count.current < 4) invalidate();
+    if (rigMounted.current) rigFrames.current++;
+    if (!ready.current && rigFrames.current > 2) { ready.current = true; if (wrapper.current) wrapper.current.dataset.rigReadyMs = performance.now().toFixed(1); onReady?.(); }
+    if (playing || count.current < 4 || (rigMounted.current && rigFrames.current < 4)) invalidate();
   }, -1);
-  const lightPosition = frame.current.sunDirection.clone().multiplyScalar(20);
   return <>
-    <CinematicEarth frame={frame} />
-    <directionalLight position={lightPosition} intensity={3.3} color="#fff8ed" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-.85} shadow-camera-right={.85} shadow-camera-top={.85} shadow-camera-bottom={-.85} shadow-camera-near={1} shadow-camera-far={40} shadow-bias={-.0001} shadow-normalBias={.0006} />
-    <CinematicTrain frame={frame} />
+    <ProgressiveSky frame={frame} />
+    <Suspense fallback={null}><CinematicEarth frame={frame} /></Suspense>
+    <Suspense fallback={<hemisphereLight args={["#b7d2ee", "#18263b", .45]} />}><EnvironmentLighting /></Suspense>
+    <primitive object={vectors.lightTarget} />
+    <directionalLight ref={keyLight} target={vectors.lightTarget} intensity={3.3} color="#fff8ed" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-.85} shadow-camera-right={.85} shadow-camera-top={.85} shadow-camera-bottom={-.85} shadow-camera-near={1} shadow-camera-far={120} shadow-bias={-.0001} shadow-normalBias={.0006} />
+    <Suspense fallback={null}><CinematicTrain frame={frame} onReady={handleRigReady} /></Suspense>
     <FlightClouds frame={frame} />
+    <RecordedTrajectory frame={frame} data={archive} selected={selectedObservation} />
   </>;
 }
 

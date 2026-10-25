@@ -78,7 +78,7 @@ export function FixtureWorld() {
   const lightPosition = SUN.clone().multiplyScalar(20);
   return <>
     <directionalLight position={lightPosition} intensity={3.3} color="#fff8ed" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-.85} shadow-camera-right={.85} shadow-camera-top={.85} shadow-camera-bottom={-.85} shadow-camera-near={1} shadow-camera-far={40} shadow-bias={-.0001} shadow-normalBias={.0006} />
-    {mode === "rig" ? <CinematicTrain frame={frame} /> : <CinematicEarth frame={frame} />}
+    {mode === "rig" ? <CinematicTrain frame={frame} /> : <CinematicEarth frame={frame} fadeIn={false} />}
   </>;
 }
 

@@ -1,8 +1,14 @@
-# Hardware gallery display images
+# Hardware display images and prior gallery
 
-The gallery uses optimized copies of the original project photographs. The
-original JPG files remain unchanged and are exposed through `EvidencePhoto.fullSrc`
-for the full-resolution photo dialog. `src` identifies the small display variant.
+These optimized copies were prepared for the `779a71e` revision’s three-tab
+hardware gallery. The current integrated flight replaces that menu with a camera
+approach and modeled payload cutaway. It reuses the small images only in the
+normal-flow reduced-motion/unavailable-WebGL fallback, while relevant inspection
+links and flight notes open the unchanged original JPEG photographs.
+
+The earlier gallery exposed originals through `EvidencePhoto.fullSrc`, with `src`
+identifying the small display variant. The processing and hashes below remain
+current; the gallery loading behaviour is preserved only as implementation history.
 
 | Original | Display variant | Dimensions | Bytes |
 | --- | --- | --- | ---: |
@@ -21,23 +27,22 @@ packaging/antenna detail, the electronics and power connections, and the complet
 actual two-balloon launch train. Launch wording remains accurately attributed to
 the Massachusetts APEX event on June 21, 2025.
 
-## Loading and presentation
+## Earlier three-tab presentation (`779a71e`)
 
-The three compressed images stay mounted and begin eager loading when the
-hardware section approaches within 320 pixels of the viewport. Each incoming
-image must complete its own `decode()` before becoming displayed. The previous
-layer stays opaque until the 160 ms incoming fade finishes, rather than exiting
-before the next resource is available. Reduced motion removes both fade and
-delayed hide. Retry attempts have separate image keys, and stale asynchronous
-decodes cannot change a newer tab selection.
+The former three-tab gallery kept compressed image layers mounted and began
+eager loading within 320 pixels of the viewport. Incoming images completed
+`decode()` before display; the previous layer stayed opaque until a 160 ms fade
+finished. Reduced motion removed the fade and delayed hide. Retry attempts used
+separate keys, and stale asynchronous decodes could not replace a newer selection.
 
-Only the currently displayed, selected photo has the `.field-photo-button` class,
-an enabled button and a tab stop. Hidden and retiring figures are `aria-hidden`
-and their buttons are disabled. Loading and retry status remain explicit.
+Only the then-displayed, selected photo had an enabled `.field-photo-button` and
+tab stop. Hidden/retiring figures were `aria-hidden`, with disabled buttons and
+explicit loading/retry status. Those menu states are not part of the integrated
+main-page journey.
 
-Scoped ESLint and whitespace checks passed. Browser checks are intentionally
-left to root's serial production QA; no browser or rendering process was run for
-this asset/transition change.
+That checkpoint’s scoped checks and later gallery browser tests belong to the
+earlier revision. They do not validate the current integrated camera, cutaway,
+recording controls or motion.
 
 ## SHA-256
 

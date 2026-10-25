@@ -1,118 +1,160 @@
-import { useEffect, useLayoutEffect, useMemo, type MutableRefObject } from "react";
-import { useFrame, useLoader, useThree } from "@react-three/fiber";
-import { ClampToEdgeWrapping, MathUtils, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, SRGBColorSpace, TextureLoader, Vector3 } from "three";
+import { useEffect, useMemo, type MutableRefObject } from "react";
+import { useFrame } from "@react-three/fiber";
+import { BoxGeometry, Data3DTexture, DoubleSide, GLSL3, InstancedBufferAttribute, InstancedBufferGeometry, LinearFilter, Matrix4, Mesh, RedFormat, RepeatWrapping, ShaderMaterial, Vector3 } from "three";
 import type { CinematicFrame } from "./cinematicTypes";
+import { CLOUD_BANKS, cloudVisibility, createCloudDensityVolume } from "./spatialEnvironment";
 
 interface Props { frame: MutableRefObject<CinematicFrame> }
+// A bounded read-only CPU cache avoids re-baking the same noise on route entry
+// or StrictMode remounts. Each mounted pass still owns/disposes its GPU texture.
+let densityBytes: Uint8Array | undefined;
 
-// Fixed placements are finite passages, not a respawning particle field.
-// Distance is metres behind the subject; lateral position is a fraction of the
-// current camera half-width, so the wisps remain peripheral on narrow phones.
-const PASSAGES = [
-  { start: -.13, end: .18, lateral: -.69, depth: 3.2, width: 8.8, opacity: .23, phase: .4, roll: -.055 },
-  { start: -.035, end: .285, lateral: .72, depth: 5.0, width: 10.4, opacity: .18, phase: 2.1, roll: .075 },
-  { start: .065, end: .35, lateral: -.78, depth: 7.2, width: 11.8, opacity: .135, phase: 4.6, roll: -.025 },
-] as const;
+// All centres/radii, sun and rays use metre-space. Camera movement changes
+// perspective, separation and occlusion; nothing is placed in camera space.
+const vertexShader = /* glsl */ `
+attribute vec3 aCenter;
+attribute vec3 aRadius;
+attribute vec2 aCloud;
+uniform vec3 uWind;
+varying vec3 vLocalPosition;
+flat out vec3 vLocalCamera;
+flat out vec3 vCenter;
+flat out vec3 vRadius;
+flat out vec2 vCloud;
+void main() {
+  vec3 center = aCenter + uWind;
+  vec3 world = center + position * aRadius;
+  vLocalPosition = position;
+  vLocalCamera = (cameraPosition - center) / aRadius;
+  vCenter = center;
+  vRadius = aRadius;
+  vCloud = aCloud;
+  gl_Position = projectionMatrix * viewMatrix * vec4(world, 1.0);
+}`;
 
-/** Three photographic alpha wisps beside/behind the complete balloon rig. */
+const fragmentShader = /* glsl */ `
+precision highp sampler3D;
+uniform sampler3D uDensity;
+uniform vec3 uSunDirection;
+uniform float uVisibility;
+uniform mat4 uViewProjection;
+varying vec3 vLocalPosition;
+flat in vec3 vLocalCamera;
+flat in vec3 vCenter;
+flat in vec3 vRadius;
+flat in vec2 vCloud;
+out vec4 cloudColor;
+#define gl_FragColor cloudColor
+
+void main() {
+  // Select one box face per ray, including when the observer enters a volume.
+  bool insideBox = max(max(abs(vLocalCamera.x), abs(vLocalCamera.y)), abs(vLocalCamera.z)) < 1.0;
+  if (gl_FrontFacing == insideBox) discard;
+  vec3 ray = normalize(vLocalPosition - vLocalCamera);
+  float b = dot(vLocalCamera, ray);
+  float c = dot(vLocalCamera, vLocalCamera) - 1.0;
+  float discriminant = b * b - c;
+  if (discriminant <= 0.0) discard;
+  float root = sqrt(discriminant);
+  float start = max(-b - root, 0.0);
+  float finish = -b + root;
+  if (finish <= start) discard;
+  float stepLength = (finish - start) / 6.0;
+  float alpha = 0.0;
+  vec3 radiance = vec3(0.0);
+  vec3 firstHit = vLocalCamera + ray * start;
+  bool found = false;
+  vec3 sun = normalize(uSunDirection);
+  // Bounded six-sample volume integrals, not a full-screen atmosphere march.
+  for (int i = 0; i < 6; i++) {
+    vec3 point = vLocalCamera + ray * (start + (float(i) + 0.5) * stepLength);
+    float shape = pow(max(1.0 - dot(point, point), 0.0), 0.7);
+    // Keep neighbouring samples correlated along depth so integration preserves
+    // clumps rather than averaging the bank into a smooth elliptical wash.
+    vec3 lookup = point * vec3(.72, .90, .28) + vec3(vCloud.y, vCloud.y * .37, vCloud.y * .71);
+    float noise = texture(uDensity, lookup).r;
+    float density = max(noise - .39, 0.0) * 6.3 * shape * vCloud.x;
+    float opacity = (1.0 - exp(-density * stepLength * 1.45)) * uVisibility;
+    if (!found && opacity > .008) { firstHit = point; found = true; }
+    // Shared sun and a shorter light path through the upper cloud surface.
+    vec3 normalBase = point / vRadius + vec3(0.0, .0001, 0.0);
+    vec3 normal = normalBase * inversesqrt(max(dot(normalBase, normalBase), .00000001));
+    float daylight = clamp(dot(normal, sun) * .35 + point.y * .22 + .55, 0.0, 1.0);
+    vec3 light = mix(vec3(.24, .35, .49), vec3(1.24, 1.22, 1.16), daylight);
+    radiance += (1.0 - alpha) * opacity * light;
+    alpha += (1.0 - alpha) * opacity;
+  }
+  if (alpha < .006) discard;
+  vec3 worldHit = vCenter + firstHit * vRadius;
+  vec4 clip = uViewProjection * vec4(worldHit, 1.0);
+  // First-density depth lets nearby vapour cross in front of the tether while
+  // the opaque foam correctly occludes distant vapour.
+  gl_FragDepth = clamp(clip.z / max(clip.w, .0001) * .5 + .5, 0.0, 1.0);
+  float distanceFog = 1.0 - exp(-length(cameraPosition - worldHit) * .0012);
+  vec3 color = radiance / max(alpha, .0001);
+  color = mix(color, vec3(.30, .45, .59), distanceFog * .48);
+  gl_FragColor = vec4(color, alpha);
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
+}`;
+
+/** One instanced draw for seven fixed 3D cloud banks along the early ascent. */
 export default function FlightClouds({ frame }: Props) {
-  const gl = useThree((state) => state.gl);
-  const invalidate = useThree((state) => state.invalidate);
-  const texture = useLoader(TextureLoader, `${import.meta.env.BASE_URL}textures/flight/cirrus-wisp.webp`);
   const resources = useMemo(() => {
-    const geometry = new PlaneGeometry(1, 1);
-    const materials = PASSAGES.map(() => new MeshBasicMaterial({
-      map: texture,
-      transparent: true,
-      opacity: 0,
-      alphaTest: .004,
-      depthTest: true,
-      depthWrite: false,
-      toneMapped: true,
-    }));
-    const meshes = materials.map((material, index) => {
-      const mesh = new Mesh(geometry, material);
-      mesh.name = `Illustrative cirrus passage ${index + 1}`;
-      mesh.castShadow = false;
-      mesh.receiveShadow = false;
-      return mesh;
+    // Transparent banks are submitted far-to-near along the initial following
+    // view. They have vanished before the close camera begins its orbit.
+    const banks = [...CLOUD_BANKS].reverse();
+    const base = new BoxGeometry(2, 2, 2);
+    const geometry = new InstancedBufferGeometry();
+    geometry.index = base.index?.clone() ?? null;
+    for (const [name, attribute] of Object.entries(base.attributes)) geometry.setAttribute(name, attribute.clone());
+    base.dispose();
+    geometry.instanceCount = CLOUD_BANKS.length;
+    geometry.setAttribute("aCenter", new InstancedBufferAttribute(new Float32Array(banks.flatMap(bank => [...bank.center])), 3));
+    geometry.setAttribute("aRadius", new InstancedBufferAttribute(new Float32Array(banks.flatMap(bank => [...bank.radius])), 3));
+    geometry.setAttribute("aCloud", new InstancedBufferAttribute(new Float32Array(banks.flatMap(bank => [bank.density, bank.seed])), 2));
+    const density = new Data3DTexture(densityBytes ??= createCloudDensityVolume(), 32, 32, 32);
+    density.name = "SkyCell procedural spatial cloud density";
+    density.format = RedFormat;
+    density.minFilter = LinearFilter;
+    density.magFilter = LinearFilter;
+    density.wrapS = density.wrapT = density.wrapR = RepeatWrapping;
+    density.unpackAlignment = 1;
+    density.needsUpdate = true;
+    const material = new ShaderMaterial({
+      glslVersion: GLSL3, vertexShader, fragmentShader,
+      side: DoubleSide, transparent: true, depthTest: true, depthWrite: false, toneMapped: true,
+      uniforms: {
+        uDensity: { value: density }, uWind: { value: new Vector3() },
+        uSunDirection: { value: new Vector3() }, uVisibility: { value: 1 },
+        uViewProjection: { value: new Matrix4() },
+      },
     });
-    return { geometry, materials, meshes };
-  }, [texture]);
-  const vectors = useMemo(() => ({
-    right: new Vector3(), up: new Vector3(), forward: new Vector3(),
-    anchor: new Vector3(0, 2, 0), toAnchor: new Vector3(), ndc: new Vector3(),
-  }), []);
+    const mesh = new Mesh(geometry, material);
+    mesh.name = "World-space cirrus volumes";
+    mesh.frustumCulled = false;
+    mesh.renderOrder = 20;
+    return { geometry, density, material, mesh };
+  }, []);
 
-  useLayoutEffect(() => {
-    texture.colorSpace = SRGBColorSpace;
-    texture.wrapS = ClampToEdgeWrapping;
-    texture.wrapT = ClampToEdgeWrapping;
-    texture.anisotropy = Math.min(2, gl.capabilities.getMaxAnisotropy());
-    texture.needsUpdate = true;
-    invalidate();
-  }, [texture, gl, invalidate]);
-
-  useEffect(() => () => {
-    resources.geometry.dispose();
-    for (const material of resources.materials) material.dispose();
-    // useLoader owns the shared texture cache; route teardown must not dispose it.
-  }, [resources]);
-
-  useFrame(({ camera, size }) => {
+  useFrame(({ camera }) => {
     const state = frame.current;
-    const progress = MathUtils.clamp(state.progress, 0, 1);
-    const time = Math.max(0, state.elapsedSeconds);
-    // At 8 km the vehicle is already above a 6 km deck. Near cirrus accompanies
-    // only the first part of the climb and is completely absent above 14 km.
-    const altitudeFade = 1 - MathUtils.smoothstep(state.altitudeKm, 10.4, 14);
-    vectors.right.setFromMatrixColumn(camera.matrixWorld, 0);
-    vectors.up.setFromMatrixColumn(camera.matrixWorld, 1);
-    vectors.forward.setFromMatrixColumn(camera.matrixWorld, 2).negate();
-    vectors.toAnchor.copy(vectors.anchor).sub(camera.position);
-    const subjectDepth = Math.max(1, vectors.toAnchor.dot(vectors.forward));
-    const fov = (camera as PerspectiveCamera).fov;
-    const tangent = Math.tan(MathUtils.degToRad(fov * .5));
-    const aspect = size.width / Math.max(size.height, 1);
-
-    for (let i = 0; i < PASSAGES.length; i++) {
-      const seed = PASSAGES[i];
-      const mesh = resources.meshes[i];
-      const material = resources.materials[i];
-      const passage = (progress - seed.start) / (seed.end - seed.start);
-      mesh.visible = altitudeFade > .001 && passage > 0 && passage < 1;
-      if (!mesh.visible) { material.opacity = 0; continue; }
-
-      const halfHeight = tangent * (subjectDepth + seed.depth);
-      const halfWidth = halfHeight * aspect;
-      // Bounded idle drift uses the parent's pause/visibility-aware scene clock.
-      // There is no raw wall time, modulo, hard wrap, spawn or per-frame allocation.
-      const wind = Math.sin(time * .105 + seed.phase) * .15;
-      const settle = Math.tanh(time / 32) * .45;
-      const horizontal = seed.lateral * halfWidth + wind;
-      const vertical = 4.6 - passage * 9.4 - settle + Math.sin(time * .07 + seed.phase) * .10;
-      const width = Math.min(seed.width, halfWidth * 2.35);
-      mesh.position.copy(vectors.anchor)
-        .addScaledVector(vectors.forward, seed.depth)
-        .addScaledVector(vectors.right, horizontal)
-        .addScaledVector(vectors.up, vertical);
-      mesh.quaternion.copy(camera.quaternion);
-      mesh.rotateZ(seed.roll);
-      mesh.scale.set(width, width * (439 / 1024), 1);
-
-      const enter = MathUtils.smoothstep(passage, 0, .12);
-      const exit = 1 - MathUtils.smoothstep(passage, .78, 1);
-      // Actual projected position includes the story's asymmetric view offsets.
-      vectors.ndc.copy(mesh.position).project(camera);
-      const windowFade = (1 - MathUtils.smoothstep(Math.abs(vectors.ndc.y), .95, 1.6))
-        * (1 - MathUtils.smoothstep(Math.abs(vectors.ndc.x), 1.15, 2.0));
-      material.opacity = seed.opacity * enter * exit * altitudeFade * windowFade;
-      const daylight = .85 + MathUtils.clamp(state.sunDirection.y, 0, 1) * .15;
-      material.color.setRGB(daylight, daylight, daylight);
-    }
+    const opacity = cloudVisibility(state.altitudeKm);
+    resources.mesh.visible = opacity > .001;
+    if (!resources.mesh.visible) return;
+    const uniforms = resources.material.uniforms;
+    const time = Number.isFinite(state.elapsedSeconds) ? state.elapsedSeconds : 0;
+    uniforms.uWind.value.set(Math.sin(time * .028) * .65, 0, Math.sin(time * .021) * .4);
+    uniforms.uVisibility.value = opacity;
+    uniforms.uSunDirection.value.copy(state.sunDirection);
+    if (uniforms.uSunDirection.value.lengthSq() < .000001) uniforms.uSunDirection.value.set(0, 1, 0);
+    uniforms.uSunDirection.value.normalize();
+    uniforms.uViewProjection.value.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
   }, 0);
 
-  return <group name="Illustrative near-cloud passage" dispose={null}>
-    {resources.meshes.map((mesh) => <primitive key={mesh.name} object={mesh} dispose={null} />)}
-  </group>;
+  useEffect(() => () => {
+    resources.geometry.dispose(); resources.material.dispose(); resources.density.dispose();
+  }, [resources]);
+
+  return <primitive object={resources.mesh} dispose={null} />;
 }

@@ -7,4 +7,6 @@ export interface CinematicFrame {
   sunDirection: Vector3;
   /** Owned visible-scene time; freezes for pause, hidden tab and offscreen. */
   elapsedSeconds: number;
+  /** Physical ascent, independent of hardware inspection/recording chapters. */
+  flightProgress?: number;
 }

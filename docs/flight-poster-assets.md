@@ -30,6 +30,10 @@ HDR, 0.45 environment intensity, sun/light/shadow settings and 0.9 exposure as
 `AscentScene`. The rig and Earth captures are rendered serially at 600×1200 and
 1440×900 respectively. No near-cloud wisps, UI or text are included.
 
+The Earth fixture explicitly passes `fadeIn={false}`. Its output is fully opaque
+from the first rendered frame, independent of the live page’s 450 ms progressive
+image reveal and paused flight clock. `ProgressiveSky` is not part of this fixture.
+
 This deliberately uses dedicated native Chrome/Playwright capture because the
 in-app browser does not expose alpha screenshots and exact asset viewports.
 Only the local first-party fixture is visited. The script waits for asset
@@ -48,7 +52,12 @@ Raw PNGs and JSON measurement reports stay outside the served project, under
 alpha-bounds cropping, padding and WebP format conversion. No painting,
 compositing, recoloring or mesh changes are used.
 
-## Verified output, 2026-10-25
+## Retained checkpoint output, 2026-10-25 (`779a71e`)
+
+The delivered files below were verified at the previous flight-story checkpoint.
+The integrated journey retains them for static/loading use. Re-running the
+fixture after live material or motion changes may produce different pixels and
+must be inspected again before replacing these files or updating their inventory.
 
 | Layer | Dimensions | Bytes | SHA-256 |
 | --- | --- | ---: | --- |

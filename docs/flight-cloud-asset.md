@@ -1,7 +1,13 @@
-# Illustrative near-cloud plate
+# Historical illustrative near-cloud plate
 
-`public/textures/flight/cirrus-wisp.webp` is a generated photographic-style cirrus
-plate used by `FlightClouds.tsx`. It is an illustrative passage element, not a
+The generated `cirrus-wisp.webp` plate belonged to the prior `779a71e` flight-story
+revision and has been removed from the integrated journey’s runtime. The exact
+[archived asset](https://github.com/sharonbasovich/skycell/blob/779a71ef56be61c02cc77180bb484e84fb7a616e/public/textures/flight/cirrus-wisp.webp)
+and [earlier plane implementation](https://github.com/sharonbasovich/skycell/blob/779a71ef56be61c02cc77180bb484e84fb7a616e/src/experience/scene/FlightClouds.tsx)
+remain in Git history. This document retains the generation prompt and provenance;
+the current scene uses procedural world-space cloud volumes instead.
+
+The plate was an illustrative passage element, not a
 photograph from the recorded SkyCell/APEX flight and not a scientific cloud map.
 The separately credited NASA Earth imagery remains geographic context.
 
@@ -10,18 +16,19 @@ request. Original RGBA output: 1916 × 821 pixels, 1,565,684 bytes. Inspection f
 50.36% fully transparent pixels, a genuinely varying alpha channel from 0 to 253,
 and no baked sky rectangle. The original RGBA output is retained outside Git with the generation record.
 
-The project copy was resized with Lanczos to 1024 × 439 and encoded as WebP quality
+The previous project copy was resized with Lanczos to 1024 × 439 and encoded as WebP quality
 92 with its alpha preserved. No painting, compositing or recoloring was applied.
-Runtime opacity is restrained and the planes sit behind the opaque rig.
+At that checkpoint its runtime opacity was restrained and the planes sat behind
+the opaque rig.
 
-- Runtime bytes: 149,230
+- Archived derivative bytes: 149,230
 - SHA-256: `30151c542707d47fc536ea26778c71ed024ec8046ab9f030a0fbc76a288a11e2`
-- Three planes share one texture and one two-triangle geometry.
-- `elapsedSeconds` comes only from the parent pause/visibility-aware clock.
-- Three fixed progress windows descend through the composition; no particle
-  respawning or hard wrapping. Opacity reaches zero above 14 km.
-- Earth geographic drift is bounded to an illustrative 66 km east / 18 km north
-  path, separately from the preserved recorded APEX trajectory.
+- The former implementation used three planes sharing one texture and one
+  two-triangle geometry, with a parent pause/visibility-aware clock.
+- Three fixed progress windows descended through the composition without
+  particle respawning or hard wrapping; opacity reached zero above 14 km.
+- Its illustrative 66 km east / 18 km north geographic path was separate from
+  the preserved recorded APEX trajectory.
 
 ## Generation prompt
 

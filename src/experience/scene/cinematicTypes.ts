@@ -5,4 +5,6 @@ export interface CinematicFrame {
   progress: number;
   altitudeKm: number;
   sunDirection: Vector3;
+  /** Owned visible-scene time; freezes for pause, hidden tab and offscreen. */
+  elapsedSeconds: number;
 }

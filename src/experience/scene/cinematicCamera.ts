@@ -1,121 +1,98 @@
-import { CubicBezierCurve3, MathUtils, Vector3 } from "three";
+import { MathUtils, Vector3 } from "three";
 
 export interface CinematicCameraSample {
   fov: number;
   altitudeKm: number;
-  /** Nearest narrative shot (0 hero, 1 payload, 2 connection, 3 wide). */
+  /** Nearest narrative composition; the followed vehicle remains the subject. */
   shot: number;
+  /** Subject target position in the viewport, measured from its top-left. */
+  screenX: number;
+  screenY: number;
 }
 
-interface Shot {
+interface Composition {
   position: Vector3;
-  target: Vector3;
   fov: number;
   altitudeKm: number;
+  screenX: number;
+  screenY: number;
 }
 
-interface CameraRig {
-  shots: readonly Shot[];
-  paths: readonly CubicBezierCurve3[];
+const TARGET = new Vector3(0, 2.05, 0);
+const TRAVEL = [[.06, .29], [.40, .62], [.75, .96]] as const;
+const ALTITUDES = [8, 14, 23, 30] as const;
+
+function composition(position: [number, number, number], fov: number, index: number, screenX: number, screenY = .5): Composition {
+  return { position: new Vector3(...position), fov, altitudeKm: ALTITUDES[index], screenX, screenY };
 }
 
-const ALTITUDES = [18, 22, 27, 30] as const;
-const TRAVEL = [[0.06, 0.28], [0.43, 0.60], [0.77, 0.94]] as const;
+// A modest following arc keeps the same complete balloon/payload in view.
+// Layout shifts make room for each piece of the story, without inspecting the
+// upper balloon, diving down the line, or retreating to an unrelated wide shot.
+const DESKTOP = [
+  composition([5.8, 3.6, 13.5], 30, 0, .72),
+  composition([5.2, 3, 13.2], 30, 1, .32, .525),
+  composition([4.5, 2.8, 13.5], 31, 2, .70),
+  composition([6.5, 3.4, 16], 32, 3, .70, .43),
+] as const;
+const MOBILE = [
+  composition([4, 2.8, 13], 38, 0, .62, .57),
+  composition([3.8, 2.8, 13], 39, 1, .40, .42),
+  composition([4.1, 2.8, 13.2], 39, 2, .65, .58),
+  composition([4, 2.8, 13.5], 40, 3, .73, .42),
+] as const;
 
-function shot(position: [number, number, number], target: [number, number, number], fov: number, index: number): Shot {
-  return { position: new Vector3(...position), target: new Vector3(...target), fov, altitudeKm: ALTITUDES[index] };
-}
-
-function createRig(shots: readonly Shot[], controls: readonly [Vector3, Vector3][]): CameraRig {
-  const paths = controls.map(([departure, arrival], index) => {
-    const path = new CubicBezierCurve3(shots[index].position, departure, arrival, shots[index + 1].position);
-    // Build the cumulative length tables once, not during scroll sampling.
-    // getPointAt then converts eased travel distance into the cubic parameter.
-    path.arcLengthDivisions = 512;
-    path.updateArcLengths();
-    return path;
-  });
-  return { shots, paths };
-}
-
-// Gentle front/right arcs retain clearance from the vertical flight train.
-// Each shot ends at rest; no orbit, automatic roll, or ambient camera drift.
-const DESKTOP = createRig([
-  shot([5.2, 22.3, 7], [0, 21.7, 0], 30, 0),
-  shot([1, 0.55, 1.75], [-0.15, 0.03, 0], 34, 1),
-  shot([5, 4, 14], [0, 4, 0], 36, 2),
-  shot([16, 16, 43], [0, 11.5, 0], 35, 3),
-], [
-  [new Vector3(5.8, 17, 8), new Vector3(2, 3, 4.1)],
-  [new Vector3(1.7, 1.2, 4.4), new Vector3(4.6, 3.6, 10)],
-  [new Vector3(7.6, 5.5, 22.6), new Vector3(12.8, 12.9, 36.5)],
-]);
-
-const MOBILE = createRig([
-  shot([3, 22.1, 5], [0, 21.9, 0], 36, 0),
-  shot([0.68, 0.4, 1.2], [-0.2, 0.03, 0], 38, 1),
-  shot([4, 4, 13], [0, 4, 0], 44, 2),
-  shot([14, 16, 45], [0, 11.5, 0], 42, 3),
-], [
-  [new Vector3(3.4, 17, 5.6), new Vector3(1.15, 2.6, 2.7)],
-  [new Vector3(1.2, 1, 3.3), new Vector3(3.4, 3.4, 9.7)],
-  [new Vector3(6.5, 6, 21.2), new Vector3(11.3, 12.9, 37)],
-]);
-
-/** Zero velocity and acceleration at both ends, without overshoot. */
+/** Zero endpoint velocity/acceleration, with no overshoot at reading holds. */
 function easeTravel(t: number): number {
-  // Roundoff immediately below t=1 can exceed 1 by a few ulps. Three's
-  // arc-length lookup requires an inclusive [0, 1] distance fraction.
   return MathUtils.clamp(t * t * t * (t * (t * 6 - 15) + 10), 0, 1);
 }
 
 /**
- * Pure, reversible scroll sampler. Positions/targets are in local metres;
- * altitude is the independent kilometre environment altitude.
- *
- * Mutates the supplied vectors. Pass a reusable sampleOut for allocation-free
- * frames. The default return object is convenient for setup and inspection.
- * Camera orientation/up vector and responsive projection offset stay with the
- * caller. This function adds no smoothing or time-dependent state.
+ * Pure and reversible composition sampler. Hardware/camera positions are in
+ * local metres; illustrative environment altitude is independently in km.
+ * Pass reusable vectors and sampleOut to avoid allocations during live scroll.
+ * The parent owns input filtering, projection offsets and the visible clock.
  */
 export function sampleCinematicCamera(
   progress: number,
   narrow: boolean,
   positionOut: Vector3,
   targetOut: Vector3,
-  sampleOut: CinematicCameraSample = { fov: 30, altitudeKm: 18, shot: 0 },
+  sampleOut: CinematicCameraSample = { fov: 30, altitudeKm: 8, shot: 0, screenX: .72, screenY: .5 },
 ): CinematicCameraSample {
   const p = Number.isNaN(progress) ? 0 : MathUtils.clamp(progress, 0, 1);
-  const rig = narrow ? MOBILE : DESKTOP;
-
+  const compositions = narrow ? MOBILE : DESKTOP;
+  targetOut.copy(TARGET);
   for (let index = 0; index < TRAVEL.length; index++) {
     const [start, end] = TRAVEL[index];
-    const from = rig.shots[index];
+    const from = compositions[index];
     if (p <= start) {
       positionOut.copy(from.position);
-      targetOut.copy(from.target);
       sampleOut.fov = from.fov;
       sampleOut.altitudeKm = from.altitudeKm;
       sampleOut.shot = index;
+      sampleOut.screenX = from.screenX;
+      sampleOut.screenY = from.screenY;
       return sampleOut;
     }
     if (p < end) {
-      const to = rig.shots[index + 1];
+      const to = compositions[index + 1];
       const eased = easeTravel((p - start) / (end - start));
-      rig.paths[index].getPointAt(eased, positionOut);
-      targetOut.lerpVectors(from.target, to.target, eased);
+      positionOut.lerpVectors(from.position, to.position, eased);
       sampleOut.fov = MathUtils.lerp(from.fov, to.fov, eased);
       sampleOut.altitudeKm = MathUtils.lerp(from.altitudeKm, to.altitudeKm, eased);
-      sampleOut.shot = eased < 0.5 ? index : index + 1;
+      sampleOut.screenX = MathUtils.lerp(from.screenX, to.screenX, eased);
+      sampleOut.screenY = MathUtils.lerp(from.screenY, to.screenY, eased);
+      sampleOut.shot = eased < .5 ? index : index + 1;
       return sampleOut;
     }
   }
-
-  const last = rig.shots[3];
+  const last = compositions[3];
   positionOut.copy(last.position);
-  targetOut.copy(last.target);
   sampleOut.fov = last.fov;
   sampleOut.altitudeKm = last.altitudeKm;
   sampleOut.shot = 3;
+  sampleOut.screenX = last.screenX;
+  sampleOut.screenY = last.screenY;
   return sampleOut;
 }

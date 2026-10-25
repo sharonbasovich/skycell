@@ -36,20 +36,30 @@ The photographs below already belong to the SkyCell repository's project archive
 | `public/gallery/1000004196.jpg` | 3024×4032 portrait. Foam enclosure and AA battery holder, with radio board and wiring below. | “Power and packaging during payload preparation.” Do not imply the photographed battery configuration solved the later power interruptions. |
 | `public/gallery/PXL_20250621_125406998.jpg` | 4032×3024 landscape. Event attendees inside a bus. | Event travel context only; not launch hardware or flight evidence. |
 
-Captions describe visible material. Dates and mission outcomes come from the confirmed project record rather than image appearance alone.
+Captions describe visible material. Dates and mission outcomes come from the confirmed project record rather than image appearance alone. Full-size dialogs retain the original JPEG evidence and existing provenance.
+
+### Gallery display derivatives
+
+| Display file | Dimensions | Bytes |
+| --- | --- | ---: |
+| [`hardware-enclosure-1600.webp`](../public/gallery/hardware-enclosure-1600.webp) | 1600×1200 | 141,960 |
+| [`hardware-electronics-1600.webp`](../public/gallery/hardware-electronics-1600.webp) | 1200×1600 | 196,784 |
+| [`hardware-launch.webp`](../public/gallery/hardware-launch.webp) | 659×880 | 7,412 |
+
+These total **346,156 bytes**, versus **1,129,035 bytes** for the three originals: **69.3% smaller**. EXIF orientation, Lanczos resizing and WebP encoding preserve the full framing, including the actual two-balloon launch train; no cropping or AI editing was used. [Gallery asset documentation](hardware-gallery-assets.md) records exact processing, SHA-256s and decode-gated presentation. Display layers preload within 320 px; the previous photo remains behind the 160 ms incoming fade, with hidden buttons disabled. A 240 ms aspect-ratio transition smooths the phone frame height; reduced motion removes the transitions. The original JPEG opens in the dialog. Final production QA verified a 3,500 ms delayed incoming image, rapid tab changes, a single accessible photo and original-JPEG dialog focus restoration.
 
 ## Original cinematic 3D assets
 
-`CinematicTrain` uses original meshes authored in Blender from the inspected project photographs, especially `1000004204.jpg` and `1000004195.jpg`, with the twin-balloon relationship observed in `PXL_20250621_172905846.MP.jpg`. The editable `.blend`, source scripts, original material textures and inspection renders are retained in [`tools/asset-pipeline`](../tools/asset-pipeline/README.md). This pipeline uses no downloaded, purchased or AI-generated 3D model.
+`CinematicTrain` uses original meshes authored in Blender from inspected project photographs, especially `1000004204.jpg` and `1000004195.jpg`. The current flight story places **one balloon above one payload** with a taut tether and illustrative wind/lag. The actual two-balloon event photograph remains accurately captioned documentary evidence; it is not altered to match the illustrative rig. Editable `.blend`, scripts, material textures and inspection renders remain in [`tools/asset-pipeline`](../tools/asset-pipeline/README.md). The meshes use no downloaded, purchased or AI-generated 3D model.
 
 | Runtime file | Bytes | Content |
 | --- | ---: | --- |
 | [`public/models/cinematic/payload-cinematic.glb`](../public/models/cinematic/payload-cinematic.glb) | 1,351,300 | Foam enclosure, lid join, clear wraps, paper labels, blue attachment, cable loop and telescopic black antenna; embedded original PBR maps. |
-| [`public/models/cinematic/balloon-latex.glb`](../public/models/cinematic/balloon-latex.glb) | 308,100 | Seamless latex balloon with inflation asymmetry, gathered neck, knot and tail; reused for two balloons. |
+| [`public/models/cinematic/balloon-latex.glb`](../public/models/cinematic/balloon-latex.glb) | 308,100 | Seamless latex balloon with inflation asymmetry, gathered neck, knot and tail; one instance in the current story. |
 
 GLB coordinates use metres and Y-up. Nominal enclosure dimensions are 0.55 × 0.22 × 0.19 m; these are authoring dimensions rather than a measured scan. [`asset-metadata.json`](../public/models/cinematic/asset-metadata.json) records source references, bounds and triangle counts. Unseen surfaces, small creases, exact tape overlaps and label wording are interpreted; recovery labels are generic. The runtime latex/backscatter shader is a visual approximation. The scene is a conceptual exterior illustration, not flight footage, a measurement or a reconstruction of the archived track.
 
-The old approximately 51 MB `public/b1.glb` and hot-air-balloon asset are not sources for this scene; their provenance is not asserted here. They remain recoverable in repository history. Existing Lucide control icons retain the package’s ISC license.
+The old approximately 51 MB `public/b1.glb` and hot-air-balloon asset are not sources for this scene; their provenance is not asserted here. They remain recoverable in repository history. Existing Lucide control icons retain the package’s ISC license. The single-balloon/tether/box brand glyph is project-native SVG geometry.
 
 ## NASA global and regional Earth imagery
 
@@ -82,11 +92,17 @@ NASA’s [Earth Science reuse guidance](https://science.nasa.gov/earth/faq/) and
 
 The self-hosted HDR supplies PMREM environment lighting, oriented to the shared sun. The visible atmosphere is an analytic concept-illustration shader rather than this ground-level sky photograph. No remote environment request is needed at runtime.
 
+## Generated illustrative cirrus
+
+[`public/textures/flight/cirrus-wisp.webp`](../public/textures/flight/cirrus-wisp.webp) was created with the built-in imagegen tool on **2026-10-25** as a photographic-style, transparent cirrus plate. It is an illustrative asset, not a SkyCell/APEX flight photograph or NASA scientific cloud map. The full generation prompt and processing record are in [`flight-cloud-asset.md`](flight-cloud-asset.md).
+
+The original RGBA output was 1916×821; the runtime derivative is **1024×439**, **149,230 bytes**, SHA-256 `30151c542707d47fc536ea26778c71ed024ec8046ab9f030a0fbc76a288a11e2`. It was Lanczos-resized and encoded as WebP quality 92 with alpha preserved, without painting, compositing or recoloring. It has genuine varying transparency, without a baked sky rectangle. Three planes share the texture and one two-triangle geometry. Their finite early-ascent passages use the parent pause/visibility-aware clock, with opacity zero above 14 km.
+
 ## Renderer-derived fallback posters and inventory
 
-The responsive fallback uses final native-Chrome captures of the actual scene, preserving its conceptual and third-party imagery credits. These are illustrations rather than documentary flight photographs. Files are [`ascent-desktop.webp`](../public/posters/ascent-desktop.webp), 1440×900 / **30,508 bytes**, and [`ascent-mobile.webp`](../public/posters/ascent-mobile.webp), 390×342 / **5,574 bytes**.
+The fallback uses two renderer-derived layers: [`flight-earth.webp`](../public/posters/flight-earth.webp), **1440×900 / 23,396 bytes**, and [`flight-rig.webp`](../public/posters/flight-rig.webp), **272×814 / 7,228 bytes**. The rig retains genuine alpha transparency and depicts the single illustrative balloon/payload. CSS positions it independently over Earth so static layouts fit different screen shapes. `sky-static-flight` supplies normal-flow story copy for reduced motion, unavailable WebGL and scene errors. The layers inherit the conceptual and NASA/Poly Haven/generated-cloud credits; they are not documentary flight photographs. Together they add **30,624 bytes**.
 
-The two GLBs, global NASA maps, selected regional variant and HDR total **7,468,679 bytes desktop** or **4,857,081 bytes compact**; poster, application code, fonts and archive photographs are additional. Only one regional variant is selected per Canvas mount. Estimated Earth-map RGBA allocation with mipmaps is **138.7 / 74.7 MiB** desktop/compact, before the cached HalfFloat target, models, HDR and PMREM. Transfer size, estimated allocation and shaded-pixel reduction are separate from measured frame time; no physical-phone FPS result is claimed.
+The two GLBs, global NASA maps, selected regional variant, HDR and generated wisp total **7,617,909 bytes desktop / 5,006,311 bytes compact**. The two fallback layers, application code, fonts and archive photographs are additional. Only one regional variant is selected per Canvas mount. Estimated Earth-map RGBA allocation with mipmaps remains **138.7 / 74.7 MiB** desktop/compact, before the cached HalfFloat target, models, HDR, PMREM and small cirrus texture. Transfer size and allocation are distinct from measured frame time; no physical-phone FPS result is claimed.
 
 ## Replay data
 

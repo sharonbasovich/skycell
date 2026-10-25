@@ -14,7 +14,7 @@ export default function ExperienceHeader() {
   return (
     <header className={`sky-header${scrolled || pathname !== "/" ? " sky-header-solid" : ""}`}>
       <Link className="sky-brand" to="/" aria-label="SkyCell home">
-        <svg viewBox="0 0 26 32" fill="none" aria-hidden="true"><circle cx="13" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" /><circle cx="13" cy="22" r="4" stroke="currentColor" strokeWidth="1.5" /><path d="M13 14v4m0 8v5" stroke="currentColor" strokeWidth="1.5" /></svg>
+        <svg viewBox="0 0 26 32" fill="none" aria-hidden="true"><circle cx="13" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" /><path d="M13 14v10m-4 3H5" stroke="currentColor" strokeWidth="1.5" /><rect x="9" y="24" width="8" height="6" rx="1" stroke="currentColor" strokeWidth="1.5" /></svg>
         SkyCell
       </Link>
       <nav aria-label="Main navigation">

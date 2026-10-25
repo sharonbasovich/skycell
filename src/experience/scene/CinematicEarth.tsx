@@ -5,6 +5,24 @@ import type { CinematicFrame } from "./cinematicTypes";
 
 const EARTH_RADIUS_KM = 6371;
 
+/** A bounded illustrative drift, separate from the recorded APEX trajectory. */
+function setIllustrativeEarthBasis(matrix: Matrix3, progress: number) {
+  const p = Math.max(0, Math.min(progress, 1));
+  const travel = p * p * (3 - 2 * p);
+  // 66 km east / 18 km north is geographic context for this ascent story.
+  // Keeping the observer on the local up axis preserves its radial altitude
+  // and horizon geometry; only the geographic lookup basis moves underneath it.
+  const latitude = 42 * Math.PI / 180 + 18 * travel / EARTH_RADIUS_KM;
+  const longitude = -71 * Math.PI / 180 + 66 * travel / (EARTH_RADIUS_KM * Math.cos(latitude));
+  const sinLat = Math.sin(latitude), cosLat = Math.cos(latitude);
+  const sinLon = Math.sin(longitude), cosLon = Math.cos(longitude);
+  matrix.set(
+    -sinLon, cosLat * cosLon, -sinLat * cosLon,
+    0, sinLat, cosLat,
+    cosLon, cosLat * sinLon, -sinLat * sinLon,
+  );
+}
+
 const vertexShader = /* glsl */ `
 varying vec2 vNdc;
 void main() {
@@ -47,7 +65,7 @@ float regionalWeight(vec2 lonLat) {
 // Returns the near shell intersection. Camera is above both shells.
 float shellDistance(vec3 eye, vec3 ray, float radius) {
   float b = dot(eye, ray);
-  // Factored c preserves precision at only 20--30 km above a 6371 km sphere.
+  // Factored c preserves precision at only 8--30 km above a 6371 km sphere.
   float eyeRadius = length(eye);
   float c = (eyeRadius - radius) * (eyeRadius + radius);
   float discriminant = b * b - c;
@@ -235,16 +253,8 @@ export default function CinematicEarth({ frame }: Props) {
     `${import.meta.env.BASE_URL}textures/cinematic/${regionalFile}`,
   ]);
   const resources = useMemo(() => {
-    const latitude = 42 * Math.PI / 180;
-    const longitude = -71 * Math.PI / 180;
-    const east = new Vector3(-Math.sin(longitude), 0, Math.cos(longitude));
-    const up = new Vector3(Math.cos(latitude) * Math.cos(longitude), Math.sin(latitude), Math.cos(latitude) * Math.sin(longitude));
-    const north = new Vector3(-Math.sin(latitude) * Math.cos(longitude), Math.cos(latitude), -Math.sin(latitude) * Math.sin(longitude));
-    const localToEarth = new Matrix3().set(
-      east.x, up.x, north.x,
-      east.y, up.y, north.y,
-      east.z, up.z, north.z,
-    );
+    const localToEarth = new Matrix3();
+    setIllustrativeEarthBasis(localToEarth, 0);
     const earthMaterial = new ShaderMaterial({
       vertexShader,
       fragmentShader,
@@ -299,6 +309,7 @@ export default function CinematicEarth({ frame }: Props) {
     target: null as WebGLRenderTarget | null,
     projection: new Matrix4(),
     world: new Matrix4(),
+    progress: NaN,
     altitudeKm: NaN,
     sun: new Vector3(),
     viewport: new Vector4(),
@@ -338,6 +349,7 @@ export default function CinematicEarth({ frame }: Props) {
     const previous = cache.current;
     const state = frame.current;
     if (previous.target === target
+      && previous.progress === state.progress
       && previous.altitudeKm === state.altitudeKm
       && previous.sun.equals(state.sunDirection)
       && previous.projection.equals(camera.projectionMatrix)
@@ -347,7 +359,9 @@ export default function CinematicEarth({ frame }: Props) {
     uniforms.uProjectionInverse.value.copy(camera.projectionMatrixInverse);
     uniforms.uCameraRotation.value.setFromMatrix4(camera.matrixWorld);
     uniforms.uEyeKm.value.setFromMatrixPosition(camera.matrixWorld).multiplyScalar(0.001);
-    uniforms.uEyeKm.value.y += EARTH_RADIUS_KM + Math.max(0.05, state.altitudeKm);
+    // This story starts above the real 6 km cloud shell, never at ground level.
+    uniforms.uEyeKm.value.y += EARTH_RADIUS_KM + Math.max(8, state.altitudeKm);
+    setIllustrativeEarthBasis(uniforms.uLocalToEarth.value, state.progress);
     uniforms.uSunDirection.value.copy(state.sunDirection);
     if (uniforms.uSunDirection.value.lengthSq() < 0.000001) uniforms.uSunDirection.value.set(0, 1, 0);
     uniforms.uSunDirection.value.normalize();
@@ -372,6 +386,7 @@ export default function CinematicEarth({ frame }: Props) {
     previous.target = target;
     previous.projection.copy(camera.projectionMatrix);
     previous.world.copy(camera.matrixWorld);
+    previous.progress = state.progress;
     previous.altitudeKm = state.altitudeKm;
     previous.sun.copy(state.sunDirection);
   }, 0);

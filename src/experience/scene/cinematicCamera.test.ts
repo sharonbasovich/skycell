@@ -1,140 +1,164 @@
 import { describe, expect, it } from "vitest";
-import { Vector3 } from "three";
+import { PerspectiveCamera, Vector3 } from "three";
 import { sampleCinematicCamera, type CinematicCameraSample } from "./cinematicCamera";
 
-const TRAVEL = [[0.06, 0.28], [0.43, 0.60], [0.77, 0.94]] as const;
-const HOLDS = [[-1, 0, 0.03, 0.06], [0.28, 0.35, 0.43], [0.60, 0.68, 0.77], [0.94, 0.97, 1, 2]];
-const ALTITUDES = [18, 22, 27, 30];
-const EXPECTED = [
-  {
-    narrow: false,
-    positions: [[5.2, 22.3, 7], [1, 0.55, 1.75], [5, 4, 14], [16, 16, 43]],
-    targets: [[0, 21.7, 0], [-0.15, 0.03, 0], [0, 4, 0], [0, 11.5, 0]],
-    fovs: [30, 34, 36, 35],
-  },
-  {
-    narrow: true,
-    positions: [[3, 22.1, 5], [0.68, 0.4, 1.2], [4, 4, 13], [14, 16, 45]],
-    targets: [[0, 21.9, 0], [-0.2, 0.03, 0], [0, 4, 0], [0, 11.5, 0]],
-    fovs: [36, 38, 44, 42],
-  },
-];
+const TRAVEL = [[.06, .29], [.40, .62], [.75, .96]] as const;
+const HOLDS = [[0, .06], [.29, .40], [.62, .75], [.96, 1]] as const;
+const TARGET = [0, 2.05, 0];
 
 function snapshot(progress: number, narrow: boolean) {
   const position = new Vector3();
   const target = new Vector3();
-  const state = sampleCinematicCamera(progress, narrow, position, target);
-  return { position, target, ...state };
+  return { position, target, ...sampleCinematicCamera(progress, narrow, position, target) };
 }
 
-// Recover the scroll parameter for a desired fraction of eased travel. This
-// checks spatial speed independently of the expected cinematic easing speed.
-function progressAtTravelFraction(start: number, end: number, fraction: number): number {
-  let low = 0;
-  let high = 1;
-  for (let i = 0; i < 45; i++) {
-    const mid = (low + high) / 2;
-    const eased = mid ** 3 * (mid * (mid * 6 - 15) + 10);
-    if (eased < fraction) low = mid;
-    else high = mid;
+// Independent envelope/payload silhouette samples in physical local metres,
+// expanded for the bounded wind/pendulum excursion. These check the complete
+// moving vehicle, not just whether its look-at point is visible.
+function vehicleSilhouette(): Vector3[] {
+  const points: Vector3[] = [];
+  for (let latitude = 0; latitude <= 12; latitude++) {
+    const phi = Math.PI * latitude / 12;
+    for (let longitude = 0; longitude < 24; longitude++) {
+      const theta = 2 * Math.PI * longitude / 24;
+      for (const dx of [-.095, .095]) for (const dy of [-.02, .02]) for (const dz of [-.05, .05]) {
+        points.push(new Vector3(.86 * Math.sin(phi) * Math.cos(theta) + dx, 4.1 + .86 * Math.cos(phi) + dy, .86 * Math.sin(phi) * Math.sin(theta) + dz));
+      }
+    }
   }
-  return start + (end - start) * (low + high) / 2;
+  for (const x of [-.83, .39]) for (const y of [-.17, .26]) for (const z of [-.20, .20]) points.push(new Vector3(x, y, z));
+  return points;
 }
 
-describe.each(EXPECTED)("cinematic camera (narrow=$narrow)", ({ narrow, positions, targets, fovs }) => {
-  it("holds the authored photographs exactly throughout their reading ranges", () => {
-    for (let shot = 0; shot < HOLDS.length; shot++) {
-      for (const progress of HOLDS[shot]) {
+describe.each([false, true])("following camera (narrow=%s)", (narrow) => {
+  it("keeps one target and rises monotonically from cloud tops to the stratosphere", () => {
+    let previousAltitude = -Infinity;
+    for (let i = 0; i <= 1000; i++) {
+      const sample = snapshot(i / 1000, narrow);
+      expect([...sample.position.toArray(), ...sample.target.toArray(), sample.fov, sample.altitudeKm, sample.screenX, sample.screenY].every(Number.isFinite)).toBe(true);
+      expect(sample.target.toArray()).toEqual(TARGET);
+      expect(sample.altitudeKm).toBeGreaterThanOrEqual(previousAltitude - 1e-10);
+      expect(sample.altitudeKm).toBeGreaterThanOrEqual(8);
+      expect(sample.altitudeKm).toBeLessThanOrEqual(30);
+      previousAltitude = sample.altitudeKm;
+    }
+    expect([0, 1 / 3, 2 / 3, 1].map((p) => snapshot(p, narrow).altitudeKm)).toEqual([8, 14, 23, 30]);
+  });
+
+  it("follows at a modest distance without a vertical inventory tour or macro dive", () => {
+    let distanceTravelled = 0;
+    let previous = snapshot(0, narrow).position;
+    for (let i = 0; i <= 1000; i++) {
+      const sample = snapshot(i / 1000, narrow);
+      const distance = sample.position.distanceTo(sample.target);
+      expect(distance).toBeGreaterThan(13);
+      expect(distance).toBeLessThan(18);
+      expect(sample.position.y).toBeGreaterThanOrEqual(2.79);
+      expect(sample.position.y).toBeLessThanOrEqual(3.61);
+      expect(sample.fov).toBeGreaterThanOrEqual((narrow ? 38 : 30) - 1e-10);
+      expect(sample.fov).toBeLessThanOrEqual((narrow ? 40 : 32) + 1e-10);
+      distanceTravelled += previous.distanceTo(sample.position);
+      previous = sample.position;
+    }
+    expect(distanceTravelled).toBeLessThan(narrow ? 2 : 5.1);
+  });
+
+  it("keeps the complete balloon and antenna-bearing payload inside the responsive projection", () => {
+    const viewports = narrow ? [[390, 844], [375, 667]] : [[1440, 900], [1272, 716]];
+    const silhouette = vehicleSilhouette();
+    const projected = new Vector3();
+    let largestAbsoluteX = 0;
+    let largestAbsoluteY = 0;
+    let smallestHeight = Infinity;
+    let smallestDepth = Infinity;
+    let largestDepth = -Infinity;
+    for (const [width, height] of viewports) {
+      const camera = new PerspectiveCamera(30, width / height, .035, 160);
+      for (let i = 0; i <= 120; i++) {
+        const sample = snapshot(i / 120, narrow);
+        camera.position.copy(sample.position);
+        camera.lookAt(sample.target);
+        camera.fov = sample.fov;
+        camera.setViewOffset(width, height, -(sample.screenX - .5) * width, -(sample.screenY - .5) * height, width, height);
+        camera.updateProjectionMatrix();
+        camera.updateMatrixWorld();
+        projected.copy(sample.target).project(camera);
+        expect((projected.x + 1) / 2).toBeCloseTo(sample.screenX, 10);
+        expect((1 - projected.y) / 2).toBeCloseTo(sample.screenY, 10);
+        let top = -Infinity;
+        let bottom = Infinity;
+        for (const point of silhouette) {
+          projected.copy(point).project(camera);
+          largestAbsoluteX = Math.max(largestAbsoluteX, Math.abs(projected.x));
+          largestAbsoluteY = Math.max(largestAbsoluteY, Math.abs(projected.y));
+          top = Math.max(top, projected.y);
+          bottom = Math.min(bottom, projected.y);
+          smallestDepth = Math.min(smallestDepth, projected.z);
+          largestDepth = Math.max(largestDepth, projected.z);
+        }
+        // The fixed navigation occupies 74 px. A canvas-only bounds check
+        // misses a balloon crown hidden behind that real page obstruction.
+        if (!narrow) expect((1 - top) * height / 2, `${width}x${height}, progress ${i / 120}`).toBeGreaterThan(82);
+        smallestHeight = Math.min(smallestHeight, (top - bottom) / 2);
+      }
+    }
+    expect(largestAbsoluteX).toBeLessThan(.90);
+    expect(largestAbsoluteY).toBeLessThan(.90);
+    expect(smallestHeight).toBeGreaterThan(narrow ? .45 : .48);
+    expect(smallestDepth).toBeGreaterThan(-1);
+    expect(largestDepth).toBeLessThan(1);
+  });
+
+  it("holds every reading composition while the independent wind clock can continue", () => {
+    for (const [start, end] of HOLDS) {
+      const baseline = snapshot((start + end) / 2, narrow);
+      for (const progress of [start, start + (end - start) * .2, end]) {
         const sample = snapshot(progress, narrow);
-        expect(sample.position.toArray()).toEqual(positions[shot]);
-        expect(sample.target.toArray()).toEqual(targets[shot]);
-        expect(sample.fov).toBe(fovs[shot]);
-        expect(sample.altitudeKm).toBe(ALTITUDES[shot]);
-        expect(sample.shot).toBe(shot);
+        expect(sample.position.toArray()).toEqual(baseline.position.toArray());
+        expect(sample.target.toArray()).toEqual(baseline.target.toArray());
+        expect([sample.fov, sample.altitudeKm, sample.screenX, sample.screenY, sample.shot]).toEqual([baseline.fov, baseline.altitudeKm, baseline.screenX, baseline.screenY, baseline.shot]);
       }
     }
   });
 
-  it("stays continuous at every hold/travel join, including the lens and altitude", () => {
-    for (const boundary of TRAVEL.flat()) {
-      const before = snapshot(boundary - 0.000001, narrow);
-      const after = snapshot(boundary + 0.000001, narrow);
-      expect(before.position.distanceTo(after.position)).toBeLessThan(0.0000001);
-      expect(before.target.distanceTo(after.target)).toBeLessThan(0.0000001);
-      expect(Math.abs(before.fov - after.fov)).toBeLessThan(0.0000001);
-      expect(Math.abs(before.altitudeKm - after.altitudeKm)).toBeLessThan(0.0000001);
-    }
-  });
-
-  it("arrives and departs with cubic-order displacement, giving zero endpoint velocity and acceleration", () => {
+  it("joins the holds continuously with zero departure/arrival velocity and acceleration", () => {
     for (const [start, end] of TRAVEL) {
       for (const [boundary, direction] of [[start, 1], [end, -1]]) {
+        const before = snapshot(boundary - 1e-6, narrow);
+        const after = snapshot(boundary + 1e-6, narrow);
+        expect(before.position.distanceTo(after.position)).toBeLessThan(1e-8);
+        for (const field of ["fov", "altitudeKm", "screenX", "screenY"] as const) expect(Math.abs(before[field] - after[field])).toBeLessThan(1e-8);
         const endpoint = snapshot(boundary, narrow).position;
-        const fine = endpoint.distanceTo(snapshot(boundary + direction * 0.0001, narrow).position);
-        const coarse = endpoint.distanceTo(snapshot(boundary + direction * 0.0002, narrow).position);
-        // Linear motion gives .5; cubic smoothstep gives .25. A C2 quintic
-        // departure gives approximately .125 at half the parameter distance.
-        expect(fine / coarse).toBeCloseTo(0.125, 2);
+        const fine = endpoint.distanceTo(snapshot(boundary + direction * .0001, narrow).position);
+        const coarse = endpoint.distanceTo(snapshot(boundary + direction * .0002, narrow).position);
+        expect(fine / coarse).toBeCloseTo(.125, 2);
       }
     }
   });
 
-  it("travels approximately equal distances for equal eased-distance fractions along each curved path", () => {
-    for (const [start, end] of TRAVEL) {
-      const distances: number[] = [];
-      let previous = snapshot(start, narrow).position;
-      for (let i = 1; i <= 20; i++) {
-        const progress = progressAtTravelFraction(start, end, i / 20);
-        const position = snapshot(progress, narrow).position;
-        distances.push(previous.distanceTo(position));
-        previous = position;
-      }
-      expect(Math.max(...distances) / Math.min(...distances)).toBeLessThan(1.03);
-    }
-  });
-
-  it("keeps every sampled view finite, clear of its target, and at a moderate pitch", () => {
-    const position = new Vector3();
-    const target = new Vector3();
-    const state: CinematicCameraSample = { fov: 0, altitudeKm: 0, shot: 0 };
-    let previousAltitude = -Infinity;
-    for (let i = 0; i <= 2000; i++) {
-      sampleCinematicCamera(i / 2000, narrow, position, target, state);
-      expect([...position.toArray(), ...target.toArray(), state.fov, state.altitudeKm].every(Number.isFinite)).toBe(true);
-      const distance = position.distanceTo(target);
-      expect(distance).toBeGreaterThan(1);
-      expect(Math.abs(position.y - target.y) / distance).toBeLessThan(Math.sin(25 * Math.PI / 180));
-      expect(position.z).toBeGreaterThanOrEqual(1.2);
-      expect(state.fov).toBeGreaterThanOrEqual(30);
-      expect(state.fov).toBeLessThanOrEqual(44);
-      expect(state.altitudeKm).toBeGreaterThanOrEqual(previousAltitude - 0.0000001);
-      previousAltitude = state.altitudeKm;
-    }
-  });
-
-  it("retraces identical poses when reversing scroll after arbitrary intermediate samples", () => {
-    const forward = Array.from({ length: 501 }, (_, index) => snapshot(index / 500, narrow));
+  it("retraces identical following poses and layout positions after arbitrary reverse input", () => {
+    const forward = Array.from({ length: 301 }, (_, index) => snapshot(index / 300, narrow));
     for (let i = forward.length - 1; i >= 0; i--) {
-      // Interleave another responsive rig and unrelated progress to detect
-      // hidden cursor state, shared mutable outputs, or path-cache mutation.
-      snapshot((i * 0.379) % 1, !narrow);
-      const reverse = snapshot(i / 500, narrow);
+      snapshot((i * .379) % 1, !narrow);
+      const reverse = snapshot(i / 300, narrow);
       expect(reverse.position.toArray()).toEqual(forward[i].position.toArray());
       expect(reverse.target.toArray()).toEqual(forward[i].target.toArray());
-      expect(reverse.fov).toBe(forward[i].fov);
-      expect(reverse.altitudeKm).toBe(forward[i].altitudeKm);
+      for (const field of ["fov", "altitudeKm", "screenX", "screenY", "shot"] as const) expect(reverse[field]).toBe(forward[i][field]);
     }
   });
 });
 
-it("supports reused result storage and safely clamps exceptional scroll values", () => {
+it("reuses output storage and clamps exceptional scroll input to complete compositions", () => {
   const position = new Vector3();
   const target = new Vector3();
-  const state: CinematicCameraSample = { fov: 0, altitudeKm: 0, shot: -1 };
+  const state: CinematicCameraSample = { fov: 0, altitudeKm: 0, shot: -1, screenX: 0, screenY: 0 };
   expect(sampleCinematicCamera(NaN, false, position, target, state)).toBe(state);
   expect(state.shot).toBe(0);
   sampleCinematicCamera(Infinity, false, position, target, state);
   expect(state.shot).toBe(3);
+  expect(state.altitudeKm).toBe(30);
   sampleCinematicCamera(-Infinity, false, position, target, state);
   expect(state.shot).toBe(0);
+  expect(state.altitudeKm).toBe(8);
+  expect(state.screenX).toBe(.72);
 });

@@ -2,6 +2,15 @@ import { MathUtils, Vector3 } from "three";
 
 export const EARTH_RADIUS_KM = 6371;
 
+/** Match foreground pixel density without allocating an unbounded HDR target. */
+export function earthBackdropSize(width: number, height: number, pixelRatio: number, maxTextureSize = 4096): [number, number] {
+  const w = Math.max(1, Number.isFinite(width) ? width : 1), h = Math.max(1, Number.isFinite(height) ? height : 1);
+  const dpr = MathUtils.clamp(Number.isFinite(pixelRatio) ? pixelRatio : 1, 1, 1.25);
+  const cap = Math.max(1, Math.min(w < 900 ? 1024 : 2048, maxTextureSize));
+  const scale = Math.min(dpr, cap / Math.max(w, h));
+  return [Math.max(1, Math.round(w * scale)), Math.max(1, Math.round(h * scale))];
+}
+
 /** The regional journey is a concept path; the APEX archive remains separate. */
 export function sampleGeographicObserver(flightProgress: number, altitudeKm: number, cameraWorld: Vector3, output: Vector3): Vector3 {
   const p = Number.isFinite(flightProgress) ? MathUtils.clamp(flightProgress, 0, 1) : 0;

@@ -9,6 +9,9 @@ const NATURAL_FREQUENCY = Math.sqrt(GRAVITY / FLIGHT_TETHER_LENGTH);
 const DAMPING_RATIO = .23;
 const AIR_DRAG = .92;
 const MAX_HORIZONTAL_OFFSET = 1.35;
+const MAX_SCROLL_OFFSET = .90;
+const SCROLL_RESPONSE_FREQUENCY = 3.4;
+const SCROLL_RESPONSE_DAMPING = .62;
 
 // Independent wind components, in metres/radians per second. Their frequencies
 // straddle the slower envelope response and the suspension's ~3.45 s period.
@@ -42,6 +45,71 @@ export function createFlightDynamicsPose(): FlightDynamicsPose {
     tetherDirection: new Vector3(0, 1, 0), midpoint: new Vector3(),
     travelVelocity: new Vector3(), scratch: new Vector3(),
   };
+}
+
+/** A small, instance-owned suspension response to the operated camera crossing.
+ * `screenX` is the balloon's intended composition coordinate, not raw wheel
+ * input. It therefore responds equally to touch, keyboard and reverse scroll.
+ */
+export interface ScrollSuspension {
+  offset: Vector3;
+  offsetVelocity: Vector3;
+  target: Vector3;
+  acceleration: Vector3;
+  right: Vector3;
+  previousScreenX: number;
+  screenVelocity: number;
+  initialized: boolean;
+}
+
+export function createScrollSuspension(): ScrollSuspension {
+  return {
+    offset: new Vector3(), offsetVelocity: new Vector3(), target: new Vector3(), acceleration: new Vector3(), right: new Vector3(1, 0, 0),
+    previousScreenX: .5, screenVelocity: 0, initialized: false,
+  };
+}
+
+/**
+ * A damped, bounded payload follow-through driven by the envelope's visible
+ * lateral travel. The envelope remains the leader; this relative offset is
+ * projected onto the exact tether by sampleFlightDynamics. Pass dt=0 when
+ * paused/hidden so both the displacement and its stored velocity freeze.
+ * Reuse one state per scene. No scene-global clock, objects or allocations.
+ */
+export function stepScrollSuspension(state: ScrollSuspension, screenX: number, worldRight: Vector3, seconds: number, enabled = true): Vector3 {
+  const coordinate = Number.isFinite(screenX) ? MathUtils.clamp(screenX, 0, 1) : state.previousScreenX;
+  if (!state.initialized) {
+    state.previousScreenX = coordinate;
+    state.initialized = true;
+  }
+  if (!(seconds > 0) || !Number.isFinite(seconds)) return state.offset;
+  const dt = Math.min(seconds, .04);
+  // A resumed tab or a direct anchor seek cannot inject an unbounded force.
+  const velocity = enabled ? MathUtils.clamp((coordinate - state.previousScreenX) / dt, -2.4, 2.4) : 0;
+  state.previousScreenX = coordinate;
+  state.screenVelocity = MathUtils.damp(state.screenVelocity, velocity, 12, dt);
+  if (Number.isFinite(worldRight.x) && Number.isFinite(worldRight.z) && Math.hypot(worldRight.x, worldRight.z) > 1e-8) {
+    state.right.set(worldRight.x, 0, worldRight.z).normalize();
+  }
+  state.target.copy(state.right).multiplyScalar(-MAX_SCROLL_OFFSET * Math.tanh(state.screenVelocity * 6.0));
+  // Substeps keep a dropped frame and an abrupt reversed gesture stable. This
+  // is a suspension state only: the camera itself receives no second filter.
+  const steps = Math.ceil(dt / (1 / 120)), h = dt / steps;
+  const stiffness = SCROLL_RESPONSE_FREQUENCY * SCROLL_RESPONSE_FREQUENCY;
+  const damping = 2 * SCROLL_RESPONSE_DAMPING * SCROLL_RESPONSE_FREQUENCY;
+  for (let step = 0; step < steps; step++) {
+    state.acceleration.copy(state.target).sub(state.offset).multiplyScalar(stiffness).addScaledVector(state.offsetVelocity, -damping);
+    state.offsetVelocity.addScaledVector(state.acceleration, h);
+    state.offset.addScaledVector(state.offsetVelocity, h);
+    const length = state.offset.length();
+    if (length > MAX_SCROLL_OFFSET) {
+      state.offset.multiplyScalar(MAX_SCROLL_OFFSET / length);
+      // Remove only outward velocity at the stop, preserving the tangent.
+      const outwardSpeed = state.offsetVelocity.dot(state.offset) / MAX_SCROLL_OFFSET;
+      if (outwardSpeed > 0) state.offsetVelocity.addScaledVector(state.offset, -outwardSpeed / MAX_SCROLL_OFFSET);
+    }
+  }
+  return state.offset;
 }
 
 function setEulerXYZ(quaternion: Quaternion, x: number, y: number, z: number) {
@@ -80,9 +148,11 @@ function relativeResponse(amplitude: number, frequency: number, phase: number) {
  * This is an illustrative reduced-order wind/suspension model, not telemetry.
  * Reuse `out` during live rendering to avoid per-frame object allocation.
  */
-export function sampleFlightDynamics(progress: number, elapsedSeconds: number, out: FlightDynamicsPose = createFlightDynamicsPose()): FlightDynamicsPose {
+export function sampleFlightDynamics(progress: number, elapsedSeconds: number, out: FlightDynamicsPose = createFlightDynamicsPose(), scrollOffset?: Vector3): FlightDynamicsPose {
   const p = Number.isFinite(progress) ? MathUtils.clamp(progress, 0, 1) : progress === Infinity ? 1 : 0;
   const time = Number.isFinite(elapsedSeconds) ? MathUtils.clamp(elapsedSeconds, 0, 1e6) : 0;
+  const scrollX = scrollOffset && Number.isFinite(scrollOffset.x) ? MathUtils.clamp(scrollOffset.x, -MAX_SCROLL_OFFSET, MAX_SCROLL_OFFSET) : 0;
+  const scrollZ = scrollOffset && Number.isFinite(scrollOffset.z) ? MathUtils.clamp(scrollOffset.z, -MAX_SCROLL_OFFSET, MAX_SCROLL_OFFSET) : 0;
   const routePhase = p * Math.PI * 1.4;
   let windX = 0, windZ = 0, velocityX = 0, velocityZ = 0, relativeX = 0, relativeZ = 0;
   for (const [amplitude, frequency, phase] of WIND_X) {
@@ -119,8 +189,11 @@ export function sampleFlightDynamics(progress: number, elapsedSeconds: number, o
   const laggedProgress = Math.max(0, p - .043);
   relativeX += routeX(laggedProgress) - routeX(p);
   relativeZ += routeZ(laggedProgress) - routeZ(p);
+  relativeX += scrollX;
+  relativeZ += scrollZ;
   const horizontalLength = Math.hypot(relativeX, relativeZ);
-  const saturation = horizontalLength > 1e-8 ? MAX_HORIZONTAL_OFFSET * Math.tanh(horizontalLength / MAX_HORIZONTAL_OFFSET) / horizontalLength : 1;
+  const maximumOffset = MAX_HORIZONTAL_OFFSET + Math.min(.35, Math.hypot(scrollX, scrollZ) * .4);
+  const saturation = horizontalLength > 1e-8 ? maximumOffset * Math.tanh(horizontalLength / maximumOffset) / horizontalLength : 1;
   relativeX *= saturation;
   relativeZ *= saturation;
   const drop = Math.sqrt(FLIGHT_TETHER_LENGTH * FLIGHT_TETHER_LENGTH - relativeX * relativeX - relativeZ * relativeZ);

@@ -7,13 +7,18 @@ import CinematicEarth from "./scene/CinematicEarth";
 import CinematicTrain from "./scene/CinematicTrain";
 import FlightClouds from "./scene/FlightClouds";
 import { sampleCinematicCamera, storyFlightProgress } from "./scene/cinematicCamera";
-import { createFlightDynamicsPose, sampleFlightDynamics } from "./scene/flightDynamics";
+import { createFlightDynamicsPose, createScrollSuspension, sampleFlightDynamics, stepScrollSuspension, type FlightDynamicsPose } from "./scene/flightDynamics";
+import { createRecordingPlaybackSample, recordingPhase, sampleRecordingPlayback } from "./scene/recordingPlayback";
 import RecordedTrajectory from "./scene/RecordedTrajectory";
 import ProgressiveSky from "./scene/ProgressiveSky";
 import type { ProcessedTrajectoryData } from "@/utils/csvDataUtils";
 import type { CinematicFrame } from "./scene/cinematicTypes";
 
-interface Props { progress: MotionValue<number>; presentedProgress: MotionValue<number>; reducedMotion: boolean; paused: boolean; active: boolean; archive: ProcessedTrajectoryData | null; selectedObservation: number; pointer: React.MutableRefObject<{ x: number; y: number }>; onReady?: () => void; onFailure?: (error?: Error) => void }
+interface Props { progress: MotionValue<number>; presentedProgress: MotionValue<number>; reducedMotion: boolean; paused: boolean; active: boolean; archive: ProcessedTrajectoryData | null; pointer: React.MutableRefObject<{ x: number; y: number }>; onReady?: () => void; onFailure?: (error?: Error) => void }
+function translatePose(pose: FlightDynamicsPose, offset: Vector3) {
+  pose.balloonPosition.add(offset); pose.payloadPosition.add(offset);
+  pose.neck.add(offset); pose.loop.add(offset); pose.midpoint.add(offset);
+}
 class SceneBoundary extends Component<{ children: ReactNode; onFailure: (error?: Error) => void }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
@@ -35,7 +40,7 @@ function EnvironmentLighting() {
   return null;
 }
 
-function World({ progress, presentedProgress, paused, active, archive, selectedObservation, pointer, onReady, onFailure, wrapper }: Props & { wrapper: React.RefObject<HTMLDivElement> }) {
+function World({ progress, presentedProgress, paused, active, archive, pointer, onReady, onFailure, wrapper }: Props & { wrapper: React.RefObject<HTMLDivElement> }) {
   const { gl, camera, size, invalidate } = useThree();
   const current = useRef(MathUtils.clamp(progress.get(), 0, 1));
   const running = useRef(false);
@@ -47,7 +52,7 @@ function World({ progress, presentedProgress, paused, active, archive, selectedO
   const count = useRef(0);
   const timings = useRef({ samples: new Float32Array(120), count: 0 });
   const frame = useRef<CinematicFrame>({ progress: current.current, altitudeKm: 8, elapsedSeconds: 0, sunDirection: new Vector3(-.3801334253, .7631884173, .5225342273).normalize() });
-  const vectors = useMemo(() => ({ position: new Vector3(), look: new Vector3(), scratch: new Vector3(), offset: new Vector3(), pose: createFlightDynamicsPose(), cameraPose: createFlightDynamicsPose(), lightTarget: new Object3D() }), []);
+  const vectors = useMemo(() => ({ position: new Vector3(), look: new Vector3(), scratch: new Vector3(), offset: new Vector3(), right: new Vector3(), recordingOffset: new Vector3(), recording: createRecordingPlaybackSample(), suspension: createScrollSuspension(), pose: createFlightDynamicsPose(), cameraPose: createFlightDynamicsPose(), lightTarget: new Object3D() }), []);
   const keyLight = useRef<DirectionalLight>(null);
   const pointerLook = useRef({ x: 0, y: 0 });
   const sample = useMemo(() => ({ fov: 30, altitudeKm: 8, shot: 0, screenX: .72, screenY: .5 }), []);
@@ -110,15 +115,28 @@ function World({ progress, presentedProgress, paused, active, archive, selectedO
     sampleFlightDynamics(f, Math.max(0, frame.current.elapsedSeconds - (inspection ? 0 : .32)), vectors.cameraPose);
     const portraitComposition = size.width <= 700 || size.width / size.height < 0.95;
     sampleCinematicCamera(p, portraitComposition, vectors.position, vectors.look, sample, vectors.cameraPose, vectors.scratch);
+    vectors.right.subVectors(vectors.look, vectors.position).cross(vectors.scratch.set(0, 1, 0)).setY(0).normalize();
+    if (archive?.points.length) sampleRecordingPlayback(archive, recordingPhase(p), vectors.recording);
+    const routeScreenX = p >= .80 && p <= .96 ? (vectors.offset.copy(vectors.recording.position).project(camera).x + 1) * .5 : sample.screenX;
+    const scrollOffset = stepScrollSuspension(vectors.suspension, routeScreenX, vectors.right, playing ? dt : 0, !inspection);
+    frame.current.scrollSuspensionVector3 = scrollOffset;
+    sampleFlightDynamics(f, frame.current.elapsedSeconds, vectors.pose, scrollOffset);
+    sampleFlightDynamics(f, Math.max(0, frame.current.elapsedSeconds - (inspection ? 0 : .32)), vectors.cameraPose, scrollOffset);
+    vectors.recordingOffset.set(0, 0, 0);
+    if (archive?.points.length) {
+      const routeWeight = MathUtils.smoothstep(p, .78, .815) * (1 - MathUtils.smoothstep(p, .95, .985));
+      vectors.recordingOffset.copy(vectors.recording.position).sub(vectors.pose.balloonPosition).multiplyScalar(routeWeight);
+      translatePose(vectors.pose, vectors.recordingOffset);
+      translatePose(vectors.cameraPose, vectors.recordingOffset);
+    }
+    frame.current.recordingTranslationVector3 = vectors.recordingOffset;
+    sampleCinematicCamera(p, portraitComposition, vectors.position, vectors.look, sample, vectors.cameraPose, vectors.scratch);
     if (inspection) {
       pointerLook.current.x = MathUtils.damp(pointerLook.current.x, pointer.current.x, 4, dt);
       pointerLook.current.y = MathUtils.damp(pointerLook.current.y, pointer.current.y, 4, dt);
       vectors.offset.subVectors(vectors.position, vectors.look).applyAxisAngle(vectors.scratch.set(0, 1, 0), pointerLook.current.x * .08);
       vectors.offset.y += pointerLook.current.y * .025;
       vectors.position.copy(vectors.look).add(vectors.offset);
-    } else if (p > .80 && p < .94) {
-      const orbit = MathUtils.smoothstep(p, .80, .835) * (1 - MathUtils.smoothstep(p, .905, .94));
-      vectors.position.x += Math.sin(frame.current.elapsedSeconds * .10) * orbit * 2;
     }
     camera.position.copy(vectors.position);
     camera.lookAt(vectors.look);
@@ -147,6 +165,9 @@ function World({ progress, presentedProgress, paused, active, archive, selectedO
       node.dataset.payloadPosition = `${vectors.pose.payloadPosition.x.toFixed(4)},${vectors.pose.payloadPosition.y.toFixed(4)},${vectors.pose.payloadPosition.z.toFixed(4)}`;
       node.dataset.balloonPosition = `${vectors.pose.balloonPosition.x.toFixed(4)},${vectors.pose.balloonPosition.y.toFixed(4)},${vectors.pose.balloonPosition.z.toFixed(4)}`;
       node.dataset.tetherAngle = MathUtils.radToDeg(Math.acos(MathUtils.clamp(vectors.pose.tetherDirection.y, -1, 1))).toFixed(3);
+      node.dataset.scrollLag = scrollOffset.length().toFixed(4);
+      node.dataset.recordingPhase = recordingPhase(p).toFixed(5);
+      node.dataset.recordingEstimated = String(vectors.recording.estimated);
       node.dataset.cameraPosition = `${camera.position.x.toFixed(5)},${camera.position.y.toFixed(5)},${camera.position.z.toFixed(5)}`;
       node.dataset.cameraTarget = `${vectors.look.x.toFixed(5)},${vectors.look.y.toFixed(5)},${vectors.look.z.toFixed(5)}`;
       if (count.current === 3 || count.current % 45 === 0) {
@@ -174,7 +195,7 @@ function World({ progress, presentedProgress, paused, active, archive, selectedO
     <directionalLight ref={keyLight} target={vectors.lightTarget} intensity={3.3} color="#fff8ed" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-.85} shadow-camera-right={.85} shadow-camera-top={.85} shadow-camera-bottom={-.85} shadow-camera-near={1} shadow-camera-far={120} shadow-bias={-.0001} shadow-normalBias={.0006} />
     <Suspense fallback={null}><CinematicTrain frame={frame} onReady={handleRigReady} /></Suspense>
     <FlightClouds frame={frame} />
-    <RecordedTrajectory frame={frame} data={archive} selected={selectedObservation} />
+    <RecordedTrajectory frame={frame} data={archive} />
   </>;
 }
 

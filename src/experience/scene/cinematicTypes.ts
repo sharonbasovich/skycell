@@ -9,4 +9,8 @@ export interface CinematicFrame {
   elapsedSeconds: number;
   /** Physical ascent, independent of hardware inspection/recording chapters. */
   flightProgress?: number;
+  /** Scroll-driven relative payload displacement shared with camera sampling. */
+  scrollSuspensionVector3?: Vector3;
+  /** Uniform translation of the same rig onto the recorded route. */
+  recordingTranslationVector3?: Vector3;
 }

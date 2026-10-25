@@ -1,8 +1,8 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
+import { Component, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from "react";
 import { useFrame, useLoader, useThree } from "@react-three/fiber";
 import { ClampToEdgeWrapping, HalfFloatType, LinearFilter, LinearSRGBColorSpace, Matrix3, Matrix4, Mesh, NoColorSpace, OrthographicCamera, PlaneGeometry, RepeatWrapping, Scene, ShaderMaterial, SRGBColorSpace, TextureLoader, Vector3, Vector4, WebGLRenderTarget } from "three";
 import type { CinematicFrame } from "./cinematicTypes";
-import { EARTH_RADIUS_KM, sampleGeographicObserver } from "./spatialEnvironment";
+import { EARTH_RADIUS_KM, earthBackdropSize, sampleGeographicObserver } from "./spatialEnvironment";
 
 /** Fixed east/up/north frame over Massachusetts, not an animated texture basis. */
 function setLocalEarthBasis(matrix: Matrix3) {
@@ -47,6 +47,8 @@ uniform vec3 uSunDirection;
 uniform sampler2D uSurface;
 uniform sampler2D uClouds;
 uniform sampler2D uRegional;
+uniform sampler2D uDetail;
+uniform float uDetailMix;
 
 const float PI = 3.141592653589793;
 const float R = 6371.0;
@@ -156,6 +158,18 @@ void main() {
       // Preserve its contrast rather than boosting/clipping the cloud whites.
       albedo = mix(albedo, texture2D(uRegional, regionalUv).rgb, regionalComposite);
     }
+    if (uDetailMix > 0.0) {
+      // Native 30 m Landsat/WELD annual imagery supplies local terrain detail.
+      // This bounded historical patch is not an upscaled MODIS photograph.
+      vec2 detailUv = (lonLat - vec2(-71.6, 41.3)) / vec2(1.8);
+      vec2 edge = min(lonLat - vec2(-71.6, 41.3), vec2(-69.8, 43.1) - lonLat);
+      float weight = smoothstep(0.0, 0.10, min(edge.x, edge.y));
+      if (weight > 0.0) {
+        vec4 detail = texture2D(uDetail, detailUv);
+        // Nodata retains the broad regional map, including the ocean.
+        albedo = mix(albedo, detail.rgb, weight * detail.a * uDetailMix);
+      }
+    }
     // Dark New England forest is not ocean. Preserve the actual atlas colour;
     // a luminance-based water replacement erases this whole regional texture.
     // The water heuristic gates only the global atlas glint, never its colour.
@@ -245,11 +259,24 @@ interface Props {
   fadeIn?: boolean;
 }
 
+class EarthMapBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(error: Error) { console.warn("SkyCell Earth imagery unavailable; retaining the physical sky.", error.message); }
+  render() { return this.state.failed ? null : this.props.children; }
+}
+
+/** Imagery can fail independently of the live vehicle and physical sky. */
+export default function CinematicEarth(props: Props) {
+  return <EarthMapBoundary><Suspense fallback={null}><EarthWithMaps {...props} /></Suspense></EarthMapBoundary>;
+}
+
 /** Depthless kilometre environment behind the metre-scale floating-origin rig. */
-export default function CinematicEarth({ frame, fadeIn = true }: Props) {
+function EarthWithMaps({ frame, fadeIn = true }: Props) {
   const gl = useThree((state) => state.gl);
   const width = useThree((state) => state.size.width);
   const height = useThree((state) => state.size.height);
+  const pixelRatio = useThree((state) => state.viewport.dpr);
   const invalidate = useThree((state) => state.invalidate);
   // Select once per Canvas mount. A resize must not download/cache both the
   // 2k and 4k regional variants on memory-constrained devices.
@@ -278,6 +305,8 @@ export default function CinematicEarth({ frame, fadeIn = true }: Props) {
         uSurface: { value: surface },
         uClouds: { value: clouds },
         uRegional: { value: regional },
+        uDetail: { value: regional },
+        uDetailMix: { value: 0 },
       },
     });
     const displayMaterial = new ShaderMaterial({
@@ -297,10 +326,9 @@ export default function CinematicEarth({ frame, fadeIn = true }: Props) {
     return { earthMaterial, displayMaterial, geometry, earthScene, camera: new OrthographicCamera(-1, 1, 1, -1, 0, 1), worldEye: new Vector3(), geographicEye: new Vector3() };
   }, [surface, clouds, regional]);
 
-  // Shade the background at bounded CSS resolution, independently of the
-  // foreground Canvas DPR. Preserve the full viewport aspect ratio.
-  const bufferWidth = Math.max(1, Math.round(Math.min(width, width < 900 ? 640 : 1024)));
-  const bufferHeight = Math.max(1, Math.round(bufferWidth * height / Math.max(width, 1)));
+  // Match the actual foreground density rather than enlarging a 640/1024 px
+  // backdrop. Cap the longest edge, including tall portrait viewports.
+  const [bufferWidth, bufferHeight] = earthBackdropSize(width, height, pixelRatio, gl.capabilities.maxTextureSize);
   const target = useMemo(() => {
     const buffer = new WebGLRenderTarget(bufferWidth, bufferHeight, {
       type: HalfFloatType,
@@ -324,6 +352,35 @@ export default function CinematicEarth({ frame, fadeIn = true }: Props) {
     scissor: new Vector4(),
   });
   const fadeAge = useRef(0);
+  const detailLoaded = useRef(false), detailAge = useRef(0);
+
+  useEffect(() => {
+    let alive = true;
+    detailLoaded.current = false;
+    detailAge.current = 0;
+    resources.earthMaterial.uniforms.uDetailMix.value = 0;
+    const filename = regionalFile === "regional-earth-2048.webp" ? "landsat-detail-2048.webp" : "landsat-detail.webp";
+    // Detail is optional and independent of the base environment. A failed
+    // detail request keeps the existing NASA regional map and the live rig.
+    const texture = new TextureLoader().load(`${import.meta.env.BASE_URL}textures/cinematic/${filename}`, loaded => {
+      if (!alive) return;
+      loaded.colorSpace = SRGBColorSpace;
+      loaded.wrapS = loaded.wrapT = ClampToEdgeWrapping;
+      loaded.anisotropy = Math.min(8, gl.capabilities.getMaxAnisotropy());
+      loaded.needsUpdate = true;
+      resources.earthMaterial.uniforms.uDetail.value = loaded;
+      detailLoaded.current = true;
+      cache.current.target = null;
+      invalidate();
+    }, undefined, () => { /* The existing regional map is the fallback. */ });
+    return () => {
+      alive = false;
+      detailLoaded.current = false;
+      resources.earthMaterial.uniforms.uDetail.value = regional;
+      resources.earthMaterial.uniforms.uDetailMix.value = 0;
+      texture.dispose();
+    };
+  }, [resources, regionalFile, regional, gl, invalidate]);
 
   useLayoutEffect(() => {
     surface.colorSpace = SRGBColorSpace;
@@ -332,7 +389,7 @@ export default function CinematicEarth({ frame, fadeIn = true }: Props) {
     for (const texture of [surface, clouds, regional]) {
       texture.wrapS = texture === regional ? ClampToEdgeWrapping : RepeatWrapping;
       texture.wrapT = ClampToEdgeWrapping;
-      texture.anisotropy = Math.min(4, gl.capabilities.getMaxAnisotropy());
+      texture.anisotropy = Math.min(8, gl.capabilities.getMaxAnisotropy());
       texture.needsUpdate = true;
     }
   }, [surface, clouds, regional, gl]);
@@ -357,6 +414,13 @@ export default function CinematicEarth({ frame, fadeIn = true }: Props) {
   useFrame(({ camera, invalidate }, delta) => {
     const previous = cache.current;
     const state = frame.current;
+    if (detailLoaded.current && detailAge.current < .45) {
+      detailAge.current = Math.min(.45, detailAge.current + (Number.isFinite(delta) ? Math.min(Math.max(delta, 0), .05) : 1 / 60));
+      const t = detailAge.current / .45;
+      resources.earthMaterial.uniforms.uDetailMix.value = t * t * (3 - 2 * t);
+      previous.target = null;
+      if (detailAge.current < .45) invalidate();
+    }
     if (fadeIn && fadeAge.current < .45) {
       // This is bounded asset-loading UI, independent of paused flight time.
       // Clamp the first timestep after a long image decode/compile pause.

@@ -1,8 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { Vector3 } from "three";
-import { cloudVisibility, createCloudDensityVolume, EARTH_RADIUS_KM, sampleGeographicObserver } from "./spatialEnvironment";
+import { cloudVisibility, createCloudDensityVolume, EARTH_RADIUS_KM, earthBackdropSize, sampleGeographicObserver } from "./spatialEnvironment";
 
 describe("spherical observer and spatial atmosphere", () => {
+  it("retains foreground pixel density while bounding portrait and large-display allocations", () => {
+    expect(earthBackdropSize(1272, 716, 1.25)).toEqual([1590, 895]);
+    for (const [width, height, dpr, limit] of [[390, 844, 1.25, 1024], [768, 1024, 1.25, 1024], [3840, 2160, 2, 2048], [1920, 1080, 1.25, 1024]]) {
+      const [w, h] = earthBackdropSize(width, height, dpr, limit);
+      expect(Math.max(w, h)).toBeLessThanOrEqual(limit);
+      expect(Math.abs(w / h - width / height)).toBeLessThan(.003);
+    }
+    expect(earthBackdropSize(NaN, NaN, NaN)).toEqual([1, 1]);
+  });
   it("moves the observer over a sphere while preserving radial altitude", () => {
     const camera = new Vector3(), output = new Vector3();
     let previousEast = -Infinity;

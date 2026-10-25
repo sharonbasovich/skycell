@@ -1,0 +1,40 @@
+{
+  "source": "NASA Global Imagery Browse Services / Landsat WELD",
+  "layer": "Landsat_WELD_CorrectedReflectance_TrueColor_Global_Annual",
+  "time": "2000-12-01",
+  "dataset_resolution_metres": 30,
+  "description": "Historical annual composite, not imagery from the 2025 flight.",
+  "bounds_west_south_east_north": [
+    -71.6,
+    41.3,
+    -69.8,
+    43.1
+  ],
+  "crs": "EPSG:4326",
+  "row_origin": "north (top)",
+  "source_url": "https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&REQUEST=GetMap&VERSION=1.1.1&LAYERS=Landsat_WELD_CorrectedReflectance_TrueColor_Global_Annual&STYLES=&FORMAT=image%2Fpng&TRANSPARENT=TRUE&WIDTH=4096&HEIGHT=4096&SRS=EPSG%3A4326&BBOX=-71.6%2C41.3%2C-69.8%2C43.1&TIME=2000-12-01",
+  "source_bytes": 39668558,
+  "source_sha256": "8558b3fe65b4bc801102ed79bfa7d9c2cc867799d5c1b00e9241c1ed19869fb6",
+  "variants": [
+    {
+      "file": "public/textures/cinematic/landsat-detail.webp",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "bytes": 5681120,
+      "sha256": "1b0004082dc2dcdfa9d21b26c9cec9fe452f25ec366eceb389b0ff937bc613f4",
+      "conversion": "WebP quality 90; no resampling"
+    },
+    {
+      "file": "public/textures/cinematic/landsat-detail-2048.webp",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "bytes": 1161924,
+      "sha256": "cbbca376669c4ce5d01fb98103efea9901cb85099502ea8335cf130e82a97163",
+      "conversion": "WebP quality 90; Lanczos 2048 square"
+    }
+  ]
+}

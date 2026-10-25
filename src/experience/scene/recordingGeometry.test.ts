@@ -37,6 +37,11 @@ describe("recorded flight geometry", () => {
     expect([geometry.groundPositions[1], geometry.groundPositions[4], geometry.groundPositions[7], geometry.groundPositions[10]]).toEqual([20, 20, 20, 20]);
     expect(geometry.segmentPositions[6]).toBe(geometry.positions[6]);
     expect(geometry.segmentPositions[8]).toBe(geometry.positions[8]);
+    expect(geometry.completePairs).toEqual([[0, 1], [1, 2], [2, 3]]);
+    expect(geometry.estimatedPairs).toEqual([[1, 2]]);
+    expect(geometry.completeSegmentPositions.length).toBe(18);
+    expect(Array.from(geometry.estimatedSegmentPositions)).toEqual(Array.from(geometry.completeSegmentPositions.slice(6, 12)));
+    expect(geometry.completeGroundPositions.length).toBe(18);
   });
 
   it("keeps the real archive's 125 native selections, recorded peak and gap boundaries", () => {
@@ -52,6 +57,9 @@ describe("recorded flight geometry", () => {
       if (elapsed > 60_000) expect(connected.has(index)).toBe(false);
     }
     expect(geometry.pairs.length + geometry.gapCount).toBe(124);
+    expect(geometry.completePairs.length).toBe(124);
+    expect(geometry.estimatedPairs.length).toBe(geometry.gapCount);
+    expect(geometry.completeSegmentPositions.length).toBe(124 * 6);
     expect(geometry.gapCount).toBeGreaterThan(0);
     expect(geometry.positions.length).toBe(375);
   });
@@ -59,6 +67,8 @@ describe("recorded flight geometry", () => {
   it("does not connect duplicate/reversed timestamps and represents an empty archive without infinities", () => {
     const geometry = buildRecordingGeometry(recording([observation(2000), observation(2000), observation(1000)]));
     expect(geometry.pairs).toEqual([]);
+    expect(geometry.completePairs).toEqual([]);
+    expect(geometry.estimatedPairs).toEqual([]);
     expect(geometry.pointCount).toBe(3);
     const empty = buildRecordingGeometry(recording([]));
     expect(empty.positions.length).toBe(0);

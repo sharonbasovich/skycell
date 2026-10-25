@@ -12,6 +12,13 @@ export interface RecordingGeometryData {
   segmentPositions: Float32Array;
   groundPositions: Float32Array;
   pairs: [number, number][];
+  /** Every chronologically adjacent pair, including explicitly estimated gaps. */
+  completeSegmentPositions: Float32Array;
+  completeGroundPositions: Float32Array;
+  completePairs: [number, number][];
+  /** Linear joins across reception gaps; never represented as measurements. */
+  estimatedSegmentPositions: Float32Array;
+  estimatedPairs: [number, number][];
   gapCount: number;
   pointCount: number;
   bounds: { min: [number, number, number]; max: [number, number, number] };
@@ -20,7 +27,8 @@ export interface RecordingGeometryData {
 /**
  * A local ENU presentation of the partial recording. All three axes share the
  * same .5 scene units/km; altitude is absolute, not relative to the first fix.
- * This explanatory plot does not claim the illustrative rig's world location.
+ * The explanatory replay preserves every received fix. Complete joins between
+ * them are estimates; positions outside the recorded interval are not inferred.
  */
 export function projectRecordedObservation(point: Pick<TrajectoryPoint, "latitude" | "longitude" | "altitude">, center: ProcessedTrajectoryData["center"]): [number, number, number] {
   const eastKm = (point.longitude - center.lon) * Math.cos(center.lat * Math.PI / 180) * 111.32;
@@ -35,7 +43,9 @@ export function projectRecordedObservation(point: Pick<TrajectoryPoint, "latitud
 export function buildRecordingGeometry(data: ProcessedTrajectoryData): RecordingGeometryData {
   const positions = new Float32Array(data.points.length * 3);
   const segments: number[] = [], ground: number[] = [];
+  const complete: number[] = [], completeGround: number[] = [], estimated: number[] = [];
   const pairs: [number, number][] = [];
+  const completePairs: [number, number][] = [], estimatedPairs: [number, number][] = [];
   const minimum: [number, number, number] = [Infinity, Infinity, Infinity];
   const maximum: [number, number, number] = [-Infinity, -Infinity, -Infinity];
   let gapCount = 0;
@@ -49,8 +59,17 @@ export function buildRecordingGeometry(data: ProcessedTrajectoryData): Recording
     }
     if (index === 0) continue;
     const delta = point.timestamp - data.points[index - 1].timestamp;
-    if (!Number.isFinite(delta) || delta <= 0 || delta > RECORDING_GAP_MS) { gapCount++; continue; }
     const previous = index * 3 - 3;
+    if (!Number.isFinite(delta) || delta <= 0) { gapCount++; continue; }
+    complete.push(positions[previous], positions[previous + 1], positions[previous + 2], ...coordinates);
+    completeGround.push(positions[previous], RECORDING_ORIGIN[1], positions[previous + 2], coordinates[0], RECORDING_ORIGIN[1], coordinates[2]);
+    completePairs.push([index - 1, index]);
+    if (delta > RECORDING_GAP_MS) {
+      gapCount++;
+      estimated.push(positions[previous], positions[previous + 1], positions[previous + 2], ...coordinates);
+      estimatedPairs.push([index - 1, index]);
+      continue;
+    }
     segments.push(positions[previous], positions[previous + 1], positions[previous + 2], ...coordinates);
     ground.push(positions[previous], RECORDING_ORIGIN[1], positions[previous + 2], coordinates[0], RECORDING_ORIGIN[1], coordinates[2]);
     pairs.push([index - 1, index]);
@@ -60,6 +79,8 @@ export function buildRecordingGeometry(data: ProcessedTrajectoryData): Recording
   }
   return {
     positions, segmentPositions: new Float32Array(segments), groundPositions: new Float32Array(ground),
+    completeSegmentPositions: new Float32Array(complete), completeGroundPositions: new Float32Array(completeGround),
+    estimatedSegmentPositions: new Float32Array(estimated), completePairs, estimatedPairs,
     pairs, gapCount, pointCount: data.points.length, bounds: { min: minimum, max: maximum },
   };
 }

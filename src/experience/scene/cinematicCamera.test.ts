@@ -7,10 +7,11 @@ import { createPayloadRevealAnchors, samplePayloadReveal, samplePayloadRevealAnc
 import { createFlightDynamicsPose, sampleFlightDynamics, type FlightDynamicsPose } from "./flightDynamics";
 import { sampleCinematicCamera, storyFlightProgress, type CinematicCameraSample } from "./cinematicCamera";
 import { buildRecordingGeometry } from "./recordingGeometry";
+import { createRecordingPlaybackSample, recordingPhase, sampleRecordingPlayback } from "./recordingPlayback";
 
 const VIEWPORTS = [[390, 844], [415, 582], [768, 1024], [1440, 900], [1272, 716]] as const;
 const WIND_TIMES = [0, 1.7, 4.3, 8, 14, 23, 37];
-const TRANSITIONS = [[.055, .125], [.205, .300], [.365, .425], [.505, .570], [.645, .705], [.775, .835], [.905, .965]] as const;
+const TRANSITIONS = [[.055, .125], [.205, .300], [.365, .425], [.505, .570], [.645, .705], [.775, .815], [.95, .985]] as const;
 
 function actor(progress: number, time = 8) {
   return sampleFlightDynamics(storyFlightProgress(progress), time, createFlightDynamicsPose());
@@ -175,6 +176,24 @@ describe.each([false, true])("flight-to-payload camera (narrow=%s)", narrow => {
     expect(sampleCinematicCamera(.465, narrow, position, target, state, actor(.465), scratch)).toBe(state);
     expect([position, target, scratch].every(vector => vector.toArray().every(Number.isFinite))).toBe(true);
   });
+
+  it("orbits the recording by scroll while keeping its scale, target and reversible framing", () => {
+    const pose = actor(.87, 8);
+    const samples = [.815, .84, .87, .91, .95].map(progress => snapshot(progress, narrow, 8, pose));
+    const distance = Math.hypot(62, 24, 10);
+    for (const sample of samples) {
+      expect(sample.target.toArray()).toEqual([0, 27.5, -25]);
+      expect(sample.position.distanceTo(sample.target)).toBeCloseTo(distance, 10);
+      expect(sample.fov).toBe(narrow ? 43 : 35);
+    }
+    const start = samples[0].position.clone().sub(samples[0].target), end = samples[4].position.clone().sub(samples[4].target);
+    expect(Math.atan2(end.x, end.z) - Math.atan2(start.x, start.z)).toBeCloseTo(.5, 10);
+    expect(samples[0].position.distanceTo(samples[4].position)).toBeGreaterThan(30);
+    for (let index = samples.length - 1; index >= 0; index--) {
+      const reverse = snapshot([.815, .84, .87, .91, .95][index], narrow, 8, pose);
+      expect(reverse.position.toArray()).toEqual(samples[index].position.toArray());
+    }
+  });
 });
 
 describe.each(VIEWPORTS)("subject framing at %ix%i", (width, height) => {
@@ -204,37 +223,56 @@ describe.each(VIEWPORTS)("subject framing at %ix%i", (width, height) => {
   });
 });
 
-describe("recording stays between the heading and its native controls", () => {
+describe("scroll recording frames its complete path and the moving vehicle", () => {
   const archive = parseCSVText(readFileSync(new URL("../../../public/data.csv", import.meta.url), "utf8"));
   const recording = buildRecordingGeometry(archive);
   const paddedPoints: Vector3[] = [];
-  // Include every real fix and each connected ground-trace endpoint. An
-  // axis-aligned ±0.35 envelope also covers marker/halo thickness in any view.
-  for (const positions of [recording.positions, recording.groundPositions]) {
+  // Linear estimates stay in the convex hull of their actual endpoints. Every
+  // fix, complete ground join and ±0.2 path/stem envelope is included.
+  for (const positions of [recording.positions, recording.completeGroundPositions]) {
     for (let index = 0; index < positions.length; index += 3) {
-      for (const x of [-.35, .35]) for (const y of [-.35, .35]) for (const z of [-.35, .35]) {
+      for (const x of [-.2, .2]) for (const y of [-.2, .2]) for (const z of [-.2, .2]) {
         paddedPoints.push(new Vector3(positions[index] + x, positions[index + 1] + y, positions[index + 2] + z));
       }
     }
   }
-  it.each([[390, 844], [415, 582], [360, 780], [1440, 900], [1272, 716]])("keeps all 125 fixes and the ground trace clear at %ix%i", (width, height) => {
+  it.each(VIEWPORTS)("keeps the full path and traveling balloon clear at %ix%i", (width, height) => {
     expect(recording.pointCount).toBe(125);
-    const narrow = width <= 700, header = narrow ? 67 : 75, sample = snapshot(.87, portraitCamera(width, height));
+    const mobileCSS = width <= 700, narrow = portraitCamera(width, height), header = mobileCSS ? 67 : 75;
+    const headingTop = mobileCSS ? height < 650 ? 87 : 99 : height < 740 ? 100 : height * .14;
+    const headingFont = mobileCSS ? height < 650 ? 31 : 35 : width <= 1050 ? width * .056 : height < 740 ? width * .043 : Math.min(72, Math.max(42, width * .048));
+    const readingFont = mobileCSS ? 29 : Math.min(52, Math.max(30, width * .035));
+    const readoutBottom = mobileCSS ? height < 650 ? 69 : 73 : height * .075;
     const required = {
       left: narrow ? 16 : width * .49,
       right: width - 16,
-      top: narrow ? height < 650 ? 170 : 200 : header + 28,
-      bottom: narrow ? height < 650 ? 375 : height - 224 : height * .68,
+      // Portrait composition reserves two real heading lines. Desktop uses
+      // the adjacent right field, so only the header needs vertical clearance.
+      top: narrow ? headingTop + headingFont * (mobileCSS ? 1.08 : 1.045) * 2 + 16 : header + 28,
+      // Current UI has a reading + source line, without the removed slider.
+      bottom: height - readoutBottom - readingFont * 1.1 - 22 - 32 - 12,
     };
     const failures = [];
-    for (const orbitX of [-2, 0, 2]) {
+    const playback = createRecordingPlaybackSample();
+    for (const progress of [.815, .84, .87, .91, .95]) {
+      const sample = snapshot(progress, narrow);
       const camera = new PerspectiveCamera(sample.fov, width / height, .05, 160);
-      camera.position.copy(sample.position); camera.position.x += orbitX; camera.lookAt(sample.target);
+      camera.position.copy(sample.position); camera.lookAt(sample.target);
       camera.setViewOffset(width, height, -(sample.screenX - .5) * width, -(sample.screenY - .5) * height, width, height);
       camera.updateProjectionMatrix(); camera.updateMatrixWorld();
-      const bounds = frameBounds(paddedPoints, camera, width, height);
-      if (!(bounds.left >= required.left && bounds.right <= required.right && bounds.top >= required.top && bounds.bottom <= required.bottom && bounds.near > -1 && bounds.far < 1)) {
-        failures.push({ orbitX, bounds, required });
+      sampleRecordingPlayback(archive, recordingPhase(progress), playback);
+      const trainPoints = [];
+      // The authored balloon is at the sampled coordinate; the enclosure hangs
+      // roughly4m below. Include the full independently moving silhouette at
+      // seven wind phases plus a conservative ±.9m body-lag envelope.
+      for (const time of WIND_TIMES) {
+        const pose = actor(progress, time), translation = playback.position.clone().sub(pose.balloonPosition);
+        trainPoints.push(...fullTrain(pose).map(point => point.add(translation)));
+      }
+      trainPoints.push(...boxPoints([-1.65, -4.25, -1.1], [1.18, -3.5, 1.1]).map(point => point.add(playback.position)));
+      for (const [subject, points] of [["path", paddedPoints], ["vehicle", trainPoints]] as const) {
+        const bounds = frameBounds(points, camera, width, height);
+        if (!(bounds.left >= required.left && bounds.right <= required.right && bounds.top >= required.top && bounds.bottom <= required.bottom && bounds.near > -1 && bounds.far < 1)) failures.push({ progress, subject, bounds, required });
       }
     }
     expect(failures).toEqual([]);

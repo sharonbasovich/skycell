@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Vector3 } from "three";
-import { createFlightDynamicsPose, FLIGHT_RISE_METRES, FLIGHT_TETHER_LENGTH, sampleFlightDynamics } from "./flightDynamics";
+import { createFlightDynamicsPose, createScrollSuspension, FLIGHT_RISE_METRES, FLIGHT_TETHER_LENGTH, sampleFlightDynamics, stepScrollSuspension } from "./flightDynamics";
 
 function finitePose(pose: ReturnType<typeof createFlightDynamicsPose>) {
   return Object.values(pose).every(value => value.toArray().every(Number.isFinite));
@@ -94,5 +94,83 @@ describe("wind-led balloon and suspended payload", () => {
         expect(pose.payloadQuaternion.length()).toBeCloseTo(1, 10);
       }
     }
+  });
+});
+
+describe("scroll-operated suspension", () => {
+  const right = new Vector3(1, 0, 0);
+  it("leaves the envelope leading a leftward screen crossing, then settles without moving the envelope route", () => {
+    const state = createScrollSuspension(), shifted = createFlightDynamicsPose(), baseline = createFlightDynamicsPose();
+    const returned = state.offset;
+    stepScrollSuspension(state, .72, right, 1 / 60);
+    let maximumLag = 0;
+    for (let frame = 1; frame <= 60; frame++) {
+      stepScrollSuspension(state, .72 - .37 * frame / 60, right, 1 / 60);
+      sampleFlightDynamics(.35, 8, shifted, state.offset);
+      sampleFlightDynamics(.35, 8, baseline);
+      maximumLag = Math.max(maximumLag, shifted.loop.x - baseline.loop.x);
+      expect(shifted.balloonPosition.toArray()).toEqual(baseline.balloonPosition.toArray());
+      expect(shifted.neck.distanceTo(shifted.loop)).toBeCloseTo(FLIGHT_TETHER_LENGTH, 10);
+      expect(state.offset.length()).toBeLessThanOrEqual(.900000001);
+    }
+    expect(maximumLag).toBeGreaterThan(.40);
+    expect(state.offset.x).toBeGreaterThan(.65);
+    for (let frame = 0; frame < 480; frame++) stepScrollSuspension(state, .35, right, 1 / 60);
+    expect(state.offset.length()).toBeLessThan(.0001);
+    expect(state.offsetVelocity.length()).toBeLessThan(.0001);
+    expect(state.offset).toBe(returned);
+  });
+
+  it("trails the other way after a reversed crossing and follows the current horizontal camera axis", () => {
+    const forward = createScrollSuspension(), backward = createScrollSuspension(), depth = createScrollSuspension();
+    const depthRight = new Vector3(0, .7, 1);
+    for (let frame = 0; frame <= 90; frame++) {
+      const phase = frame / 90;
+      stepScrollSuspension(forward, .72 - .37 * phase, right, 1 / 60);
+      stepScrollSuspension(backward, .35 + .37 * phase, right, 1 / 60);
+      stepScrollSuspension(depth, .72 - .37 * phase, depthRight, 1 / 60);
+    }
+    expect(forward.offset.x).toBeGreaterThan(.65);
+    expect(backward.offset.x).toBeLessThan(-.65);
+    expect(forward.offset.x + backward.offset.x).toBeCloseTo(0, 12);
+    expect(depth.offset.z).toBeCloseTo(forward.offset.x, 12);
+    expect(depth.offset.y).toBe(0);
+    for (let frame = 1; frame <= 90; frame++) stepScrollSuspension(forward, .35 + .37 * frame / 90, right, 1 / 60);
+    expect(forward.offset.x).toBeLessThan(-.5);
+  });
+
+  it("freezes both position and stored velocity for pause, and safely handles anchor jumps and bad values", () => {
+    const state = createScrollSuspension(), pose = createFlightDynamicsPose();
+    for (let frame = 0; frame <= 50; frame++) stepScrollSuspension(state, .72 - frame * .006, right, 1 / 60);
+    const snapshot = { offset: state.offset.toArray(), velocity: state.offsetVelocity.toArray(), previous: state.previousScreenX };
+    for (const dt of [0, -1, NaN, Infinity]) {
+      stepScrollSuspension(state, .9, right, dt);
+      expect(state.offset.toArray()).toEqual(snapshot.offset);
+      expect(state.offsetVelocity.toArray()).toEqual(snapshot.velocity);
+      expect(state.previousScreenX).toBe(snapshot.previous);
+    }
+    for (const coordinate of [0, 1, 0, 1, NaN, Infinity, -.3, 3]) {
+      stepScrollSuspension(state, coordinate, new Vector3(NaN, Infinity, NaN), 1e6);
+      sampleFlightDynamics(.4, 5, pose, state.offset);
+      expect(state.offset.toArray().every(Number.isFinite)).toBe(true);
+      expect(state.offset.length()).toBeLessThanOrEqual(.900000001);
+      expect(finitePose(pose)).toBe(true);
+      expect(pose.neck.distanceTo(pose.loop)).toBeCloseTo(FLIGHT_TETHER_LENGTH, 10);
+    }
+    for (const offset of [new Vector3(NaN, 0, Infinity), new Vector3(-1e308, 0, 1e308)]) {
+      sampleFlightDynamics(.4, 5, pose, offset);
+      expect(finitePose(pose)).toBe(true);
+      expect(pose.neck.distanceTo(pose.loop)).toBeCloseTo(FLIGHT_TETHER_LENGTH, 10);
+    }
+  });
+
+  it("decays inspection forcing instead of retaining a static offset, with independent scene storage", () => {
+    const first = createScrollSuspension(), second = createScrollSuspension();
+    for (let frame = 0; frame <= 60; frame++) stepScrollSuspension(first, .72 - frame * .006, right, 1 / 60);
+    expect(first.offset.length()).toBeGreaterThan(.65);
+    expect(second.offset.length()).toBe(0);
+    for (let frame = 0; frame < 480; frame++) stepScrollSuspension(first, frame % 2, right, 1 / 60, false);
+    expect(first.offset.length()).toBeLessThan(.0001);
+    expect(first.offsetVelocity.length()).toBeLessThan(.0001);
   });
 });

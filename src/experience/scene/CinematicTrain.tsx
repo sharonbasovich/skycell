@@ -104,7 +104,7 @@ export default function CinematicTrain({ frame, onReady }: Props) {
     // The parent owns visible scene time. A frozen clock gives exactly the same
     // pose on pause, tab hide, offscreen suspension and resumed render frames.
     const { balloonRig, payloadRig, pose, loop, direction, tether, reveal } = resources;
-    sampleFlightDynamics(frame.current.flightProgress ?? frame.current.progress, frame.current.elapsedSeconds, pose);
+    sampleFlightDynamics(frame.current.flightProgress ?? frame.current.progress, frame.current.elapsedSeconds, pose, frame.current.scrollSuspensionVector3);
     // During the technical cutaway, reduce the out-of-frame suspension's
     // visual weight so it does not cross the explanatory typography.
     const inspection = MathUtils.smoothstep(frame.current.progress, .25, .29) * (1 - MathUtils.smoothstep(frame.current.progress, .79, .82));
@@ -123,6 +123,12 @@ export default function CinematicTrain({ frame, onReady }: Props) {
     tether.position.copy(pose.neck).add(loop).multiplyScalar(.5);
     tether.scale.set(1, direction.length(), 1);
     tether.quaternion.setFromUnitVectors(resources.up, direction.normalize());
+    const recordingOffset = frame.current.recordingTranslationVector3;
+    if (recordingOffset) {
+      balloonRig.position.add(recordingOffset);
+      payloadRig.position.add(recordingOffset);
+      tether.position.add(recordingOffset);
+    }
   });
   useEffect(() => () => {
     resources.owned.forEach((material) => material.dispose());

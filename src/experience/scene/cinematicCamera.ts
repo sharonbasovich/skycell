@@ -1,8 +1,10 @@
 import { MathUtils, Vector3 } from "three";
 import type { FlightDynamicsPose } from "./flightDynamics";
+import { recordingPhase } from "./recordingReadout";
 
 export { STORY_STOPS } from "../storyTiming";
-const HOLDS = [[0, .055], [.125, .205], [.300, .365], [.425, .505], [.570, .645], [.705, .775], [.835, .905], [.965, 1]] as const;
+const HOLDS = [[0, .055], [.125, .205], [.300, .365], [.425, .505], [.570, .645], [.705, .775], [.815, .95], [.985, 1]] as const;
+const UP = new Vector3(0, 1, 0);
 export interface CinematicCameraSample { fov: number; altitudeKm: number; shot: number; screenX: number; screenY: number }
 type Anchor = "flight" | "payload" | "inside" | "radio" | "power" | "recording";
 interface Shot { anchor: Anchor; offset: [number, number, number]; fov: number; x: number; y: number }
@@ -56,6 +58,9 @@ export function sampleCinematicCamera(
   anchorPosition(to.anchor, f, pose, scratch);
   targetOut.lerp(scratch, blend);
   positionOut.set(MathUtils.lerp(from.offset[0], to.offset[0], blend), MathUtils.lerp(from.offset[1], to.offset[1], blend), MathUtils.lerp(from.offset[2], to.offset[2], blend)).add(targetOut);
+  const orbitWeight = ease((p - .775) / .04) * (1 - ease((p - .95) / .035));
+  const yaw = (ease(recordingPhase(p)) - .5) * .5 * orbitWeight;
+  positionOut.sub(targetOut).applyAxisAngle(UP, yaw).add(targetOut);
   sampleOut.fov = MathUtils.lerp(from.fov, to.fov, blend);
   sampleOut.screenX = MathUtils.lerp(from.x, to.x, blend);
   sampleOut.screenY = MathUtils.lerp(from.y, to.y, blend);

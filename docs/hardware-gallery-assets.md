@@ -2,9 +2,9 @@
 
 These optimized copies were prepared for the `779a71e` revision’s three-tab
 hardware gallery. The current integrated flight replaces that menu with a camera
-approach and modeled payload cutaway. It reuses the small images only in the
-normal-flow reduced-motion/unavailable-WebGL fallback, while relevant inspection
-links and flight notes open the unchanged original JPEG photographs.
+approach and modeled payload cutaway. The enclosure, workbench and launch photos
+appear as cards in both the scroll scene and the normal-flow fallback. Selecting
+a card opens the unchanged original JPEG photograph.
 
 The earlier gallery exposed originals through `EvidencePhoto.fullSrc`, with `src`
 identifying the small display variant. The processing and hashes below remain

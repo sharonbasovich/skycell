@@ -36,7 +36,7 @@ export function samplePayloadReveal(progress: number, out: RevealState = { open:
   out.sensor = ease(p, .400, .423) * settle;
   out.compute = ease(p, .423, .449) * settle;
   out.radio = ease(p, .449, .476) * settle;
-  out.power = ease(p, .476, .500) * settle;
+  out.power = ease(p, .430, .475) * settle;
   return out;
 }
 
@@ -141,6 +141,7 @@ export function createPayloadReveal(hardware: Group): PayloadRevealAssembly {
   const palePcb = material("Inspection / pale radio board", "#d7d8ce", .75);
   const chip = material("Inspection / matte silicon packages", "#171c1c", .63);
   const ceramic = material("Inspection / ceramic components", "#b8a486", .68);
+  const antennaCeramic = material("Inspection / GPS patch ceramic", "#bd9250", .73);
   const aluminium = material("Inspection / brushed metal ports", "#aeb9bd", .32, .83);
   const contacts = material("Inspection / plated contacts", "#b5a067", .36, .75);
   const silkscreen = material("Inspection / circuit marks", "#b6c5ab", .82);
@@ -196,28 +197,58 @@ export function createPayloadReveal(hardware: Group): PayloadRevealAssembly {
   const compute = new DetailBatch(); board(compute, pcb, .164, .102);
   compute.box(chip, [.035, .006, .032], [-.006, .005, -.008], .0015);
   compute.box(chip, [.019, .004, .025], [.045, .004, .018]);
-  compute.box(aluminium, [.035, .022, .027], [-.062, .012, -.034], .0015);
-  compute.box(chip, [.029, .013, .002], [-.062, .013, -.048]);
+  compute.box(aluminium, [.035, .027, .027], [-.064, .015, -.034], .0015);
+  compute.box(chip, [.001, .019, .021], [-.082, .016, -.034], .0004);
+  for (let pin = 0; pin < 8; pin++) {
+    compute.box(contacts, [.001, .006, .0012], [-.0826, .020, -.040 + pin * .00175], 0);
+  }
   for (const z of [-.010, .028]) {
-    compute.box(aluminium, [.030, .022, .030], [-.065, .013, z], .0015);
-    compute.box(chip, [.002, .014, .021], [-.081, .014, z]);
+    compute.box(aluminium, [.030, .025, .025], [-.067, .014, z], .0015);
+    for (const y of [.0085, .019]) {
+      compute.box(chip, [.001, .007, .020], [-.0825, y, z], .0003);
+      compute.box(bluePcb, [.0004, .0017, .016], [-.0832, y - .0015, z], 0);
+    }
+  }
+  for (const [x, width] of [[-.024, .016], [.005, .016], [.054, .012]]) {
+    compute.box(aluminium, [width, .008, .013], [x, .006, .047], .0011);
+    compute.box(chip, [width - .003, .004, .001], [x, .006, .054], .0003);
   }
   for (let i = 0; i < 10; i++) compute.box(aluminium, [.002, .011, .032], [-.018 + i * .004, .009, -.006], .0004);
   for (let i = 0; i < 12; i++) {
     compute.box(chip, [.007, .003, .004], [-.038 + i * .007, .004, .037], .0006);
-    compute.box(contacts, [.001, .010, .001], [-.036 + i * .007, .009, -.042], 0);
+  }
+  compute.box(chip, [.112, .004, .012], [.010, .004, -.041], .0007);
+  for (let pin = 0; pin < 20; pin++) {
+    for (const z of [-.044, -.038]) {
+      compute.box(contacts, [.0013, .009, .0013], [-.042 + pin * .0055, .010, z], 0);
+    }
   }
   compute.box(led, [.003, .002, .003], [.068, .004, .035], .0004);
   compute.finish(modules.compute, ownedGeometry);
 
   const power = new DetailBatch(); board(power, bluePcb, .082, .061);
-  power.box(chip, [.026, .014, .026], [-.005, .009, -.003], .002);
-  power.box(aluminium, [.024, .002, .024], [-.005, .017, -.003], .001);
-  for (const x of [-.026, .027]) {
-    power.add(new CylinderGeometry(.007, .007, .017, 12), aluminium, [x, .010, -.006]);
-    power.add(new CylinderGeometry(.0066, .0066, .001, 12), chip, [x, .019, -.006]);
-    power.box(bluePcb, [.015, .013, .014], [x, .008, .020], .001);
-    power.box(aluminium, [.010, .001, .007], [x, .015, .020], .0004);
+  power.box(chip, [.019, .011, .019], [0, .007, -.011], .0015);
+  power.add(new CylinderGeometry(.008, .008, .003, 12), aluminium, [0, .013, -.011]);
+  for (const x of [-.016, .016]) {
+    power.add(new CylinderGeometry(.006, .006, .016, 12), chip, [x, .010, -.013]);
+    power.add(new CylinderGeometry(.0056, .0056, .001, 12), aluminium, [x, .0185, -.013]);
+  }
+  for (const x of [-.033, .033]) {
+    power.box(bluePcb, [.014, .014, .021], [x, .009, -.008], .001);
+    for (const z of [-.013, -.003]) {
+      power.add(new CylinderGeometry(.003, .003, .0015, 10), aluminium, [x, .0165, z]);
+      power.box(chip, [.0038, .0003, .0007], [x, .01735, z], 0);
+    }
+  }
+  // The display's pale, inactive segments reproduce the photographed hardware.
+  power.box(chip, [.047, .010, .023], [0, .007, .014], .0015);
+  for (const x of [-.014, 0, .014]) {
+    for (const z of [.007, .014, .021]) {
+      power.box(ceramic, [.0055, .0007, .0012], [x, .0123, z], 0);
+    }
+    for (const side of [-1, 1]) for (const z of [.0105, .0175]) {
+      power.box(ceramic, [.0012, .0007, .0045], [x + side * .0038, .0123, z], 0);
+    }
   }
   power.finish(modules.power, ownedGeometry);
 
@@ -232,6 +263,27 @@ export function createPayloadReveal(hardware: Group): PayloadRevealAssembly {
   sensor.box(aluminium, [.016, .007, .014], [0, .005, 0], .001);
   sensor.box(chip, [.005, .001, .005], [0, .009, .002], .0005);
   for (let i = 0; i < 4; i++) sensor.box(contacts, [.001, .008, .001], [-.013 + i * .008, .007, -.013], 0);
+  // Square ceramic GPS patch and short coax pigtail, as photographed on the bench.
+  sensor.box(antennaCeramic, [.038, .009, .038], [-.079, .005, -.009], .002);
+  sensor.box(aluminium, [.027, .001, .027], [-.079, .010, -.009], .0015);
+  sensor.add(new CylinderGeometry(.0027, .0027, .0007, 10), contacts, [-.076, .0108, -.011]);
+  sensor.tube(blackWire, [[-.098, .004, -.007], [-.109, .004, -.012], [-.113, .003, -.028], [-.106, .003, -.038]], .00125);
+  sensor.box(contacts, [.004, .002, .0035], [-.104, .003, -.039], .0005);
+  // The narrow daughterboard stacks above its carrier on two rows of headers.
+  const daughterboardX = -.090;
+  sensor.box(pcb, [.066, .0035, .043], [daughterboardX, 0, -.093], .0014);
+  sensor.box(pcb, [.050, .0028, .026], [daughterboardX, .008, -.092], .001);
+  for (const z of [-.102, -.082]) {
+    sensor.box(chip, [.046, .0055, .0036], [daughterboardX, .0047, z], .0004);
+    for (let pin = 0; pin < 12; pin++) {
+      const x = daughterboardX + (pin - 5.5) * .0036;
+      sensor.add(new CylinderGeometry(.0012, .0012, .001, 6), contacts, [x, .0096, z]);
+    }
+  }
+  sensor.box(chip, [.011, .0027, .011], [daughterboardX, .0106, -.092], .0006, [0, Math.PI / 4, 0]);
+  sensor.box(aluminium, [.009, .0055, .011], [daughterboardX + .025, .012, -.092], .0008);
+  sensor.box(chip, [.0007, .0026, .007], [daughterboardX + .0298, .012, -.092], .0003);
+  sensor.box(ceramic, [.005, .002, .003], [daughterboardX - .015, .0104, -.093], .0004);
   sensor.finish(modules.sensor, ownedGeometry);
 
   const wiring = new DetailBatch();

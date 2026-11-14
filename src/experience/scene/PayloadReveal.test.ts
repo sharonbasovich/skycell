@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import { BoxGeometry, Group, Mesh, MeshStandardMaterial, Vector3 } from "three";
 import { createPayloadReveal, createPayloadRevealAnchors, samplePayloadReveal, samplePayloadRevealAnchors } from "./PayloadReveal";
+import { STORY_STOPS } from "../storyTiming";
 
 describe("payload inspection", () => {
   it("keeps the hardware together through the code chapter and closes for the recording", () => {
     expect(samplePayloadReveal(.33)).toEqual({ open: 0, sensor: 0, compute: 0, radio: 0, power: 0 });
+    expect(samplePayloadReveal(STORY_STOPS[3]).power).toBeGreaterThan(.9);
     expect(samplePayloadReveal(.51)).toEqual({ open: 1, sensor: 1, compute: 1, radio: 1, power: 1 });
     expect(samplePayloadReveal(.67)).toEqual({ open: 1, sensor: 1, compute: 1, radio: 1, power: 1 });
     const closing = samplePayloadReveal(.705);

@@ -7,6 +7,7 @@ import { formatUTC, parseCSVData, type ProcessedTrajectoryData } from "@/utils/c
 import { STORY_STOPS } from "./storyTiming";
 import StaticRecording from "./StaticRecording";
 import StoryHeading, { type HeadingTreatment } from "./StoryHeading";
+import StoryPhotoCard, { type StoryPhoto } from "./StoryPhotoCard";
 import { readRecordingAt, recordingPhase } from "./scene/recordingReadout";
 import "./experience.css";
 
@@ -15,10 +16,20 @@ const IDS = ["ascent", "climb", "hardware", "inside", "connection", "flight-arch
 const RANGES = [[0, .045, .085], [.117, .13, .19, .215], [.282, .304, .356, .375], [.408, .434, .496, .515], [.553, .578, .67, .71], [.795, .815, .95, .965], [.972, .988, 1]];
 const ENDING_INDEX = IDS.length - 1;
 const HEADING_POINTER_SPRING = { stiffness: 170, damping: 27 };
-const PHOTOS = [
-  { src: "/gallery/1000004204.jpg", alt: "The actual taped foam enclosure with its black side antenna and blue suspension fitting.", caption: "The flight enclosure and antenna." },
-  { src: "/gallery/1000004195.jpg", alt: "Flight electronics, radio hardware, converter and power connections assembled on the workbench.", caption: "The actual electronics before packaging." },
-];
+const PHOTOS: Record<"enclosure" | "electronics" | "launch", StoryPhoto> = {
+  enclosure: {
+    src: "/gallery/1000004204.jpg", preview: "/gallery/hardware-enclosure-1600.webp", width: 1600, height: 1200,
+    alt: "The taped foam enclosure with its black side antenna and blue suspension fitting.", caption: "The flight enclosure and antenna.",
+  },
+  electronics: {
+    src: "/gallery/1000004195.jpg", preview: "/gallery/hardware-electronics-1600.webp", width: 1200, height: 1600,
+    alt: "Flight electronics, radio hardware, converter and power connections assembled on the workbench.", caption: "The electronics before packaging.",
+  },
+  launch: {
+    src: "/gallery/PXL_20250621_172905846.MP.jpg", preview: "/gallery/hardware-launch.webp", width: 659, height: 880,
+    alt: "Two SkyCell launch balloons and their payload rising over Massachusetts.", caption: "SkyCell’s balloon launch.",
+  },
+};
 class SceneBoundary extends Component<{ children: ReactNode; onFailure: (error?: Error) => void }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
@@ -51,7 +62,7 @@ export default function SkyCellExperience() {
   const [capable, setCapable] = useState<boolean | null>(null), [visible, setVisible] = useState(document.visibilityState === "visible"), [onscreen, setOnscreen] = useState(true);
   const [active, setActive] = useState(0), [archive, setArchive] = useState<ProcessedTrajectoryData | null>(null), [archiveError, setArchiveError] = useState(false), [attempt, setAttempt] = useState(0), [observation, setObservation] = useState(0);
   const [playbackPhase, setPlaybackPhase] = useState(0);
-  const [photo, setPhoto] = useState<number | null>(null);
+  const [photo, setPhoto] = useState<StoryPhoto | null>(null);
   const photoTrigger = useRef<HTMLButtonElement | null>(null);
   const staticMode = reduced || capable === false || failed, showScene = capable === true && !reduced && !failed;
   const onReady = useCallback(() => setReady(true), []), onFailure = useCallback(() => { setFailed(true); setReady(false); }, []);
@@ -80,7 +91,7 @@ export default function SkyCellExperience() {
     if (anchor) window.scrollTo({ top: anchor.getBoundingClientRect().top + scrollY, behavior: staticMode ? "instant" : "smooth" });
   };
   const tab = (index: number) => staticMode || active === index ? 0 : -1;
-  const openPhoto = (index: number, trigger: HTMLButtonElement) => { photoTrigger.current = trigger; setPhoto(index); };
+  const photoCard = (image: StoryPhoto, index: number) => <StoryPhotoCard photo={image} tabIndex={tab(index)} onOpen={trigger => { photoTrigger.current = trigger; setPhoto(image); }} />;
   const restoreFocus = (event: Event, target: HTMLButtonElement | null) => {
     event.preventDefault();
     if (target?.isConnected && !target.closest('[aria-hidden="true"]')) target.focus();
@@ -97,17 +108,25 @@ export default function SkyCellExperience() {
           <ChevronDown size={28} strokeWidth={1.7} aria-hidden="true" />
         </button>}
       </>;
-      case 1: return <>{heading(1, ["We reached", "98,000 feet"])}<p>to test a mesh network communications link</p></>;
-      case 2: return <>{heading(2, ["a system for when", "communication", "channels fail"])}<p>we connected to a base station 230,000 feet away</p><button type="button" className="story-link" tabIndex={tab(2)} onClick={event => openPhoto(0, event.currentTarget)}>See the actual build <ArrowUpRight size={16} /></button></>;
-      case 3: return <>{heading(3, ["The internals"])}<p>A Raspberry Pi, GPS receiver, environmental sensors, and a 915 MHz LoRa radio.</p><button type="button" className="story-link" tabIndex={tab(3)} onClick={event => openPhoto(1, event.currentTarget)}>From the workbench <ArrowUpRight size={16} /></button></>;
+      case 1: return <>{heading(1, ["We reached", "98,000 feet"])}<p>to test a communications mesh network</p></>;
+      case 2: return <>
+        {heading(2, ["We built an alternative", "for when communication", "systems fail"])}
+        <p>our payload connected to a base station 230,000 feet away</p>
+        {photoCard(PHOTOS.enclosure, index)}
+      </>;
+      case 3: return <>
+        {heading(3, ["The internals"])}
+        <p>A Raspberry Pi, GPS receiver, environmental sensors, and a 915 MHz LoRa radio.</p>
+        {photoCard(PHOTOS.electronics, index)}
+      </>;
       case 4: return <>{heading(4, ["The code"])}<p>Python read GPS and sensor data, sent telemetry over Meshtastic, and handled reconnection.</p></>;
       case 5: return <>{heading(5, ["The flight path."])}{staticMode && archive && <StaticRecording data={archive} selected={observation} />}<div className="story-record-controls" data-observation-index={staticMode ? observation : archive ? readRecordingAt(archive, playbackPhase).observationIndex : 0} data-recording-phase={playbackPhase.toFixed(4)}>
         {archive && point ? <><div className="story-record-reading"><time dateTime={new Date(point.timestamp).toISOString()}>{formatUTC(point.timestamp)}<small>UTC</small></time><span>{(point.altitude / 1000).toFixed(2)}<small>km</small></span></div>{staticMode && <div className="story-record-steps"><button type="button" disabled={observation === 0} onClick={() => setObservation(value => Math.max(0, value - 1))}>Previous fix</button><button type="button" disabled={observation === archive.points.length - 1} onClick={() => setObservation(value => Math.min(archive.points.length - 1, value + 1))}>Next fix</button></div>}<div className="story-record-source"><span>APEX-2-T · Gaps estimated between recorded fixes.</span></div></> : archiveError ? <button type="button" tabIndex={tab(5)} onClick={() => setAttempt(value => value + 1)}>Load the recording again</button> : <p role="status">Loading the flight recording…</p>}
       </div></>;
       default: return <>
         {heading(ENDING_INDEX, ["Skycell"])}
-        <img className="story-ending-image" src="/gallery/hardware-launch.webp" alt="Two SkyCell launch balloons and their payload rising over Massachusetts." width={659} height={880} loading="lazy" />
-        <a className="story-link" href="https://github.com/knivier/SkyCell" target="_blank" rel="noreferrer" tabIndex={tab(ENDING_INDEX)}>Explore the project <ArrowUpRight size={16} /></a>
+        {photoCard(PHOTOS.launch, index)}
+        <a className="story-link" href="https://github.com/knivier/SkyCell" target="_blank" rel="noreferrer" tabIndex={tab(ENDING_INDEX)}>Source code <ArrowUpRight size={16} aria-hidden="true" /></a>
       </>;
     }
   };
@@ -121,8 +140,14 @@ export default function SkyCellExperience() {
         {!staticMode && <div className="story-copy">{IDS.map((id, index) => <Chapter key={id} index={index} progress={presented} active={active === index}>{content(index)}</Chapter>)}</div>}
         {failed && !reduced && <button className="story-retry" type="button" onClick={() => location.reload()}>Reload the 3D journey</button>}
       </div>
-      {staticMode && <div className="story-static-copy">{IDS.map((id, index) => <section id={index === 0 ? undefined : id} className={`story-static-chapter story-static-chapter-${index}`} key={id}>{content(index)}{index === 2 && <img src="/gallery/hardware-enclosure-1600.webp" alt={PHOTOS[0].alt} />}{index === 3 && <img src="/gallery/hardware-electronics-1600.webp" alt={PHOTOS[1].alt} />}</section>)}</div>}
+      {staticMode && <div className="story-static-copy">{IDS.map((id, index) => <section id={index === 0 ? undefined : id} className={`story-static-chapter story-static-chapter-${index}`} key={id}>{content(index)}</section>)}</div>}
     </section>
-    <Dialog open={photo !== null} onOpenChange={open => { if (!open) setPhoto(null); }}><DialogContent className="story-photo-dialog" onCloseAutoFocus={event => restoreFocus(event, photoTrigger.current)}><DialogTitle>{photo !== null ? PHOTOS[photo].caption : "Project photograph"}</DialogTitle><DialogDescription>Original photograph from the SkyCell project archive.</DialogDescription>{photo !== null && <img src={PHOTOS[photo].src} alt={PHOTOS[photo].alt} />}</DialogContent></Dialog>
+    <Dialog open={photo !== null} onOpenChange={open => { if (!open) setPhoto(null); }}>
+      <DialogContent className="story-photo-dialog" onCloseAutoFocus={event => restoreFocus(event, photoTrigger.current)}>
+        <DialogTitle>{photo?.caption ?? "Project photograph"}</DialogTitle>
+        <DialogDescription className="sr-only">Original photograph from the SkyCell project archive.</DialogDescription>
+        {photo && <img src={photo.src} alt={photo.alt} />}
+      </DialogContent>
+    </Dialog>
   </div>;
 }

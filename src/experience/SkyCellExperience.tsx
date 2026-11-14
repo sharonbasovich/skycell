@@ -13,6 +13,7 @@ import "./experience.css";
 const AscentScene = lazy(() => import("./AscentScene"));
 const IDS = ["ascent", "climb", "hardware", "inside", "connection", "power", "flight-archive", "story-end"];
 const RANGES = [[0, .045, .085], [.117, .13, .19, .215], [.282, .304, .356, .375], [.408, .434, .496, .515], [.553, .578, .635, .655], [.688, .713, .765, .79], [.795, .815, .95, .965], [.972, .988, 1]];
+const HEADING_POINTER_SPRING = { stiffness: 170, damping: 27 };
 const PHOTOS = [
   { src: "/gallery/1000004204.jpg", alt: "The actual taped foam enclosure with its black side antenna and blue suspension fitting.", caption: "The flight enclosure and antenna." },
   { src: "/gallery/1000004195.jpg", alt: "Flight electronics, radio hardware, converter and power connections assembled on the workbench.", caption: "The actual electronics before packaging." },
@@ -35,10 +36,13 @@ function Chapter({ index, progress, active, children }: { index: number; progres
 export default function SkyCellExperience() {
   const [search] = useSearchParams();
   const headingChoice = Number(search.get("headings"));
-  const headingTreatment: HeadingTreatment = headingChoice === 1 || headingChoice === 2 || headingChoice === 3 ? headingChoice : 0;
+  const showHeadingExperiments = headingChoice === 1 || headingChoice === 2 || headingChoice === 3;
+  const headingTreatment: HeadingTreatment = showHeadingExperiments ? headingChoice : 2;
   const journey = useRef<HTMLElement>(null), viewport = useRef<HTMLDivElement>(null);
   const pointer = useRef({ x: 0, y: 0 });
   const pointerX = useMotionValue(0), pointerY = useMotionValue(0);
+  const headingPointerX = useSpring(pointerX, HEADING_POINTER_SPRING);
+  const headingPointerY = useSpring(pointerY, HEADING_POINTER_SPRING);
   const { scrollYProgress } = useScroll({ target: journey, offset: ["start start", "end end"] });
   const progress = useSpring(scrollYProgress, { stiffness: 130, damping: 25, mass: .75, restDelta: .00003, restSpeed: .00003 });
   const presented = useMotionValue(0), shade = useTransform(presented, [0, .25, .30, .78, .82, .95, .98, 1], [.08, .08, .35, .35, .42, .42, .12, .12]);
@@ -84,7 +88,7 @@ export default function SkyCellExperience() {
     else document.querySelector<HTMLAnchorElement>('.sky-header nav a')?.focus();
   };
   const point = staticMode ? archive?.points[Math.min(observation, archive.points.length - 1)] : archive ? readRecordingAt(archive, playbackPhase) : undefined;
-  const heading = (index: number, lines: string[]) => <StoryHeading index={index} lines={lines} range={RANGES[index]} progress={presented} treatment={headingTreatment} pointerX={pointerX} pointerY={pointerY} staticMode={staticMode} />;
+  const heading = (index: number, lines: string[]) => <StoryHeading index={index} lines={lines} range={RANGES[index]} progress={presented} treatment={headingTreatment} pointerX={headingPointerX} pointerY={headingPointerY} staticMode={staticMode} />;
   const content = (index: number) => {
     switch (index) {
       case 0: return <>{heading(0, ["A small radio.", "A bigger horizon."])}<p className="story-lead">Four students. One experiment<br />above the clouds.</p><button type="button" className="story-link story-begin" tabIndex={tab(0)} onClick={() => go(1)}>Follow the flight <ArrowDown size={17} /></button></>;
@@ -105,7 +109,7 @@ export default function SkyCellExperience() {
       <div ref={viewport} className="story-viewport" onPointerMove={event => { if (event.pointerType === "mouse") { const rect = event.currentTarget.getBoundingClientRect(); pointer.current.x = (event.clientX - rect.left) / rect.width * 2 - 1; pointer.current.y = (event.clientY - rect.top) / rect.height * 2 - 1; pointerX.set(pointer.current.x); pointerY.set(pointer.current.y); } }} onPointerLeave={() => { pointer.current.x = pointer.current.y = 0; pointerX.set(0); pointerY.set(0); }}>
         <div className={`story-visual${ready && showScene ? " is-ready" : ""}`} aria-busy={showScene && !ready}><Poster showRig={staticMode} />{showScene && <div className="story-canvas"><SceneBoundary onFailure={onFailure}><Suspense fallback={null}><AscentScene progress={progress} presentedProgress={presented} paused={paused} active={onscreen && visible && !notes && photo === null} reducedMotion={reduced} archive={archive} pointer={pointer} onReady={onReady} onFailure={onFailure} /></Suspense></SceneBoundary></div>}</div>
         <motion.div className="story-shade" style={{ opacity: shade }} aria-hidden="true" />
-        {headingTreatment !== 0 && <nav className="story-heading-experiments" aria-label="Heading experiments"><span>Type experiments</span>{([1, 2, 3] as const).map(choice => <Link key={choice} to={`?headings=${choice}#${IDS[Math.max(0, active)]}`} aria-current={headingTreatment === choice ? "page" : undefined}>{choice}<span className="sr-only">: {choice === 1 ? "Lift" : choice === 2 ? "Depth" : "Signal"}</span></Link>)}</nav>}
+        {showHeadingExperiments && !staticMode && <nav className="story-heading-experiments" aria-label="Heading experiments"><span>Type experiments</span>{([1, 2, 3] as const).map(choice => <Link key={choice} to={`?headings=${choice}#${IDS[Math.max(0, active)]}`} aria-current={headingTreatment === choice ? "page" : undefined}>{choice}<span className="sr-only">: {choice === 1 ? "Lift" : choice === 2 ? "Depth" : "Signal"}</span></Link>)}</nav>}
         {!staticMode && <div className="story-copy">{IDS.map((id, index) => <Chapter key={id} index={index} progress={presented} active={active === index}>{content(index)}</Chapter>)}</div>}
         {showScene && <button type="button" className="story-pause" onClick={() => setPaused(value => !value)} aria-label={paused ? "Resume flight movement" : "Pause flight movement"} aria-pressed={paused}>{paused ? <Play size={16} /> : <Pause size={16} />}</button>}
         {failed && !reduced && <button className="story-retry" type="button" onClick={() => location.reload()}>Reload the 3D journey</button>}

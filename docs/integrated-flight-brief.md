@@ -19,7 +19,7 @@ No separate hardware tab menu, generic card sequence, white document-like epilog
 
 ## Heading comparison
 
-Three bounded, query-selected treatments are implemented in the accepted Motion/Three stack: **1 Lift** (`?headings=1`, rising line masks), **2 Depth** (`?headings=2`, scroll entry and restrained pointer-responsive line depth), and **3 Signal** (`?headings=3`, a scroll-linked highlight sweep). All three actual interactions and variant switching are verified. They are ready for comparison, not automatically selected for the main page. **Depth is recommended** for its connection to the spatial scene and its scroll response on touch layouts; the base heading treatment remains unchanged until Sharon chooses. Reduced-motion/static mode uses ordinary readable headings.
+Three bounded, query-selected treatments are implemented in the accepted Motion/Three stack: **1 Lift** (`?headings=1`, rising line masks), **2 Depth** (`?headings=2`, scroll entry and restrained pointer-responsive line depth), and **3 Signal** (`?headings=3`, a scroll-linked highlight sweep). All three actual interactions and variant switching are verified. Sharon selected **Depth** for the main page, with a more visible staggered perspective entrance and stronger desktop pointer tilt. Reduced-motion/static mode uses ordinary readable headings.
 
 ## Completion evidence
 

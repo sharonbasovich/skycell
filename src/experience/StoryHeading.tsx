@@ -1,4 +1,4 @@
-import { motion, useSpring, useTransform, type MotionValue } from "framer-motion";
+import { motion, useTransform, type MotionValue } from "framer-motion";
 
 export type HeadingTreatment = 0 | 1 | 2 | 3;
 interface Props {
@@ -12,7 +12,26 @@ interface Props {
   staticMode: boolean;
 }
 
-function HeadingLine({ text, order, progress, range, treatment, pointerX, pointerY }: Omit<Props, "lines" | "index" | "staticMode"> & { text: string; order: number }) {
+type LineProps = Pick<Props, "progress" | "range"> & { text: string; order: number };
+
+function DepthLine({ text, order, progress, range, pointerX, pointerY }: LineProps & Pick<Props, "pointerX" | "pointerY">) {
+  const [enter, rest, leave, end] = range;
+  const staggeredEnter = enter + (rest - enter) * order * .16;
+  const phase = useTransform(
+    progress,
+    enter === 0 ? [rest, leave] : end === undefined ? [staggeredEnter, rest] : [staggeredEnter, rest, leave, end],
+    enter === 0 ? [0, -1] : end === undefined ? [1, 0] : [1, 0, 0, -1],
+  );
+  const x = useTransform(pointerX, [-1, 1], [-(10 + order * 7), 10 + order * 7]);
+  const y = useTransform(() => pointerY.get() * (4 + order * 2) + phase.get() * (22 + order * 7));
+  const z = useTransform(phase, [-1, 0, 1], [-(64 + order * 24), 0, -(110 + order * 42)]);
+  const rotateX = useTransform(() => -6 * pointerY.get() - 28 * phase.get());
+  const rotateY = useTransform(pointerX, [-1, 1], [-9, 9]);
+
+  return <motion.span className="story-heading-line story-heading-depth" style={{ x, y, z, rotateX, rotateY }}>{text}</motion.span>;
+}
+
+function ComparisonLine({ text, order, progress, range, treatment }: LineProps & Pick<Props, "treatment">) {
   const start = range[0] + order * .003;
   const end = range[1] + order * .003;
   const exit = range[range.length - 1];
@@ -21,25 +40,19 @@ function HeadingLine({ text, order, progress, range, treatment, pointerX, pointe
   const lift = useTransform(reveal, [0, 1], [108, 0]);
   const liftY = useTransform(lift, value => `${value}%`);
   const angle = useTransform(reveal, [0, 1], [12, 0]);
-  const depthX = useTransform(pointerX, [-1, 1], [-(order + 1) * 4, (order + 1) * 4]);
-  const depthY = useTransform(pointerY, [-1, 1], [-(order + 1) * 2, (order + 1) * 2]);
-  const x = useSpring(depthX, { stiffness: 160, damping: 28 });
-  const y = useSpring(depthY, { stiffness: 160, damping: 28 });
-  const depthLift = useTransform(() => y.get() + (1 - reveal.get()) * (24 + order * 12));
-  const depthTilt = useTransform(reveal, [0, 1], [-18, 0]);
-  const rotateY = useTransform(pointerX, [-1, 1], [-4, 4]);
   const sweep = useTransform(progress, [isOpening ? -.025 : start, isOpening ? -.005 : end + .025], [100, 0]);
   const clipPath = useTransform(sweep, value => `inset(0 ${value}% 0 0)`);
   if (treatment === 1) return <span className="story-heading-mask"><motion.span className="story-heading-line" style={{ y: liftY, rotateX: angle }}>{text}</motion.span></span>;
-  if (treatment === 2) return <motion.span className="story-heading-line story-heading-depth" style={{ x, y: depthLift, rotateX: depthTilt, rotateY }}>{text}</motion.span>;
   return <span className="story-heading-line story-heading-signal"><span>{text}</span><motion.span className="story-heading-signal-light" style={{ clipPath }} aria-hidden="true">{text}</motion.span></span>;
 }
 
-/** Three isolated, query-selected treatments keep the accepted typography intact. */
 export default function StoryHeading(props: Props) {
-  const { index, lines, treatment, staticMode } = props;
+  const { index, lines, treatment, staticMode, progress, range, pointerX, pointerY } = props;
   const Tag = index === 0 ? "h1" : "h2";
+  const Line = treatment === 2 ? DepthLine : ComparisonLine;
   return <Tag id={`story-heading-${index}`} className={`story-heading story-heading-treatment-${staticMode ? 0 : treatment}`} aria-label={lines.join(" ")}>
-    {staticMode || treatment === 0 ? lines.map((line, order) => <span className="story-heading-line" key={order}>{line}</span>) : lines.map((text, order) => <HeadingLine {...props} text={text} order={order} key={order} />)}
+    {lines.map((text, order) => staticMode || treatment === 0
+      ? <span className="story-heading-line" key={order}>{text}</span>
+      : <Line key={order} text={text} order={order} progress={progress} range={range} treatment={treatment} pointerX={pointerX} pointerY={pointerY} />)}
   </Tag>;
 }

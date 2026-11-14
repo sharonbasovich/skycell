@@ -38,8 +38,8 @@ body { font-family:Manrope,"Segoe UI",Arial,sans-serif; }
 .story-chapter h2 { max-width:48%; font-size:clamp(45px,4.9vw,76px); }
 .story-heading-line { display:block; }
 .story-heading-mask { display:block; overflow:hidden; padding:.08em 0 .14em; margin:-.08em 0 -.14em; perspective:600px; }
-.story-heading-depth { transform-origin:0 50%; perspective:600px; }
-.story-heading-treatment-2 { perspective:650px; transform-style:preserve-3d; }
+.story-heading-depth { transform-origin:0 50%; }
+.story-heading-treatment-2 { perspective:560px; perspective-origin:0 50%; }
 .story-heading-signal { position:relative; color:#ffffff60; }
 .story-heading-signal-light { position:absolute; inset:0; color:#fff; }
 .story-heading-experiments { position:absolute; z-index:10; bottom:20px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:3px; padding:4px 6px 4px 14px; border:1px solid #ffffff35; border-radius:30px; background:#071426dc; color:#d6e4f5; font-size:10px; }

@@ -5,6 +5,7 @@ import { ArrowUpRight, ChevronDown } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { formatUTC, parseCSVData, type ProcessedTrajectoryData } from "@/utils/csvDataUtils";
 import { STORY_STOPS } from "./storyTiming";
+import FlightPoster from "./FlightPoster";
 import StaticRecording from "./StaticRecording";
 import StoryHeading, { type HeadingTreatment } from "./StoryHeading";
 import StoryPhotoCard, { type StoryPhoto } from "./StoryPhotoCard";
@@ -36,7 +37,6 @@ class SceneBoundary extends Component<{ children: ReactNode; onFailure: (error?:
   componentDidCatch(error: Error) { this.props.onFailure(error); }
   render() { return this.state.failed ? null : this.props.children; }
 }
-function Poster({ showRig }: { showRig: boolean }) { return <div className="story-poster" aria-hidden="true"><img src="/posters/flight-earth.webp" className="story-poster-earth" alt="" />{showRig && <img src="/posters/flight-rig.webp" className="story-poster-rig" alt="" />}</div>; }
 function Chapter({ index, progress, active, children }: { index: number; progress: MotionValue<number>; active: boolean; children: ReactNode }) {
   const range = RANGES[index];
   const opacity = useTransform(progress, range, index === 0 ? [1, 1, 0] : index === ENDING_INDEX ? [0, 1, 1] : [0, 1, 1, 0]);
@@ -134,7 +134,10 @@ export default function SkyCellExperience() {
     <section ref={journey} className="story-journey" id="ascent" aria-label="The SkyCell flight">
       {!staticMode && IDS.slice(1).map((id, i) => <div key={id} id={id} className="story-anchor" style={{ top: `${STORY_STOPS[i + 1] * 950}svh` }} aria-hidden="true" />)}
       <div ref={viewport} className="story-viewport" onPointerMove={event => { if (event.pointerType === "mouse") { const rect = event.currentTarget.getBoundingClientRect(); pointer.current.x = (event.clientX - rect.left) / rect.width * 2 - 1; pointer.current.y = (event.clientY - rect.top) / rect.height * 2 - 1; pointerX.set(pointer.current.x); pointerY.set(pointer.current.y); } }} onPointerLeave={() => { pointer.current.x = pointer.current.y = 0; pointerX.set(0); pointerY.set(0); }}>
-        <div className={`story-visual${ready && showScene ? " is-ready" : ""}`} aria-busy={showScene && !ready}><Poster showRig={staticMode} />{showScene && <div className="story-canvas"><SceneBoundary onFailure={onFailure}><Suspense fallback={null}><AscentScene progress={progress} presentedProgress={presented} active={onscreen && visible && photo === null} archive={archive} pointer={pointer} onReady={onReady} onFailure={onFailure} /></Suspense></SceneBoundary></div>}</div>
+        <div className={`story-visual${ready && showScene ? " is-ready" : ""}`} aria-busy={showScene && !ready}>
+          {(!ready || !showScene) && <FlightPoster />}
+          {showScene && <div className="story-canvas"><SceneBoundary onFailure={onFailure}><Suspense fallback={null}><AscentScene progress={progress} presentedProgress={presented} active={onscreen && visible && photo === null} archive={archive} pointer={pointer} onReady={onReady} onFailure={onFailure} /></Suspense></SceneBoundary></div>}
+        </div>
         <motion.div className="story-shade" style={{ opacity: shade }} aria-hidden="true" />
         {showHeadingExperiments && !staticMode && <nav className="story-heading-experiments" aria-label="Heading experiments"><span>Type experiments</span>{([1, 2, 3] as const).map(choice => <Link key={choice} to={`?headings=${choice}#${IDS[Math.max(0, active)]}`} aria-current={headingTreatment === choice ? "page" : undefined}>{choice}<span className="sr-only">: {choice === 1 ? "Lift" : choice === 2 ? "Depth" : "Signal"}</span></Link>)}</nav>}
         {!staticMode && <div className="story-copy">{IDS.map((id, index) => <Chapter key={id} index={index} progress={presented} active={active === index}>{content(index)}</Chapter>)}</div>}

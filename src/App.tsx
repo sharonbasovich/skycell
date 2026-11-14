@@ -3,6 +3,7 @@ import { BrowserRouter, Link, Route, Routes, useLocation } from "react-router-do
 import { MotionConfig } from "framer-motion";
 import NotFound from "./pages/NotFound";
 import ExperienceHeader from "./experience/ExperienceHeader";
+import FlightPoster from "./experience/FlightPoster";
 import "./experience/experience.css";
 
 const Development = lazy(() => import("./pages/Development"));
@@ -50,7 +51,9 @@ function PageViews() {
       <a href="#main-content" className="sky-skip">Skip to content</a>
       <ExperienceHeader />
       <main id="main-content" tabIndex={-1} className="sky-page-main">
-        <Suspense fallback={<div className="sky-page-loading" role="status">Opening SkyCell…</div>}>
+        <Suspense fallback={<div className={`sky-page-loading${home ? " sky-page-loading-flight" : ""}`} role="status">
+          {home ? <><FlightPoster /><span className="sr-only">Opening SkyCell…</span></> : "Opening SkyCell…"}
+        </div>}>
           <Routes>
             <Route path="/" element={<SkyCellExperience />} />
             <Route path="/development" element={<Development />} />

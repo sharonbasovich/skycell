@@ -1,7 +1,7 @@
 import { Component, lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { motion, useMotionValue, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform, type MotionValue } from "framer-motion";
-import { ArrowDown, ArrowUpRight, Pause, Play } from "lucide-react";
+import { ArrowUpRight, ChevronDown } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { formatUTC, parseCSVData, type ProcessedTrajectoryData } from "@/utils/csvDataUtils";
 import { STORY_STOPS } from "./storyTiming";
@@ -47,7 +47,7 @@ export default function SkyCellExperience() {
   const progress = useSpring(scrollYProgress, { stiffness: 130, damping: 25, mass: .75, restDelta: .00003, restSpeed: .00003 });
   const presented = useMotionValue(0), shade = useTransform(presented, [0, .25, .30, .78, .82, .95, .98, 1], [.08, .08, .35, .35, .42, .42, .12, .12]);
   const reduced = Boolean(useReducedMotion());
-  const [paused, setPaused] = useState(false), [ready, setReady] = useState(false), [failed, setFailed] = useState(false);
+  const [ready, setReady] = useState(false), [failed, setFailed] = useState(false);
   const [capable, setCapable] = useState<boolean | null>(null), [visible, setVisible] = useState(document.visibilityState === "visible"), [onscreen, setOnscreen] = useState(true);
   const [active, setActive] = useState(0), [archive, setArchive] = useState<ProcessedTrajectoryData | null>(null), [archiveError, setArchiveError] = useState(false), [attempt, setAttempt] = useState(0), [observation, setObservation] = useState(0);
   const [playbackPhase, setPlaybackPhase] = useState(0);
@@ -91,7 +91,13 @@ export default function SkyCellExperience() {
   const heading = (index: number, lines: string[]) => <StoryHeading index={index} lines={lines} range={RANGES[index]} progress={presented} treatment={headingTreatment} pointerX={headingPointerX} pointerY={headingPointerY} staticMode={staticMode} />;
   const content = (index: number) => {
     switch (index) {
-      case 0: return <>{heading(0, ["A small radio.", "A bigger horizon."])}<p className="story-lead">Four students. One experiment<br />above the clouds.</p><button type="button" className="story-link story-begin" tabIndex={tab(0)} onClick={() => go(1)}>Follow the flight <ArrowDown size={17} /></button></>;
+      case 0: return <>
+        {heading(0, ["A small radio.", "A bigger horizon."])}
+        <p className="story-lead">Four students. One experiment<br />above the clouds.</p>
+        {!staticMode && <button type="button" className="story-scroll-cue" aria-label="Scroll to the next chapter" tabIndex={tab(0)} onClick={() => go(1)}>
+          <ChevronDown size={28} strokeWidth={1.7} aria-hidden="true" />
+        </button>}
+      </>;
       case 1: return <>{heading(1, ["Lift above.", "Weight below."])}<p>Helium lifts the balloon. The suspended<br className="story-desktop-break" /> payload trails changes in the wind.</p><p className="story-altitude">30<span>km</span></p></>;
       case 2: return <>{heading(2, ["The whole mission.", "Inside a small box."])}<p>Foam to keep the flight computer warm.<br className="story-desktop-break" /> An antenna to keep it connected.</p><button type="button" className="story-link" tabIndex={tab(2)} onClick={event => openPhoto(0, event.currentTarget)}>See the actual build <ArrowUpRight size={16} /></button></>;
       case 3: return <>{heading(3, ["Sense.", "Compute.", "Transmit."])}<p>GPS and environmental readings.<br />Python to prepare them.<br />A radio to send them home.</p><button type="button" className="story-link" tabIndex={tab(3)} onClick={event => openPhoto(1, event.currentTarget)}>From the workbench <ArrowUpRight size={16} /></button></>;
@@ -107,11 +113,10 @@ export default function SkyCellExperience() {
     <section ref={journey} className="story-journey" id="ascent" aria-label="The SkyCell flight">
       {!staticMode && IDS.slice(1).map((id, i) => <div key={id} id={id} className="story-anchor" style={{ top: `${STORY_STOPS[i + 1] * 950}svh` }} aria-hidden="true" />)}
       <div ref={viewport} className="story-viewport" onPointerMove={event => { if (event.pointerType === "mouse") { const rect = event.currentTarget.getBoundingClientRect(); pointer.current.x = (event.clientX - rect.left) / rect.width * 2 - 1; pointer.current.y = (event.clientY - rect.top) / rect.height * 2 - 1; pointerX.set(pointer.current.x); pointerY.set(pointer.current.y); } }} onPointerLeave={() => { pointer.current.x = pointer.current.y = 0; pointerX.set(0); pointerY.set(0); }}>
-        <div className={`story-visual${ready && showScene ? " is-ready" : ""}`} aria-busy={showScene && !ready}><Poster showRig={staticMode} />{showScene && <div className="story-canvas"><SceneBoundary onFailure={onFailure}><Suspense fallback={null}><AscentScene progress={progress} presentedProgress={presented} paused={paused} active={onscreen && visible && !notes && photo === null} reducedMotion={reduced} archive={archive} pointer={pointer} onReady={onReady} onFailure={onFailure} /></Suspense></SceneBoundary></div>}</div>
+        <div className={`story-visual${ready && showScene ? " is-ready" : ""}`} aria-busy={showScene && !ready}><Poster showRig={staticMode} />{showScene && <div className="story-canvas"><SceneBoundary onFailure={onFailure}><Suspense fallback={null}><AscentScene progress={progress} presentedProgress={presented} active={onscreen && visible && !notes && photo === null} archive={archive} pointer={pointer} onReady={onReady} onFailure={onFailure} /></Suspense></SceneBoundary></div>}</div>
         <motion.div className="story-shade" style={{ opacity: shade }} aria-hidden="true" />
         {showHeadingExperiments && !staticMode && <nav className="story-heading-experiments" aria-label="Heading experiments"><span>Type experiments</span>{([1, 2, 3] as const).map(choice => <Link key={choice} to={`?headings=${choice}#${IDS[Math.max(0, active)]}`} aria-current={headingTreatment === choice ? "page" : undefined}>{choice}<span className="sr-only">: {choice === 1 ? "Lift" : choice === 2 ? "Depth" : "Signal"}</span></Link>)}</nav>}
         {!staticMode && <div className="story-copy">{IDS.map((id, index) => <Chapter key={id} index={index} progress={presented} active={active === index}>{content(index)}</Chapter>)}</div>}
-        {showScene && <button type="button" className="story-pause" onClick={() => setPaused(value => !value)} aria-label={paused ? "Resume flight movement" : "Pause flight movement"} aria-pressed={paused}>{paused ? <Play size={16} /> : <Pause size={16} />}</button>}
         {failed && !reduced && <button className="story-retry" type="button" onClick={() => location.reload()}>Reload the 3D journey</button>}
       </div>
       {staticMode && <div className="story-static-copy">{IDS.map((id, index) => <section id={index === 0 ? undefined : id} className={`story-static-chapter story-static-chapter-${index}`} key={id}>{content(index)}{index === 2 && <img src="/gallery/hardware-enclosure-1600.webp" alt={PHOTOS[0].alt} />}{index === 3 && <img src="/gallery/hardware-electronics-1600.webp" alt={PHOTOS[1].alt} />}{index === 7 && <img src="/gallery/hardware-launch.webp" alt={PHOTOS[2].alt} />}</section>)}</div>}

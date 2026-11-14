@@ -9,20 +9,20 @@ export interface CinematicCameraSample { fov: number; altitudeKm: number; shot: 
 type Anchor = "flight" | "payload" | "inside" | "radio" | "power" | "recording";
 interface Shot { anchor: Anchor; offset: [number, number, number]; fov: number; x: number; y: number }
 const DESKTOP: Shot[] = [
-  { anchor: "flight", offset: [6.7, 3.1, 16.6], fov: 32, x: .72, y: .54 },
-  { anchor: "flight", offset: [7.6, 2.5, 15.4], fov: 33, x: .35, y: .50 },
-  { anchor: "payload", offset: [.98, .58, 1.38], fov: 34, x: .68, y: .53 },
-  { anchor: "inside", offset: [.78, .70, 1.22], fov: 37, x: .66, y: .55 },
+  { anchor: "flight", offset: [6.7, 3.1, 16.6], fov: 32, x: .75, y: .54 },
+  { anchor: "flight", offset: [7.6, 2.5, 15.4], fov: 33, x: .23, y: .50 },
+  { anchor: "payload", offset: [.98, .58, 1.38], fov: 34, x: .77, y: .53 },
+  { anchor: "inside", offset: [.78, .70, 1.22], fov: 37, x: .72, y: .55 },
   { anchor: "radio", offset: [-2.5, 1.3, 4.2], fov: 35, x: .68, y: .54 },
   { anchor: "power", offset: [.70, .56, 1.04], fov: 37, x: .66, y: .55 },
   { anchor: "recording", offset: [62, 24, 10], fov: 35, x: .65, y: .43 },
   { anchor: "flight", offset: [7.8, 3.2, 18], fov: 34, x: .71, y: .53 },
 ];
 const MOBILE: Shot[] = [
-  { anchor: "flight", offset: [5.1, 2.4, 18], fov: 40, x: .60, y: .62 },
-  { anchor: "flight", offset: [6.5, 2.2, 17.5], fov: 40, x: .43, y: .43 },
-  { anchor: "payload", offset: [1.05, .63, 1.70], fov: 43, x: .52, y: .64 },
-  { anchor: "inside", offset: [.98, .90, 1.72], fov: 43, x: .50, y: .64 },
+  { anchor: "flight", offset: [5.3, 2.5, 18.8], fov: 40, x: .65, y: .62 },
+  { anchor: "flight", offset: [7.1, 2.4, 19.2], fov: 40, x: .30, y: .43 },
+  { anchor: "payload", offset: [1.18, .71, 1.91], fov: 45, x: .60, y: .64 },
+  { anchor: "inside", offset: [1.11, 1.02, 1.95], fov: 45, x: .56, y: .64 },
   { anchor: "radio", offset: [-2.8, 1.4, 5.4], fov: 43, x: .56, y: .64 },
   { anchor: "power", offset: [.98, .79, 1.58], fov: 43, x: .52, y: .63 },
   { anchor: "recording", offset: [62, 24, 10], fov: 43, x: .50, y: .465 },
@@ -62,7 +62,9 @@ export function sampleCinematicCamera(
   const yaw = (ease(recordingPhase(p)) - .5) * .5 * orbitWeight;
   positionOut.sub(targetOut).applyAxisAngle(UP, yaw).add(targetOut);
   sampleOut.fov = MathUtils.lerp(from.fov, to.fov, blend);
-  sampleOut.screenX = MathUtils.lerp(from.x, to.x, blend);
+  // Return to the right ahead of the tightest part of the payload approach.
+  const reframe = fromIndex === 1 && toIndex === 2 ? blend + .75 * blend * (1 - blend) : blend;
+  sampleOut.screenX = MathUtils.lerp(from.x, to.x, reframe);
   sampleOut.screenY = MathUtils.lerp(from.y, to.y, blend);
   sampleOut.altitudeKm = 8 + f * 22;
   sampleOut.shot = blend < .5 ? fromIndex : toIndex;

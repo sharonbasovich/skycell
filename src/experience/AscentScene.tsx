@@ -14,7 +14,7 @@ import ProgressiveSky from "./scene/ProgressiveSky";
 import type { ProcessedTrajectoryData } from "@/utils/csvDataUtils";
 import type { CinematicFrame } from "./scene/cinematicTypes";
 
-interface Props { progress: MotionValue<number>; presentedProgress: MotionValue<number>; reducedMotion: boolean; paused: boolean; active: boolean; archive: ProcessedTrajectoryData | null; pointer: React.MutableRefObject<{ x: number; y: number }>; onReady?: () => void; onFailure?: (error?: Error) => void }
+interface Props { progress: MotionValue<number>; presentedProgress: MotionValue<number>; active: boolean; archive: ProcessedTrajectoryData | null; pointer: React.MutableRefObject<{ x: number; y: number }>; onReady?: () => void; onFailure?: (error?: Error) => void }
 function translatePose(pose: FlightDynamicsPose, offset: Vector3) {
   pose.balloonPosition.add(offset); pose.payloadPosition.add(offset);
   pose.neck.add(offset); pose.loop.add(offset); pose.midpoint.add(offset);
@@ -40,12 +40,10 @@ function EnvironmentLighting() {
   return null;
 }
 
-function World({ progress, presentedProgress, paused, active, archive, pointer, onReady, onFailure, wrapper }: Props & { wrapper: React.RefObject<HTMLDivElement> }) {
+function World({ progress, presentedProgress, active, archive, pointer, onReady, onFailure, wrapper }: Props & { wrapper: React.RefObject<HTMLDivElement> }) {
   const { gl, camera, size, invalidate } = useThree();
   const current = useRef(MathUtils.clamp(progress.get(), 0, 1));
   const running = useRef(false);
-  const wasPaused = useRef(paused);
-  const resume = useRef<{ from: number; elapsed: number; duration: number } | null>(null);
   const ready = useRef(false);
   const rigMounted = useRef(false), rigFrames = useRef(0);
   const handleRigReady = useCallback(() => { rigMounted.current = true; rigFrames.current = 0; invalidate(); }, [invalidate]);
@@ -68,27 +66,16 @@ function World({ progress, presentedProgress, paused, active, archive, pointer, 
     return () => gl.domElement.removeEventListener("webglcontextlost", lost);
   }, [gl, onFailure]);
   useEffect(() => {
-    if (paused) {
-      current.current = frame.current.progress;
-      resume.current = null;
-    } else {
-      const next = MathUtils.clamp(progress.get(), 0, 1);
-      if (wasPaused.current && active && Math.abs(next - frame.current.progress) > .0001) resume.current = { from: frame.current.progress, elapsed: 0, duration: .3 + Math.abs(next - frame.current.progress) * .75 };
-      current.current = next;
-    }
-    wasPaused.current = paused;
-    if (!active) resume.current = null;
+    current.current = MathUtils.clamp(progress.get(), 0, 1);
     running.current = false;
     invalidate();
     return progress.on("change", (value) => {
-      if (!paused) {
-        current.current = MathUtils.clamp(value, 0, 1);
-        if (active) invalidate();
-      }
+      current.current = MathUtils.clamp(value, 0, 1);
+      if (active) invalidate();
     });
-  }, [progress, paused, active, invalidate]);
+  }, [progress, active, invalidate]);
   useFrame((_, delta) => {
-    const playing = active && !paused;
+    const playing = active;
     if (playing && running.current) {
       const timing = timings.current;
       timing.samples[timing.count % timing.samples.length] = delta * 1000;
@@ -99,13 +86,7 @@ function World({ progress, presentedProgress, paused, active, archive, pointer, 
     const dt = running.current && playing ? Math.min(delta, .04) : 1 / 60;
     running.current = playing;
     if (playing) frame.current.elapsedSeconds += dt;
-    let p = current.current;
-    if (resume.current && playing) {
-      resume.current.elapsed += dt;
-      const t = MathUtils.clamp(resume.current.elapsed / resume.current.duration, 0, 1);
-      p = MathUtils.lerp(resume.current.from, current.current, t * t * (3 - 2 * t));
-      if (t === 1) resume.current = null;
-    }
+    const p = current.current;
     const f = storyFlightProgress(p);
     frame.current.flightProgress = f;
     sampleFlightDynamics(f, frame.current.elapsedSeconds, vectors.pose);

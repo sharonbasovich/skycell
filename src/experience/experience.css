@@ -48,6 +48,11 @@ body { font-family:Manrope,"Segoe UI",Arial,sans-serif; }
 .story-heading-experiments a[aria-current="page"] { background:#fff; color:#071426; }
 .story-chapter p { max-width:43%; margin:27px 0 0; font-size:16px; line-height:1.8; color:#e1eafa; }
 .story-chapter .story-lead { font-size:17px; }
+.story-scroll-cue { position:absolute; left:50%; bottom:max(16px, env(safe-area-inset-bottom)); translate:-50% 0; display:grid; place-items:center; width:48px; height:48px; border:0; border-radius:50%; background:transparent; color:#fff; cursor:pointer; }
+.story-heading-experiments ~ .story-copy .story-scroll-cue { bottom:68px; }
+.story-scroll-cue svg { filter:drop-shadow(0 1px 4px #071426); }
+.story-visual.is-ready ~ .story-copy .story-chapter-0[aria-hidden="false"] .story-scroll-cue svg { animation:story-scroll-bounce 1.55s ease-in-out 3; }
+@keyframes story-scroll-bounce { 0%, 100% { transform:translateY(0); } 45% { transform:translateY(7px); } }
 .story-link { display:inline-flex; align-items:center; gap:13px; min-height:44px; padding:0; color:inherit; background:none; border:0; border-bottom:1px solid #ffffff75; font-size:12px; line-height:1.5; cursor:pointer; transition:border-color 150ms ease; }
 .story-link:hover { border-color:#fff; }
 .story-chapter .story-link { margin-top:31px; }
@@ -79,8 +84,6 @@ body { font-family:Manrope,"Segoe UI",Arial,sans-serif; }
 .story-record-source a { display:inline-flex; align-items:center; gap:8px; min-height:32px; color:#fff; }
 .story-chapter-7 h2 { max-width:50%; font-size:clamp(48px,5.4vw,84px); }
 .story-ending-links { display:flex; flex-wrap:wrap; gap:14px 25px; max-width:45%; }
-.story-pause { position:absolute; bottom:20px; right:22px; z-index:8; display:grid; place-items:center; width:44px; height:44px; border:1px solid #ffffff45; border-radius:50%; background:#07142635; color:#fff; cursor:pointer; transition:background-color 150ms ease; }
-.story-pause:hover { background:#071426b0; }
 .story-retry { position:absolute; bottom:22px; right:22px; min-height:44px; padding:0 17px; color:#fff; background:#071426; border:1px solid #ffffff60; }
 .story-photo-dialog,.story-notes { font-family:Manrope,"Segoe UI",sans-serif; color:#fff; background:#0b1b32; border:1px solid #ffffff30; border-radius:4px; max-width:min(92vw,1100px); max-height:90svh; overflow:auto; padding:26px; }
 .story-photo-dialog h2,.story-notes h2 { font-size:21px; font-weight:500; letter-spacing:-.025em; }
@@ -150,7 +153,6 @@ body { font-family:Manrope,"Segoe UI",Arial,sans-serif; }
   .story-chapter-7 p { max-width:90%; }
   .story-ending-links { position:absolute; bottom:69px; left:24px; right:70px; max-width:none; display:flex; flex-direction:column; align-items:flex-start; gap:4px; }
   .story-ending-links .story-link { margin-top:0; font-size:10px; min-height:37px; }
-  .story-pause { bottom:16px; right:18px; }
   .story-heading-experiments { padding:3px; left:auto; right:75px; transform:none; }
   .story-heading-experiments > span { display:none; }
   .story-static-copy { display:flex; flex-direction:column; gap:65px; padding:55px 25px; }

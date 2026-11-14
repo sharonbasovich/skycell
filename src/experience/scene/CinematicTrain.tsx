@@ -121,7 +121,8 @@ export default function CinematicTrain({ frame, onReady }: Props) {
     loop.copy(reveal.anchors.suspension).applyQuaternion(payloadRig.quaternion).add(payloadRig.position);
     direction.subVectors(pose.neck, loop);
     tether.position.copy(pose.neck).add(loop).multiplyScalar(.5);
-    tether.scale.set(1, direction.length(), 1);
+    const tetherWidth = MathUtils.lerp(1.5, 1, inspection);
+    tether.scale.set(tetherWidth, direction.length(), tetherWidth);
     tether.quaternion.setFromUnitVectors(resources.up, direction.normalize());
     const recordingOffset = frame.current.recordingTranslationVector3;
     if (recordingOffset) {

@@ -9,9 +9,10 @@ const NATURAL_FREQUENCY = Math.sqrt(GRAVITY / FLIGHT_TETHER_LENGTH);
 const DAMPING_RATIO = .23;
 const AIR_DRAG = .92;
 const MAX_HORIZONTAL_OFFSET = 1.35;
-const MAX_SCROLL_OFFSET = .90;
-const SCROLL_RESPONSE_FREQUENCY = 3.4;
-const SCROLL_RESPONSE_DAMPING = .62;
+const MAX_SCROLL_OFFSET = 1.40;
+const SCROLL_VELOCITY_RESPONSE = 18;
+const SCROLL_RESPONSE_FREQUENCY = 9;
+const SCROLL_RESPONSE_DAMPING = .74;
 
 // Independent wind components, in metres/radians per second. Their frequencies
 // straddle the slower envelope response and the suspension's ~3.45 s period.
@@ -47,7 +48,7 @@ export function createFlightDynamicsPose(): FlightDynamicsPose {
   };
 }
 
-/** A small, instance-owned suspension response to the operated camera crossing.
+/** An instance-owned suspension response to the operated camera crossing.
  * `screenX` is the balloon's intended composition coordinate, not raw wheel
  * input. It therefore responds equally to touch, keyboard and reverse scroll.
  */
@@ -87,11 +88,11 @@ export function stepScrollSuspension(state: ScrollSuspension, screenX: number, w
   // A resumed tab or a direct anchor seek cannot inject an unbounded force.
   const velocity = enabled ? MathUtils.clamp((coordinate - state.previousScreenX) / dt, -2.4, 2.4) : 0;
   state.previousScreenX = coordinate;
-  state.screenVelocity = MathUtils.damp(state.screenVelocity, velocity, 12, dt);
+  state.screenVelocity = MathUtils.damp(state.screenVelocity, velocity, SCROLL_VELOCITY_RESPONSE, dt);
   if (Number.isFinite(worldRight.x) && Number.isFinite(worldRight.z) && Math.hypot(worldRight.x, worldRight.z) > 1e-8) {
     state.right.set(worldRight.x, 0, worldRight.z).normalize();
   }
-  state.target.copy(state.right).multiplyScalar(-MAX_SCROLL_OFFSET * Math.tanh(state.screenVelocity * 6.0));
+  state.target.copy(state.right).multiplyScalar(-MAX_SCROLL_OFFSET * Math.tanh(state.screenVelocity * 5.5));
   // Substeps keep a dropped frame and an abrupt reversed gesture stable. This
   // is a suspension state only: the camera itself receives no second filter.
   const steps = Math.ceil(dt / (1 / 120)), h = dt / steps;
@@ -189,10 +190,19 @@ export function sampleFlightDynamics(progress: number, elapsedSeconds: number, o
   const laggedProgress = Math.max(0, p - .043);
   relativeX += routeX(laggedProgress) - routeX(p);
   relativeZ += routeZ(laggedProgress) - routeZ(p);
+  const scrollLength = Math.hypot(scrollX, scrollZ);
+  if (scrollLength > .10) {
+    // Retain crosswind sway throughout the crossing. A strong directional pull
+    // takes precedence over the part of the ambient swing acting against it.
+    const opposing = Math.min(0, (relativeX * scrollX + relativeZ * scrollZ) / (scrollLength * scrollLength));
+    const pull = MathUtils.smoothstep(scrollLength, .10, .85);
+    relativeX -= opposing * pull * scrollX;
+    relativeZ -= opposing * pull * scrollZ;
+  }
   relativeX += scrollX;
   relativeZ += scrollZ;
   const horizontalLength = Math.hypot(relativeX, relativeZ);
-  const maximumOffset = MAX_HORIZONTAL_OFFSET + Math.min(.35, Math.hypot(scrollX, scrollZ) * .4);
+  const maximumOffset = MAX_HORIZONTAL_OFFSET + Math.min(.46, scrollLength * .4);
   const saturation = horizontalLength > 1e-8 ? maximumOffset * Math.tanh(horizontalLength / maximumOffset) / horizontalLength : 1;
   relativeX *= saturation;
   relativeZ *= saturation;

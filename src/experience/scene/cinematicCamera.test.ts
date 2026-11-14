@@ -9,12 +9,12 @@ import { sampleCinematicCamera, storyFlightProgress, type CinematicCameraSample 
 import { buildRecordingGeometry } from "./recordingGeometry";
 import { createRecordingPlaybackSample, recordingPhase, sampleRecordingPlayback } from "./recordingPlayback";
 
-const VIEWPORTS = [[390, 844], [415, 582], [768, 1024], [1440, 900], [1272, 716]] as const;
+const VIEWPORTS = [[360, 780], [390, 844], [415, 582], [768, 1024], [1440, 900], [1272, 716]] as const;
 const WIND_TIMES = [0, 1.7, 4.3, 8, 14, 23, 37];
 const TRANSITIONS = [[.055, .125], [.205, .300], [.365, .425], [.505, .570], [.645, .705], [.775, .815], [.95, .985]] as const;
 
-function actor(progress: number, time = 8) {
-  return sampleFlightDynamics(storyFlightProgress(progress), time, createFlightDynamicsPose());
+function actor(progress: number, time = 8, scrollOffset?: Vector3) {
+  return sampleFlightDynamics(storyFlightProgress(progress), time, createFlightDynamicsPose(), scrollOffset);
 }
 function portraitCamera(width: number, height: number) {
   return width <= 700 || width / height < .95;
@@ -23,10 +23,15 @@ function snapshot(progress: number, narrow: boolean, time = 8, pose = actor(prog
   const position = new Vector3(), target = new Vector3();
   return { position, target, pose, ...sampleCinematicCamera(progress, narrow, position, target, undefined, pose) };
 }
-function projectedCamera(progress: number, width: number, height: number, time: number) {
-  const pose = actor(progress, time), inspection = progress > .25 && progress < .80;
+function projectedCamera(progress: number, width: number, height: number, time: number, lag = 0) {
+  const inspection = progress > .25 && progress < .80;
   // Match the renderer's small following delay, while detail views follow now.
-  const sample = snapshot(progress, portraitCamera(width, height), time, actor(progress, Math.max(0, time - (inspection ? 0 : .32))));
+  const cameraTime = Math.max(0, time - (inspection ? 0 : .32));
+  const narrow = portraitCamera(width, height);
+  const initial = snapshot(progress, narrow, time, actor(progress, cameraTime));
+  const scrollOffset = lag ? initial.target.clone().sub(initial.position).cross(new Vector3(0, 1, 0)).setY(0).normalize().multiplyScalar(lag) : undefined;
+  const pose = actor(progress, time, scrollOffset);
+  const sample = scrollOffset ? snapshot(progress, narrow, time, actor(progress, cameraTime, scrollOffset)) : initial;
   const camera = new PerspectiveCamera(sample.fov, width / height, .05, 160);
   camera.position.copy(sample.position); camera.lookAt(sample.target);
   camera.setViewOffset(width, height, -(sample.screenX - .5) * width, -(sample.screenY - .5) * height, width, height);
@@ -200,10 +205,10 @@ describe.each(VIEWPORTS)("subject framing at %ix%i", (width, height) => {
   // Camera composition follows aspect ratio; the page header remains governed
   // by its CSS width breakpoint, so a portrait tablet still reserves 75 px.
   const header = width <= 700 ? 67 : 75;
-  function frameFailures(progress: number, points: (pose: FlightDynamicsPose) => Vector3[]) {
+  function frameFailures(progress: number, points: (pose: FlightDynamicsPose) => Vector3[], lag = 0) {
     const failures = [];
     for (const time of WIND_TIMES) {
-      const { camera, pose } = projectedCamera(progress, width, height, time), bounds = frameBounds(points(pose), camera, width, height);
+      const { camera, pose } = projectedCamera(progress, width, height, time, lag), bounds = frameBounds(points(pose), camera, width, height);
       if (!(bounds.left > 8 && bounds.right < width - 8 && bounds.top > header + 8 && bounds.bottom < height - 8 && bounds.near > -1 && bounds.far < 1)) {
         failures.push({ progress, time, bounds, required: { left: 8, right: width - 8, top: header + 8, bottom: height - 8, near: -1, far: 1 } });
       }
@@ -212,6 +217,23 @@ describe.each(VIEWPORTS)("subject framing at %ix%i", (width, height) => {
   }
   it("shows the entire wind-led train and antenna at flight reading stops", () => {
     expect([0, .165, 1].flatMap(progress => frameFailures(progress, fullTrain))).toEqual([]);
+  });
+  it("keeps the train visible across the leftward pass and brings the payload to the right", () => {
+    const pass = [0, .055, .07, .09, .11, .125, .165, .205].flatMap(progress =>
+      [-1.4, 0, 1.4].flatMap(lag => frameFailures(progress, fullTrain, lag)));
+    const approach = [.23, .25, .27, .29, .30, .335].flatMap(progress =>
+      [-1.4, 0, 1.4].flatMap(lag => frameFailures(progress, closedPayload, lag)));
+    expect([...pass, ...approach]).toEqual([]);
+
+    for (const time of WIND_TIMES) {
+      const start = projectedCamera(0, width, height, time);
+      const left = projectedCamera(.165, width, height, time);
+      const detail = projectedCamera(.335, width, height, time);
+      const screenX = (point: Vector3, camera: PerspectiveCamera) => (point.clone().project(camera).x + 1) / 2;
+      expect(screenX(start.pose.balloonPosition, start.camera)).toBeGreaterThan(.58);
+      expect(screenX(left.pose.balloonPosition, left.camera)).toBeLessThan(.36);
+      expect(screenX(detail.pose.payloadPosition, detail.camera)).toBeGreaterThan(.56);
+    }
   });
   it("frames the full enclosure and cutaway, then the selected power component", () => {
     const closed = frameFailures(.335, pose => closedPayload(pose));

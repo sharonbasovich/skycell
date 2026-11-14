@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Vector3 } from "three";
+import { MathUtils, Vector3 } from "three";
 import { createFlightDynamicsPose, createScrollSuspension, FLIGHT_RISE_METRES, FLIGHT_TETHER_LENGTH, sampleFlightDynamics, stepScrollSuspension } from "./flightDynamics";
 
 function finitePose(pose: ReturnType<typeof createFlightDynamicsPose>) {
@@ -111,7 +111,7 @@ describe("scroll-operated suspension", () => {
       maximumLag = Math.max(maximumLag, shifted.loop.x - baseline.loop.x);
       expect(shifted.balloonPosition.toArray()).toEqual(baseline.balloonPosition.toArray());
       expect(shifted.neck.distanceTo(shifted.loop)).toBeCloseTo(FLIGHT_TETHER_LENGTH, 10);
-      expect(state.offset.length()).toBeLessThanOrEqual(.900000001);
+      expect(state.offset.length()).toBeLessThanOrEqual(1.400000001);
     }
     expect(maximumLag).toBeGreaterThan(.40);
     expect(state.offset.x).toBeGreaterThan(.65);
@@ -119,6 +119,21 @@ describe("scroll-operated suspension", () => {
     expect(state.offset.length()).toBeLessThan(.0001);
     expect(state.offsetVelocity.length()).toBeLessThan(.0001);
     expect(state.offset).toBe(returned);
+  });
+
+  it("shows the payload lag before the midpoint of a quick eased crossing", () => {
+    const state = createScrollSuspension(), pose = createFlightDynamicsPose();
+    const secondsPerFrame = 1 / 60, frameCount = 28;
+    for (let frame = 0; frame <= frameCount / 2; frame++) {
+      const crossing = MathUtils.smootherstep(frame, 0, frameCount);
+      stepScrollSuspension(state, .75 - .52 * crossing, right, secondsPerFrame);
+    }
+    expect(state.offset.x).toBeGreaterThan(.80);
+    for (let time = 0; time < 16; time += .2) {
+      sampleFlightDynamics(.35, time, pose, state.offset);
+      expect(pose.loop.x - pose.neck.x).toBeGreaterThan(.65);
+      expect(pose.neck.distanceTo(pose.loop)).toBeCloseTo(FLIGHT_TETHER_LENGTH, 10);
+    }
   });
 
   it("trails the other way after a reversed crossing and follows the current horizontal camera axis", () => {
@@ -153,7 +168,7 @@ describe("scroll-operated suspension", () => {
       stepScrollSuspension(state, coordinate, new Vector3(NaN, Infinity, NaN), 1e6);
       sampleFlightDynamics(.4, 5, pose, state.offset);
       expect(state.offset.toArray().every(Number.isFinite)).toBe(true);
-      expect(state.offset.length()).toBeLessThanOrEqual(.900000001);
+      expect(state.offset.length()).toBeLessThanOrEqual(1.400000001);
       expect(finitePose(pose)).toBe(true);
       expect(pose.neck.distanceTo(pose.loop)).toBeCloseTo(FLIGHT_TETHER_LENGTH, 10);
     }

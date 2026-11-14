@@ -11,7 +11,7 @@ import { createRecordingPlaybackSample, recordingPhase, sampleRecordingPlayback 
 
 const VIEWPORTS = [[360, 780], [390, 844], [415, 582], [768, 1024], [1440, 900], [1272, 716]] as const;
 const WIND_TIMES = [0, 1.7, 4.3, 8, 14, 23, 37];
-const TRANSITIONS = [[.055, .125], [.205, .300], [.365, .425], [.505, .570], [.645, .705], [.775, .815], [.95, .985]] as const;
+const TRANSITIONS = [[.055, .125], [.205, .300], [.365, .425], [.505, .570], [.69, .815], [.95, .985]] as const;
 
 function actor(progress: number, time = 8, scrollOffset?: Vector3) {
   return sampleFlightDynamics(storyFlightProgress(progress), time, createFlightDynamicsPose(), scrollOffset);
@@ -78,12 +78,6 @@ function inspectionAssembly(progress: number, pose: FlightDynamicsPose) {
   }
   return payloadWorld(points, pose);
 }
-function powerAssembly(progress: number, pose: FlightDynamicsPose) {
-  const anchors = samplePayloadRevealAnchors(progress, createPayloadRevealAnchors());
-  const points = boxPoints([-.041, -.003, -.031], [.041, .037, .031]).map(point => point.add(anchors.power));
-  points.push(anchors.power.clone());
-  return payloadWorld(points, pose);
-}
 function frameBounds(points: Vector3[], camera: PerspectiveCamera, width: number, height: number) {
   let left = Infinity, right = -Infinity, top = Infinity, bottom = -Infinity, near = Infinity, far = -Infinity;
   const projected = new Vector3();
@@ -104,7 +98,7 @@ describe.each([false, true])("flight-to-payload camera (narrow=%s)", narrow => {
       if (![...sample.position.toArray(), ...sample.target.toArray(), sample.fov, sample.altitudeKm, sample.screenX, sample.screenY].every(Number.isFinite)
         || sample.position.distanceTo(sample.target) <= .6 || sample.fov <= 20 || sample.fov >= 55
         || sample.screenX <= .05 || sample.screenX >= .95 || sample.screenY <= .05 || sample.screenY >= .95
-        || !(Number.isInteger(sample.shot) && sample.shot >= 0 && sample.shot < 8)) invalid.push({ progress: i / 800, sample });
+        || !(Number.isInteger(sample.shot) && sample.shot >= 0 && sample.shot < STORY_STOPS.length)) invalid.push({ progress: i / 800, sample });
     }
     expect(invalid).toEqual([]);
     for (const [exceptional, expected] of [[NaN, 0], [-Infinity, 0], [Infinity, 1], [-12, 0], [12, 1]]) {
@@ -129,7 +123,7 @@ describe.each([false, true])("flight-to-payload camera (narrow=%s)", narrow => {
   });
 
   it("follows the moving payload including its independent rotation", () => {
-    for (const progress of [.335, .465, .605, .740]) {
+    for (const progress of [.335, .465, .605, .68]) {
       const before = snapshot(progress, narrow, 1), after = snapshot(progress, narrow, 11);
       expect(before.pose.payloadPosition.distanceTo(after.pose.payloadPosition)).toBeGreaterThan(.1);
       expect(before.target.distanceTo(after.target)).toBeGreaterThan(.1); expect(before.position.distanceTo(after.position)).toBeGreaterThan(.1);
@@ -144,14 +138,21 @@ describe.each([false, true])("flight-to-payload camera (narrow=%s)", narrow => {
     }
   });
 
-  it("enters the payload, follows radio and power, then returns to the flight", () => {
+  it("enters the payload, opens directly from code to the recording, then returns to flight", () => {
     const distances = STORY_STOPS.map(progress => { const sample = snapshot(progress, narrow); return sample.position.distanceTo(sample.target); });
     expect(distances[2]).toBeLessThan(distances[0] * .20); expect(distances[3]).toBeLessThan(3);
     expect(distances[4]).toBeGreaterThan(distances[2] * 2); expect(distances[4]).toBeLessThan(distances[0] * .60);
-    expect(distances[5]).toBeLessThan(distances[4] * .50);
-    expect(distances[6]).toBeGreaterThan(distances[0] * 1.8); expect(distances[7]).toBeLessThan(distances[6] * .70);
-    expect(distances[7]).toBeGreaterThan(distances[2] * 5);
+    expect(distances[5]).toBeGreaterThan(distances[0] * 1.8); expect(distances[6]).toBeLessThan(distances[5] * .70);
+    expect(distances[6]).toBeGreaterThan(distances[2] * 5);
     STORY_STOPS.forEach((progress, index) => expect(snapshot(progress, narrow).shot).toBe(index));
+
+    let previousDistance = distances[4];
+    for (let i = 0; i <= 100; i++) {
+      const sample = snapshot(.69 + (.815 - .69) * (i / 100), narrow);
+      const distance = sample.position.distanceTo(sample.target);
+      expect(distance).toBeGreaterThanOrEqual(previousDistance - 1e-8);
+      previousDistance = distance;
+    }
   });
 
   it("joins reading holds with zero camera endpoint velocity and acceleration", () => {
@@ -235,13 +236,11 @@ describe.each(VIEWPORTS)("subject framing at %ix%i", (width, height) => {
       expect(screenX(detail.pose.payloadPosition, detail.camera)).toBeGreaterThan(.56);
     }
   });
-  it("frames the full enclosure and cutaway, then the selected power component", () => {
+  it("frames the full enclosure, cutaway and code chapter hardware", () => {
     const closed = frameFailures(.335, pose => closedPayload(pose));
     const opened = frameFailures(.465, pose => inspectionAssembly(.465, pose));
-    // Case/lid crop is intentional here: the preceding two chapters already
-    // establish them, and this shot moves into the power assembly itself.
-    const power = frameFailures(.740, pose => powerAssembly(.740, pose));
-    expect([...closed, ...opened, ...power]).toEqual([]);
+    const code = frameFailures(.605, pose => inspectionAssembly(.605, pose));
+    expect([...closed, ...opened, ...code]).toEqual([]);
   });
 });
 

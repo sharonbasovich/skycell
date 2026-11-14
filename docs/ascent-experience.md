@@ -4,22 +4,21 @@ The ascent experience originated from `origin/main` (`16d83f3`), then developed 
 
 ## Page and information
 
-Manrope, deep atmospheric blue, white and a restrained signal cyan form one visual system. Large direct headlines describe the current object or question. The permanent illustration caption, floating chapter labels, hero award, separate white field-story epilogue and footer have been removed. The final chapter retains source links and the accessible **Flight notes & evidence** dialog. Removing the footer leaves the final full-height chapter inside its sticky scene rather than pushing its large text under the fixed header.
+Manrope, deep atmospheric blue, white and a restrained signal cyan form one visual system. Large direct headlines describe the current object or question. The permanent illustration caption, floating chapter labels, hero award, separate white field-story epilogue and footer have been removed. The final chapter places the launch photograph between the Skycell heading and the project link. Removing the footer leaves the final full-height chapter inside its sticky scene rather than pushing its large text under the fixed header.
 
 Three bounded heading treatments are implemented as isolated query-selected comparisons: **Lift** (`?headings=1`) reveals lines through a rising mask; **Depth** (`?headings=2`) combines scroll entry with pointer-responsive line offsets and tilt; **Signal** (`?headings=3`) sweeps brighter text across the heading as its chapter arrives. Their inputs and variant switching are verified. Sharon selected Depth for the base URL. Each line enters from farther back in perspective, settles into a reading position, and recedes as the chapter exits. Desktop pointer movement tilts and offsets the lines. Static/reduced-motion mode uses ordinary readable text.
 
-The continuous sequence has eight chapters:
+The continuous sequence has seven chapters:
 
 1. **Flight:** one balloon leads a denser, suspended payload, with distinct movement and a changing tether angle.
 2. **Ascent:** the camera follows the same moving vehicle past fixed cloud volumes as Earth recedes.
 3. **Payload:** approach the same foam enclosure, preserving its identity and antenna; an inspection link opens the actual build photograph.
 4. **Inside:** lift the lid and separate interpreted sensing, computation, radio and power assemblies. This is a technical cutaway, not an event that occurred during flight.
-5. **Connection:** use the antenna and spatial signal explanation to present the 70 km, 915 MHz result alongside the limited number of received payload packets.
-6. **Power:** return to the relevant component to explain startup brownouts and the shorter operating window.
-7. **Recording:** reveal the event tracker’s 125 actual fixes and time-linear estimates between them. Scrolling moves the same balloon/payload along the complete partial-archive path, reveals travelled segments and orbits the camera; amber joins distinguish reception gaps.
-8. **Resolve:** return to the complete vehicle, the four-student result, project source and flight notes.
+5. **Code:** explain how Python read sensor data, sent telemetry over Meshtastic and handled reconnection as the camera frames the radio.
+6. **Recording:** reveal the event tracker’s 125 actual fixes and time-linear estimates between them. Scrolling moves the same balloon/payload along the complete partial-archive path, reveals travelled segments and orbits the camera; amber joins distinguish reception gaps.
+7. **Resolve:** show the complete vehicle alongside the launch photograph and project link.
 
-There is no separate three-tab hardware menu. The [optimized project photographs](hardware-gallery-assets.md) remain useful in the normal-flow fallback; inspection dialogs use their original JPEG evidence. The actual launch photograph retains its two-balloon train and factual caption. Reduced motion, unavailable WebGL and scene errors use `sky-story-static`: all eight chapters remain in normal reading order, with photographs, a static recording profile and manual controls.
+There is no separate three-tab hardware menu. The [optimized project photographs](hardware-gallery-assets.md) remain useful in the normal-flow fallback; inspection dialogs use their original JPEG evidence. The actual launch photograph shows the two-balloon train. Reduced motion, unavailable WebGL and scene errors use `sky-story-static`: all seven chapters remain in normal reading order, with photographs, a static recording profile and manual controls.
 
 ## Flight, camera and inspection
 
@@ -49,7 +48,7 @@ The recording geometry preserves one point per actual observation, projected int
 
 SkyCell established an approximately **70 km LoRa / Meshtastic link at 915 MHz**, with an approximately **30 km** mission altitude. Python handled NMEA GPS, environmental readings and reconnection; the ground work included RTL-SDR **30 MHz–1.5 GHz at 2.4 MS/s**. Only a few payload packets were received. Startup brownouts required a power-bank workaround that shortened operating time. Range success is not a claim of continuous telemetry.
 
-The separate **APEX-2-T / SondeHub event-tracker archive** contains **125 observations**, June 21, 2025 **18:11:06–19:17:21 UTC**, with a **29,510 m** peak in the partial recording. It is neither live nor SkyCell’s 915 MHz mesh packet stream. The flight-notes dialog preserves that distinction, the actual two-balloon event configuration and the cutaway’s interpretation.
+The separate **APEX-2-T / SondeHub event-tracker archive** contains **125 observations**, June 21, 2025 **18:11:06–19:17:21 UTC**, with a **29,510 m** peak in the partial recording. It is neither live nor SkyCell’s 915 MHz mesh packet stream.
 
 ## Current verification
 
@@ -66,7 +65,7 @@ These runs used **Intel Iris Xe through ANGLE/D3D11** on desktop hardware. Callb
 
 After late fixes to the recording/ending text overlap, Depth scroll entry and phone comparison-nav spacing, a fresh production rebuild and targeted browser pass covered **1272×716, 415×582, 360×780 and 768×1024**. All four report clear controls, a working Depth scroll treatment and no JavaScript errors. The recording headline now ends its exit at **.965** and the final headline starts at **.972**, avoiding simultaneous visible headings. At maximum scroll, the final headline remains below the fixed header; the footer is absent. Comparison navigation also remains clear of other controls.
 
-Fault fixtures separately returned an intended **404 for the Landsat detail map**, an intended **404 for a base NASA map**, and held **all four map requests for nine seconds**. All three retained a ready live vehicle, and paused clock/camera stayed held. Only the expected failed-image fixture diagnostics and the base-map fallback warning occurred; the fault report contains no unexpected errors. Reduced-motion and unavailable-WebGL checks both retain eight normal-flow chapters and the static recording without requesting the Three.js chunk. These are current checks; the historical context-loss/reload test below belongs to its earlier checkpoint.
+Fault fixtures separately returned an intended **404 for the Landsat detail map**, an intended **404 for a base NASA map**, and held **all four map requests for nine seconds**. All three retained a ready live vehicle, and paused clock/camera stayed held. Only the expected failed-image fixture diagnostics and the base-map fallback warning occurred; the fault report contains no unexpected errors. Reduced-motion and unavailable-WebGL checks both retain eight normal-flow chapters and the static recording without requesting the Three.js chunk. These checks predate the seven-chapter copy revision. The historical context-loss/reload test below belongs to an earlier checkpoint.
 
 The current reports are `skycell-scroll-qa/results.json`, `faults-results.json` and `final-check-results.json` outside Git, beside their recordings and screenshots. No deployment result is asserted by these local checks.
 

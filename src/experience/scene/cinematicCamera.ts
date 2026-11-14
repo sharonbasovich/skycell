@@ -3,10 +3,12 @@ import type { FlightDynamicsPose } from "./flightDynamics";
 import { recordingPhase } from "./recordingReadout";
 
 export { STORY_STOPS } from "../storyTiming";
-const HOLDS = [[0, .055], [.125, .205], [.300, .365], [.425, .505], [.570, .645], [.705, .775], [.815, .95], [.985, 1]] as const;
+const RECORDING_APPROACH_START = .69;
+const RECORDING_HOLD_START = .815;
+const HOLDS = [[0, .055], [.125, .205], [.300, .365], [.425, .505], [.570, RECORDING_APPROACH_START], [RECORDING_HOLD_START, .95], [.985, 1]] as const;
 const UP = new Vector3(0, 1, 0);
 export interface CinematicCameraSample { fov: number; altitudeKm: number; shot: number; screenX: number; screenY: number }
-type Anchor = "flight" | "payload" | "inside" | "radio" | "power" | "recording";
+type Anchor = "flight" | "payload" | "inside" | "radio" | "recording";
 interface Shot { anchor: Anchor; offset: [number, number, number]; fov: number; x: number; y: number }
 const DESKTOP: Shot[] = [
   { anchor: "flight", offset: [6.7, 3.1, 16.6], fov: 32, x: .75, y: .54 },
@@ -14,7 +16,6 @@ const DESKTOP: Shot[] = [
   { anchor: "payload", offset: [.98, .58, 1.38], fov: 34, x: .77, y: .53 },
   { anchor: "inside", offset: [.78, .70, 1.22], fov: 37, x: .72, y: .55 },
   { anchor: "radio", offset: [-2.5, 1.3, 4.2], fov: 35, x: .68, y: .54 },
-  { anchor: "power", offset: [.70, .56, 1.04], fov: 37, x: .66, y: .55 },
   { anchor: "recording", offset: [62, 24, 10], fov: 35, x: .65, y: .43 },
   { anchor: "flight", offset: [7.8, 3.2, 18], fov: 34, x: .71, y: .53 },
 ];
@@ -24,7 +25,6 @@ const MOBILE: Shot[] = [
   { anchor: "payload", offset: [1.18, .71, 1.91], fov: 45, x: .60, y: .64 },
   { anchor: "inside", offset: [1.11, 1.02, 1.95], fov: 45, x: .56, y: .64 },
   { anchor: "radio", offset: [-2.8, 1.4, 5.4], fov: 43, x: .56, y: .64 },
-  { anchor: "power", offset: [.98, .79, 1.58], fov: 43, x: .52, y: .63 },
   { anchor: "recording", offset: [62, 24, 10], fov: 43, x: .50, y: .465 },
   { anchor: "flight", offset: [5.2, 2.4, 18.3], fov: 41, x: .61, y: .60 },
 ];
@@ -36,7 +36,7 @@ export function storyFlightProgress(progress: number): number {
 function anchorPosition(kind: Anchor, f: number, pose: FlightDynamicsPose | undefined, out: Vector3) {
   if (kind === "recording") return out.set(0, 27.5, -25);
   if (kind === "flight") return pose ? out.copy(pose.midpoint) : out.set(0, 2.05 + 28 * f, 0);
-  out.set(kind === "power" ? .155 : kind === "radio" ? -.20 : 0, kind === "inside" ? .13 : kind === "power" ? .10 : .035, kind === "power" ? -.025 : 0);
+  out.set(kind === "radio" ? -.20 : 0, kind === "inside" ? .13 : .035, 0);
   if (pose) out.applyQuaternion(pose.payloadQuaternion).add(pose.payloadPosition);
   else out.y += 28 * f;
   return out;
@@ -57,8 +57,18 @@ export function sampleCinematicCamera(
   anchorPosition(from.anchor, f, pose, targetOut);
   anchorPosition(to.anchor, f, pose, scratch);
   targetOut.lerp(scratch, blend);
-  positionOut.set(MathUtils.lerp(from.offset[0], to.offset[0], blend), MathUtils.lerp(from.offset[1], to.offset[1], blend), MathUtils.lerp(from.offset[2], to.offset[2], blend)).add(targetOut);
-  const orbitWeight = ease((p - .775) / .04) * (1 - ease((p - .95) / .035));
+  if (from.anchor === "radio" && to.anchor === "recording") {
+    // Pull out on an arc so turning toward the recording never pushes the lens back into the payload.
+    const [fromX, fromY, fromZ] = from.offset;
+    const [toX, toY, toZ] = to.offset;
+    const angle = MathUtils.lerp(Math.atan2(fromX, fromZ), Math.atan2(toX, toZ), blend);
+    const radius = MathUtils.lerp(Math.hypot(fromX, fromZ), Math.hypot(toX, toZ), blend);
+    positionOut.set(Math.sin(angle) * radius, MathUtils.lerp(fromY, toY, blend), Math.cos(angle) * radius);
+  } else {
+    positionOut.set(MathUtils.lerp(from.offset[0], to.offset[0], blend), MathUtils.lerp(from.offset[1], to.offset[1], blend), MathUtils.lerp(from.offset[2], to.offset[2], blend));
+  }
+  positionOut.add(targetOut);
+  const orbitWeight = ease((p - RECORDING_APPROACH_START) / (RECORDING_HOLD_START - RECORDING_APPROACH_START)) * (1 - ease((p - .95) / .035));
   const yaw = (ease(recordingPhase(p)) - .5) * .5 * orbitWeight;
   positionOut.sub(targetOut).applyAxisAngle(UP, yaw).add(targetOut);
   sampleOut.fov = MathUtils.lerp(from.fov, to.fov, blend);

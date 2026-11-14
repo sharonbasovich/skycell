@@ -3,10 +3,16 @@ import { BoxGeometry, Group, Mesh, MeshStandardMaterial, Vector3 } from "three";
 import { createPayloadReveal, createPayloadRevealAnchors, samplePayloadReveal, samplePayloadRevealAnchors } from "./PayloadReveal";
 
 describe("payload inspection", () => {
-  it("stages the hardware, isolates power, and closes for the archive and flight", () => {
+  it("keeps the hardware together through the code chapter and closes for the recording", () => {
     expect(samplePayloadReveal(.33)).toEqual({ open: 0, sensor: 0, compute: 0, radio: 0, power: 0 });
     expect(samplePayloadReveal(.51)).toEqual({ open: 1, sensor: 1, compute: 1, radio: 1, power: 1 });
-    expect(samplePayloadReveal(.735)).toEqual({ open: 1, sensor: 0, compute: 0, radio: 0, power: 1 });
+    expect(samplePayloadReveal(.67)).toEqual({ open: 1, sensor: 1, compute: 1, radio: 1, power: 1 });
+    const closing = samplePayloadReveal(.705);
+    expect(closing.open).toBe(1);
+    expect(closing.power).toBeGreaterThan(0);
+    expect(closing.power).toBeLessThan(1);
+    expect([closing.sensor, closing.compute, closing.radio]).toEqual([closing.power, closing.power, closing.power]);
+    expect(samplePayloadReveal(.78)).toEqual({ open: 0, sensor: 0, compute: 0, radio: 0, power: 0 });
     for (const progress of [.835, .865, .965, 1]) expect(samplePayloadReveal(progress).open).toBe(0);
     const invalid = [];
     for (let i = 0; i <= 1000; i++) for (const value of Object.values(samplePayloadReveal(i / 1000))) {
@@ -56,9 +62,9 @@ describe("payload inspection", () => {
 
   it("gives independent callers identical anchors through reverse inspection", () => {
     const first = createPayloadRevealAnchors(), second = createPayloadRevealAnchors();
-    samplePayloadRevealAnchors(.735, first);
+    samplePayloadRevealAnchors(.705, first);
     const saved = first.power.clone();
-    for (const progress of [.1, .4, .62, .8, .94, .735]) samplePayloadRevealAnchors(progress, second);
+    for (const progress of [.1, .4, .62, .8, .94, .705]) samplePayloadRevealAnchors(progress, second);
     expect(first.power.toArray()).toEqual(saved.toArray());
     for (const role of ["sensor", "compute", "radio", "power", "suspension"] as const) {
       expect(first[role].toArray()).toEqual(second[role].toArray());

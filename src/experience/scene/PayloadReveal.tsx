@@ -31,13 +31,12 @@ const ease = (progress: number, start: number, end: number) => {
 /** An explanatory cutaway: the opening is an inspection, not a flight event. */
 export function samplePayloadReveal(progress: number, out: RevealState = { open: 0, sensor: 0, compute: 0, radio: 0, power: 0 }): RevealState {
   const p = clamp(progress);
-  const primary = ease(p, .365, .405) * (1 - ease(p, .780, .815));
-  const settle = 1 - ease(p, .625, .650);
-  out.open = primary;
+  const settle = 1 - ease(p, .67, .73);
+  out.open = ease(p, .365, .405) * (1 - ease(p, .72, .78));
   out.sensor = ease(p, .400, .423) * settle;
   out.compute = ease(p, .423, .449) * settle;
   out.radio = ease(p, .449, .476) * settle;
-  out.power = Math.max(ease(p, .476, .500) * settle, ease(p, .700, .720) * (1 - ease(p, .780, .800)));
+  out.power = ease(p, .476, .500) * settle;
   return out;
 }
 

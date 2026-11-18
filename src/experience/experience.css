@@ -11,6 +11,7 @@ body { font-family:Manrope,"Segoe UI",Arial,sans-serif; }
 .sky-header nav { display:flex; align-items:center; gap:34px; font-size:12px; font-weight:550; }
 .sky-header nav a { display:inline-flex; align-items:center; min-height:44px; color:inherit; opacity:.8; transition:opacity 120ms ease; }
 .sky-header nav a:hover { opacity:1; }
+.sky-header-github { justify-content:center; flex:0 0 44px; }
 .sky-skip { position:fixed; z-index:100; top:8px; left:8px; padding:12px 18px; color:var(--sky-ink); background:#fff; transform:translateY(-150%); }
 .sky-skip:focus { transform:translateY(0); }
 .sky-page-main:focus { outline:none; }
@@ -156,7 +157,7 @@ body { font-family:Manrope,"Segoe UI",Arial,sans-serif; }
   .sky-header { height:67px; padding:0 22px; gap:16px; }
   .sky-brand { font-size:21px; gap:5px; }
   .sky-brand svg { width:21px; height:28px; }
-  .sky-header nav { gap:18px; font-size:10px; }
+  .sky-header nav { gap:14px; font-size:10px; }
   .story-chapter { padding:99px 24px 75px; }
   .story-chapter h1 { max-width:100%; font-size:clamp(26px,8.7vw,46px); line-height:1.06; }
   .story-chapter h2 { max-width:100%; font-size:clamp(30px,8.5vw,46px); line-height:1.08; }
@@ -204,6 +205,10 @@ body { font-family:Manrope,"Segoe UI",Arial,sans-serif; }
   .story-chapter-3 h2 { font-size:4.8vw; }
   .story-chapter-2 h2 { font-size:4vw; }
   .story-chapter-5 { padding-top:100px; }
+}
+@media (max-width:374px) {
+  .sky-header { padding-inline:14px; gap:10px; }
+  .sky-header nav { gap:8px; }
 }
 @media(prefers-reduced-motion:reduce) {
   .sky-experience *, .sky-header * { scroll-behavior:auto!important; transition:none!important; animation:none!important; }

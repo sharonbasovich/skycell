@@ -1,3 +1,4 @@
+import { Github } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import type { MouseEvent } from "react";
 
@@ -20,6 +21,15 @@ export default function ExperienceHeader() {
         <Link to="/#ascent" onClick={event => travel(event, "ascent")}>Flight</Link>
         <Link to="/#hardware" onClick={event => travel(event, "hardware")}>Payload</Link>
         <Link to="/#flight-archive" onClick={event => travel(event, "flight-archive")}>Recording</Link>
+        <a
+          className="sky-header-github"
+          href="https://github.com/sharonbasovich/skycell"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="SkyCell on GitHub"
+        >
+          <Github aria-hidden="true" size={19} />
+        </a>
       </nav>
     </header>
   );
